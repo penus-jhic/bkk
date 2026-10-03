@@ -1,366 +1,340 @@
-@extends('index.master')
+{{--
+    Daftar berita & agenda BKK. Gaya mengikuti landing page sekolah (coretan tangan, merah marun),
+    data dari PublicController@berita: $categories, $totalPublished, $heroBerita, $beritas, $kategoriSlug, $searchQuery.
+--}}
+@php
+    $navSection = 'berita';
+
+    $activeCategory = $kategoriSlug ? ($categories->firstWhere('slug', $kategoriSlug)->nama ?? $kategoriSlug) : null;
+
+    // tone = warna kotak tanggal, berurutan dari agenda paling dekat
+    $agendas = [
+        ['month' => 'Mei', 'day' => '24', 'title' => 'Penus Career Fair 2025', 'place' => 'Aula Serbaguna Kampus • 08:00 WIB', 'note' => '35 Perusahaan Partisipan', 'highlight' => true, 'tone' => 'bg-brand-darkred text-white'],
+        ['month' => 'Mei', 'day' => '28', 'title' => 'Pelepasan Magang Gel. II', 'place' => 'Lapangan Utama • Siswa Kelas XI', 'note' => 'Wajib Seragam Wearpack', 'highlight' => false, 'tone' => 'bg-brand-signal/15 text-brand-darkred'],
+        ['month' => 'Jun', 'day' => '05', 'title' => 'Walk-in PT Denso Indonesia', 'place' => 'Lab Mesin & Otomotif • 09:00 WIB', 'note' => 'Khusus Alumni 2024 & 2025', 'highlight' => true, 'tone' => 'bg-brand-softmist text-brand-ink'],
+    ];
+
+    $downloads = [
+        ['title' => 'Pedoman Laporan PKL 2025', 'meta' => 'PDF • 2.4 MB • Versi Revisi', 'icon' => 'fileText'],
+        ['title' => 'Format CV ATS Vokasi SMK', 'meta' => 'DOCX • 680 KB • Terstandarisasi', 'icon' => 'user'],
+        ['title' => 'Form Penilaian Mitra IDUKA', 'meta' => 'PDF • 450 KB • Lampiran Penilaian', 'icon' => 'check'],
+    ];
+@endphp
+
+@extends('index.layouts.landing')
 
 @section('title', 'Berita & Agenda - BKK SMK Plus Pelita Nusantara')
 
 @section('content')
-<div class="flex flex-col w-full">
-<!-- Page Header & Categorization Layer -->
-<section class="w-full bg-surface-container-low py-12 lg:py-16">
-<div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-8">
-<!-- Breadcrumb & Status Pill -->
-<div class="flex items-center gap-3">
-<span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary font-label-dense text-label-dense">
-<span class="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-          Warta &amp; Agenda Terkini
-        </span>
-<span class="text-on-surface-variant font-label-dense text-label-dense">/ Portal Informasi Terpadu</span>
-</div>
-<!-- Main Header Text -->
-<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-<div class="max-w-3xl flex flex-col gap-3">
-<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">
-            Kabar &amp; Agenda Bursa Kerja Khusus
-          </h1>
-<p class="font-body-editorial text-body-editorial text-on-surface-variant">
-            Informasi terkini mengenai bursa kerja, agenda walk-in interview, kunjungan industri, pembekalan magang (PKL), serta tips karier persiapan dunia kerja SMK Plus Pelita Nusantara.
-          </p>
-</div>
-<!-- Quick Search Form -->
-<form method="GET" action="{{ route('bkk.berita') }}" class="w-full sm:w-80 relative shrink-0">
-@if($kategoriSlug)
-    <input type="hidden" name="kategori" value="{{ $kategoriSlug }}"/>
-@endif
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-<input name="q" value="{{ $searchQuery }}" class="w-full pl-11 pr-4 py-3 bg-surface-container-lowest text-on-surface font-body-default text-body-default rounded-full shadow-sm placeholder:text-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Cari berita atau agenda..." type="text"/>
-</form>
-</div>
-<!-- Category Filter Tabs -->
-<div class="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar">
-<a href="{{ route('bkk.berita', request()->only('q')) }}" 
-   class="px-5 py-2.5 rounded-full {{ empty($kategoriSlug) ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface hover:bg-surface-variant' }} font-label-md text-label-md font-semibold shrink-0 transition-all flex items-center gap-2">
-<span>Semua Artikel</span>
-<span class="text-[11px] {{ empty($kategoriSlug) ? 'bg-white/20' : 'bg-on-surface/10 text-on-surface-variant' }} px-2 py-0.5 rounded-full">{{ $totalPublished }}</span>
-</a>
-@foreach($categories as $cat)
-<a href="{{ route('bkk.berita', array_merge(request()->only('q'), ['kategori' => $cat->slug])) }}" 
-   class="px-5 py-2.5 rounded-full {{ $kategoriSlug === $cat->slug ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface hover:bg-surface-variant' }} font-label-md text-label-md font-semibold shrink-0 transition-colors flex items-center gap-2">
-<span>{{ $cat->nama }}</span>
-<span class="text-[11px] {{ $kategoriSlug === $cat->slug ? 'bg-white/20' : 'bg-on-surface/10 text-on-surface-variant' }} px-2 py-0.5 rounded-full">{{ $cat->beritas_count }}</span>
-</a>
-@endforeach
-</div>
-</div>
-</section>
-<!-- Main Content Structure: Hero + Articles Grid with Sidebar -->
-<section class="w-full max-w-7xl mx-auto px-6 lg:px-12 py-12 lg:py-16 flex flex-col gap-12">
-<!-- FEATURED HERO ARTICLE (Horizontal Split 16:9 feel) -->
-@if($heroBerita)
-<article class="w-full bg-surface-container-lowest rounded-lg shadow-sm overflow-hidden flex flex-col lg:flex-row transition-all hover:shadow-md">
-<!-- Media Aspect Holder -->
-<div class="lg:w-7/12 relative aspect-video lg:aspect-auto min-h-[320px] overflow-hidden group">
-<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="{{ $heroBerita->judul }}" src="{{ $heroBerita->gambar_sampul }}"/>
-<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent lg:hidden"></div>
-<div class="absolute top-4 left-4 flex flex-wrap gap-2">
-<span class="px-3 py-1 rounded-full bg-primary text-on-primary font-label-dense text-label-dense uppercase tracking-wider font-semibold shadow-sm">
-    Agenda Utama
-</span>
-<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-dense text-label-dense uppercase tracking-wider font-semibold shadow-sm">
-    {{ $heroBerita->kategori->nama ?? 'Bursa Kerja' }}
-</span>
-</div>
-</div>
-<!-- Text Details -->
-<div class="lg:w-5/12 p-8 lg:p-10 flex flex-col justify-between bg-surface-container-lowest">
-<div class="flex flex-col gap-4">
-<!-- Metadata Bar -->
-<div class="flex items-center gap-4 text-on-surface-variant font-label-dense text-label-dense">
-<span class="flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
-    {{ $heroBerita->formatted_date }}
-</span>
-<span>•</span>
-<span class="flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px]">schedule</span>
-    {{ $heroBerita->estimasi_baca ?? '4 Menit Baca' }}
-</span>
-</div>
-<a href="{{ route('bkk.berita.detail', $heroBerita->slug) }}">
-<h2 class="font-headline-md text-headline-md text-on-surface leading-snug hover:text-primary transition-colors cursor-pointer">
-    {{ $heroBerita->judul }}
-</h2>
-</a>
-<p class="font-body-default text-body-default text-on-surface-variant line-clamp-3">
-    {{ $heroBerita->ringkasan }}
-</p>
-</div>
-<!-- Byline & CTA -->
-<div class="pt-6 mt-6 flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-[14px]">
-    {{ strtoupper(substr($heroBerita->penulis_nama, 0, 2)) }}
-</div>
-<div class="flex flex-col">
-<span class="font-label-md text-label-md text-on-surface font-semibold">{{ $heroBerita->penulis_nama }}</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">{{ $heroBerita->penulis_jabatan ?? 'Sekretariat Penus Cibinong' }}</span>
-</div>
-</div>
-<a class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary/90 transition-all" href="{{ route('bkk.berita.detail', $heroBerita->slug) }}">
-<span>Baca Selengkapnya</span>
-<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</a>
-</div>
-</div>
-</article>
-@endif
-
-<!-- CONTENT GRID: Left (Articles) & Right (Sidebar) -->
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-<!-- ARTICLES COLUMN (8 Cols) -->
-<div class="lg:col-span-8 flex flex-col gap-8">
-<div class="flex items-center justify-between">
-<h3 class="font-title-md text-title-md text-on-surface flex items-center gap-2">
-<span class="w-1.5 h-6 bg-primary rounded-full inline-block"></span>
-    @if($kategoriSlug)
-        Kategori: {{ $categories->firstWhere('slug', $kategoriSlug)->nama ?? $kategoriSlug }}
-    @elseif($searchQuery)
-        Hasil Pencarian: "{{ $searchQuery }}"
-    @else
-        Semua Publikasi Terkini
-    @endif
-</h3>
-<span class="font-label-dense text-label-dense text-on-surface-variant">
-    Menampilkan {{ $beritas->firstItem() ?? 0 }} - {{ $beritas->lastItem() ?? 0 }} dari {{ $beritas->total() }} Kabar
-</span>
-</div>
-<!-- 6 Cards Grid (2 columns on desktop) -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-@forelse($beritas as $item)
-<article class="flex flex-col bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all group">
-<div class="relative aspect-[16/10] overflow-hidden">
-@if($item->gambar_sampul)
-    <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ $item->judul }}" src="{{ $item->gambar_sampul }}"/>
-@else
-    <div class="w-full h-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-        <span class="material-symbols-outlined text-[36px]">newspaper</span>
+{{-- ============================================================
+     1. KEPALA HALAMAN: judul, pencarian & kategori
+     ============================================================ --}}
+<section class="relative overflow-hidden bg-white px-6 pt-32 pb-10 md:pt-40 md:pb-12">
+    {{-- Latar: grid halus + titik-titik di kanan atas --}}
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-size-[44px_44px] mask-[radial-gradient(ellipse_60%_70%_at_20%_20%,#000_50%,transparent_100%)]"></div>
+        <div class="absolute right-6 top-28 hidden md:block w-40 h-28 bg-[radial-gradient(circle,var(--color-brand-mist)_2px,transparent_2.5px)] bg-size-[22px_22px]"></div>
     </div>
-@endif
-<span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-surface-container-lowest/90 backdrop-blur text-primary font-label-dense text-label-dense font-semibold">
-    {{ $item->kategori->nama ?? 'Umum' }}
-</span>
-</div>
-<div class="p-5 flex flex-col flex-1 justify-between gap-4">
-<div class="flex flex-col gap-2">
-<div class="flex items-center gap-2 text-on-surface-variant font-label-dense text-label-dense">
-<span>{{ $item->formatted_date }}</span>
-<span>•</span>
-<span>{{ $item->estimasi_baca ?? '3 Menit' }}</span>
-</div>
-<a href="{{ route('bkk.berita.detail', $item->slug) }}">
-<h4 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-2">
-    {{ $item->judul }}
-</h4>
-</a>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">
-    {{ $item->ringkasan }}
-</p>
-</div>
-<div class="flex items-center justify-between pt-2">
-<span class="font-label-dense text-label-dense text-on-surface-variant">{{ $item->penulis_nama }}</span>
-<a href="{{ route('bkk.berita.detail', $item->slug) }}" class="text-primary font-label-dense text-label-dense font-semibold flex items-center group-hover:translate-x-1 transition-transform">
-    Selengkapnya <span class="material-symbols-outlined text-[16px] ml-0.5">chevron_right</span>
-</a>
-</div>
-</div>
-</article>
-@empty
-<div class="col-span-2 py-12 flex flex-col items-center justify-center gap-3 bg-surface-container-lowest rounded-lg p-8 text-center">
-    <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">feed</span>
-    <h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Belum Ada Artikel</h4>
-    <p class="font-body-dense text-body-dense text-on-surface-variant max-w-md">
-        Belum ditemukan publikasi berita yang sesuai dengan kategori atau kata kunci pencarian yang dipilih.
-    </p>
-    <a href="{{ route('bkk.berita') }}" class="mt-2 px-5 py-2 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold hover:bg-primary/90 transition-all">
-        Lihat Semua Artikel
-    </a>
-</div>
-@endforelse
-</div>
-<!-- PAGINATION SECTION -->
-@if($beritas->hasPages())
-<div class="w-full bg-surface-container-lowest rounded-lg p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-<div class="text-on-surface-variant font-body-dense text-body-dense">
-    Halaman <strong class="text-on-surface">{{ $beritas->currentPage() }}</strong> dari <strong class="text-on-surface">{{ $beritas->lastPage() }}</strong> (Total {{ $beritas->total() }} Catatan Berita)
-</div>
-<div class="flex items-center gap-1.5">
-@if($beritas->onFirstPage())
-    <span class="w-9 h-9 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center opacity-50 cursor-not-allowed">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-    </span>
-@else
-    <a href="{{ $beritas->previousPageUrl() }}" class="w-9 h-9 rounded-full bg-surface-container text-on-surface hover:bg-surface-variant transition-colors flex items-center justify-center">
-        <span class="material-symbols-outlined text-[18px]">chevron_left</span>
-    </a>
-@endif
 
-@foreach($beritas->getUrlRange(1, $beritas->lastPage()) as $page => $url)
-    @if($page == $beritas->currentPage())
-        <span class="w-9 h-9 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center shadow-sm">
-            {{ $page }}
-        </span>
-    @else
-        <a href="{{ $url }}" class="w-9 h-9 rounded-full bg-surface-container text-on-surface hover:bg-surface-variant font-label-md text-label-md transition-colors flex items-center justify-center">
-            {{ $page }}
-        </a>
-    @endif
-@endforeach
+    <div class="relative max-w-6xl mx-auto">
+        <div class="animate-fade-up">
+            <p class="flex flex-wrap items-center gap-x-10 gap-y-2 text-xs font-semibold uppercase tracking-[0.25em]">
+                <span class="text-brand-darkred"><x-sketch.sparks>Warta &amp; Agenda Terkini</x-sketch.sparks></span>
+                <span class="text-brand-ink/40">/ Portal Informasi Terpadu</span>
+            </p>
 
-@if($beritas->hasMorePages())
-    <a href="{{ $beritas->nextPageUrl() }}" class="w-9 h-9 rounded-full bg-surface-container text-on-surface hover:bg-surface-variant transition-colors flex items-center justify-center">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-    </a>
-@else
-    <span class="w-9 h-9 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center opacity-50 cursor-not-allowed">
-        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
-    </span>
-@endif
-</div>
-</div>
-@endif
-</div>
-<!-- SIDEBAR WIDGETS COLUMN (4 Cols) -->
-<aside class="lg:col-span-4 flex flex-col gap-6 w-full">
-<!-- WIDGET 1: Agenda Calendar & Milestones -->
-<div class="w-full bg-surface-container-lowest rounded-lg p-6 shadow-sm flex flex-col gap-5">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-[22px]">event</span>
-<h3 class="font-title-md text-title-md text-on-surface">Kalender Agenda BKK</h3>
-</div>
-<span class="font-label-dense text-label-dense px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">Mei - Juni 2025</span>
-</div>
-<!-- Micro Schedule Timeline -->
-<div class="flex flex-col gap-3.5">
-<!-- Event Item 1 -->
-<div class="flex items-start gap-3 p-3 rounded-DEFAULT bg-surface-container-low transition-colors hover:bg-surface-container">
-<div class="flex flex-col items-center justify-center w-12 h-12 rounded-DEFAULT bg-primary text-on-primary shrink-0">
-<span class="text-[10px] uppercase font-label-dense font-semibold tracking-wide">Mei</span>
-<span class="text-[18px] font-bold leading-none">24</span>
-</div>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Penus Career Fair 2025</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Aula Serbaguna Kampus • 08:00 WIB</span>
-<span class="font-label-dense text-label-dense text-primary mt-0.5">35 Perusahaan Partisipan</span>
-</div>
-</div>
-<!-- Event Item 2 -->
-<div class="flex items-start gap-3 p-3 rounded-DEFAULT bg-surface-container-low transition-colors hover:bg-surface-container">
-<div class="flex flex-col items-center justify-center w-12 h-12 rounded-DEFAULT bg-secondary-container text-on-secondary-container shrink-0">
-<span class="text-[10px] uppercase font-label-dense font-semibold tracking-wide">Mei</span>
-<span class="text-[18px] font-bold leading-none">28</span>
-</div>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Pelepasan Magang Gel. II</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Lapangan Utama • Siswa Kelas XI</span>
-<span class="font-label-dense text-label-dense text-on-surface-variant mt-0.5">Wajib Seragam Wearpack</span>
-</div>
-</div>
-<!-- Event Item 3 -->
-<div class="flex items-start gap-3 p-3 rounded-DEFAULT bg-surface-container-low transition-colors hover:bg-surface-container">
-<div class="flex flex-col items-center justify-center w-12 h-12 rounded-DEFAULT bg-surface-container-highest text-on-surface shrink-0">
-<span class="text-[10px] uppercase font-label-dense font-semibold tracking-wide">Jun</span>
-<span class="text-[18px] font-bold leading-none">05</span>
-</div>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Walk-in PT Denso Indonesia</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Lab Mesin &amp; Otomotif • 09:00 WIB</span>
-<span class="font-label-dense text-label-dense text-primary mt-0.5">Khusus Alumni 2024 &amp; 2025</span>
-</div>
-</div>
-</div>
-<a class="w-full py-2.5 rounded-full bg-surface-container text-on-surface hover:bg-surface-variant text-center font-label-md text-label-md font-medium transition-colors" href="#">
-            Lihat Jadwal Lengkap Semester Ini
-          </a>
-</div>
-<!-- WIDGET 2: Document Downloads -->
-<div class="w-full bg-surface-container-lowest rounded-lg p-6 shadow-sm flex flex-col gap-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-secondary text-[22px]">download_for_offline</span>
-<h3 class="font-title-md text-title-md text-on-surface">Pusat Unduhan Siswa</h3>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant">
-            Unduh format resmi berkas administratif prakerin magang dan template portofolio standar industri.
-          </p>
-<div class="flex flex-col gap-2.5">
-<!-- Doc 1 -->
-<a class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-primary/5 transition-all group" href="#">
-<div class="flex items-center gap-3 min-w-0">
-<span class="material-symbols-outlined text-primary text-[24px]">description</span>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate group-hover:text-primary transition-colors">
-                    Pedoman Laporan PKL 2025
-                  </span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">PDF • 2.4 MB • Versi Revisi</span>
-</div>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">file_download</span>
-</a>
-<!-- Doc 2 -->
-<a class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-primary/5 transition-all group" href="#">
-<div class="flex items-center gap-3 min-w-0">
-<span class="material-symbols-outlined text-secondary text-[24px]">contact_page</span>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate group-hover:text-primary transition-colors">
-                    Format CV ATS Vokasi SMK
-                  </span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">DOCX • 680 KB • Terstandarisasi</span>
-</div>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">file_download</span>
-</a>
-<!-- Doc 3 -->
-<a class="flex items-center justify-between p-3 rounded-DEFAULT bg-surface-container-low hover:bg-primary/5 transition-all group" href="#">
-<div class="flex items-center gap-3 min-w-0">
-<span class="material-symbols-outlined text-tertiary text-[24px]">fact_check</span>
-<div class="flex flex-col min-w-0">
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate group-hover:text-primary transition-colors">
-                    Form Penilaian Mitra IDUKA
-                  </span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">PDF • 450 KB • Lampiran Penilaian</span>
-</div>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">file_download</span>
-</a>
-</div>
-</div>
-<!-- WIDGET 3: Newsletter & WhatsApp Career Alerts -->
-<div class="w-full bg-gradient-to-br from-primary to-primary-fixed-variant rounded-lg p-6 text-on-primary shadow-sm flex flex-col gap-4 relative overflow-hidden">
-<!-- Ambient Decorative Accent -->
-<div class="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[24px] text-secondary-fixed">campaign</span>
-<span class="font-label-dense text-label-dense uppercase tracking-wider font-semibold text-white/80">Langganan Info Karir</span>
-</div>
-<h3 class="font-title-md text-title-md font-bold leading-tight">
-            Dapatkan Info Lowongan &amp; Walk-in Wawancara Langsung di Ponselmu
-          </h3>
-<p class="font-body-dense text-body-dense text-white/90">
-            Bergabung dengan 1.200+ siswa dan alumni dalam siaran kabar eksklusif BKK Penus setiap Jumat pagi.
-          </p>
-<form class="flex flex-col gap-2.5 pt-1" onsubmit="event.preventDefault(); alert('Terima kasih! Anda telah terdaftar dalam sistem broadcast BKK Penus.');">
-<input class="w-full px-4 py-2.5 rounded-full bg-white text-on-surface font-body-dense text-body-dense placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="Nama Lengkap Siswa / Alumni" required="" type="text"/>
-<input class="w-full px-4 py-2.5 rounded-full bg-white text-on-surface font-body-dense text-body-dense placeholder:text-on-surface-variant/70 focus:outline-none" placeholder="No. WhatsApp Aktif (08xx)" required="" type="tel"/>
-<button class="w-full py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-semibold hover:bg-secondary-fixed transition-all flex items-center justify-center gap-2 shadow-sm" type="submit">
-<span class="material-symbols-outlined text-[18px]">send</span>
-              Daftar Notifikasi WhatsApp
-            </button>
-</form>
-<div class="flex items-center justify-center gap-2 text-[11px] text-white/75 font-body-dense pt-1">
-<span class="material-symbols-outlined text-[14px]">lock</span>
-<span>Data privat terproteksi &amp; bebas spam iklan luar.</span>
-</div>
-</div>
-</aside>
-</div>
+            <div class="mt-6 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+                <div class="max-w-3xl">
+                    {{-- delay: coretan mulai setelah teks selesai muncul --}}
+                    <h1 class="text-left font-display text-4xl sm:text-5xl lg:text-6xl font-bold uppercase tracking-wide leading-[1.05]">
+                        Kabar &amp; Agenda Bursa Kerja
+                        <x-sketch.underline size="lg" tone="text-brand-signal" :delay="500" class="text-brand-darkred">Khusus</x-sketch.underline>
+                    </h1>
+                    {{-- mt-10: ruang untuk coretan yang menggantung di bawah judul --}}
+                    <p class="mt-10 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                        Informasi terkini mengenai bursa kerja, agenda walk-in interview, kunjungan industri, pembekalan magang (PKL), serta tips karier persiapan dunia kerja SMK Plus Pelita Nusantara.
+                    </p>
+                </div>
+
+                <form method="GET" action="{{ route('bkk.berita') }}" role="search" class="relative w-full shrink-0 sm:w-80">
+                    @if ($kategoriSlug)
+                        <input type="hidden" name="kategori" value="{{ $kategoriSlug }}">
+                    @endif
+                    <label for="cari-berita" class="sr-only">Cari berita atau agenda</label>
+                    <x-landing.icon name="search" class="pointer-events-none absolute left-4 top-1/2 w-5 h-5 -translate-y-1/2 text-brand-darkred" />
+                    <input id="cari-berita" name="q" type="search" value="{{ $searchQuery }}" placeholder="Cari berita atau agenda..."
+                        class="w-full rounded-full border-2 border-brand-ink/10 bg-white py-3 pl-12 pr-5 text-sm text-brand-ink shadow-softpill placeholder:text-brand-ink/40 transition focus:border-brand-darkred focus:outline-none focus:ring-4 focus:ring-brand-darkred/10">
+                </form>
+            </div>
+        </div>
+
+        {{-- Kategori: kategori aktif ditandai coretan bawah. py-3 memberi ruang coretannya, karena daftar ini
+             overflow-x-auto (yang keluar dari kotaknya ikut terpotong) --}}
+        <nav aria-label="Kategori berita" class="relative mt-12 md:mt-14">
+            <ul class="-mx-6 flex gap-2 overflow-x-auto px-6 pb-3 [scrollbar-width:none] sm:mx-0 sm:px-0">
+                @php
+                    $tabs = collect([['label' => 'Semua Artikel', 'count' => $totalPublished, 'href' => route('bkk.berita', request()->only('q')), 'active' => empty($kategoriSlug)]])
+                        ->concat($categories->map(fn ($cat) => [
+                            'label' => $cat->nama,
+                            'count' => $cat->beritas_count,
+                            'href' => route('bkk.berita', array_merge(request()->only('q'), ['kategori' => $cat->slug])),
+                            'active' => $kategoriSlug === $cat->slug,
+                        ]));
+                @endphp
+                @foreach ($tabs as $tab)
+                    <li class="shrink-0">
+                        <a href="{{ $tab['href'] }}" @if ($tab['active']) aria-current="page" @endif
+                            class="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition-colors {{ $tab['active'] ? 'text-brand-darkred' : 'text-brand-ink/65 hover:bg-brand-ink/5 hover:text-brand-ink' }}">
+                            @if ($tab['active'])
+                                <x-sketch.underline size="sm">{{ $tab['label'] }}</x-sketch.underline>
+                            @else
+                                <span>{{ $tab['label'] }}</span>
+                            @endif
+                            <span class="min-w-6 rounded-full px-1.5 py-0.5 text-center text-[11px] font-bold {{ $tab['active'] ? 'bg-brand-darkred text-white' : 'bg-brand-ink/5 text-brand-ink/50' }}">{{ $tab['count'] }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+            <x-sketch.line class="left-0 right-0 -bottom-1.5 h-3 text-brand-ink/15" />
+        </nav>
+    </div>
 </section>
-</div>
+
+{{-- ============================================================
+     2. BERITA UTAMA, DAFTAR BERITA & SIDEBAR
+     ============================================================ --}}
+<section class="relative bg-brand-softmist px-6 py-16 md:py-24">
+    <div class="max-w-6xl mx-auto">
+        @if ($heroBerita)
+            @php $heroUrl = route('bkk.berita.detail', $heroBerita->slug); @endphp
+            {{-- Siku coretan di luar kartu, sama seperti foto di hero beranda --}}
+            <article class="group relative mb-16 md:mb-20">
+                <div class="relative grid overflow-hidden rounded-card bg-white shadow-softpill ring-1 ring-brand-ink/5 lg:grid-cols-[7fr_5fr]">
+                    <a href="{{ $heroUrl }}" tabindex="-1" aria-hidden="true" class="relative block min-h-72 aspect-video overflow-hidden bg-linear-to-br from-brand-signal to-brand-deepred lg:aspect-auto">
+                        <img src="{{ $heroBerita->gambar_sampul }}" alt="{{ $heroBerita->judul }}" class="absolute inset-0 size-full object-cover transition-transform duration-700 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-linear-to-t from-brand-ink/50 via-transparent to-transparent"></div>
+                        <span class="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-darkred shadow-sm">
+                            {{ $heroBerita->kategori->nama ?? 'Bursa Kerja' }}
+                        </span>
+                    </a>
+
+                    <div class="flex flex-col justify-between gap-8 p-7 md:p-10">
+                        <div>
+                            <p class="font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-none text-brand-darkred">
+                                <x-sketch.underline tone="text-brand-signal">Agenda Utama</x-sketch.underline>
+                            </p>
+                            <ul class="mt-9 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-brand-ink/60">
+                                <li class="flex items-center gap-2">
+                                    <x-landing.icon name="calendar" class="w-4 h-4 text-brand-darkred" />
+                                    {{ $heroBerita->formatted_date }}
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <x-landing.icon name="clock" class="w-4 h-4 text-brand-darkred" />
+                                    {{ $heroBerita->estimasi_baca ?? '4 Menit Baca' }}
+                                </li>
+                            </ul>
+                            <h2 class="mt-4 text-left font-display text-2xl md:text-3xl font-bold uppercase tracking-wide leading-tight transition-colors group-hover:text-brand-darkred">
+                                <a href="{{ $heroUrl }}">{{ $heroBerita->judul }}</a>
+                            </h2>
+                            <p class="mt-4 text-base leading-relaxed text-brand-ink/70 line-clamp-3">{{ $heroBerita->ringkasan }}</p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-5">
+                            <div class="flex items-center gap-3">
+                                <span class="flex w-11 h-11 shrink-0 items-center justify-center rounded-full bg-brand-darkred/10 font-display text-sm font-bold text-brand-darkred">
+                                    {{ strtoupper(substr($heroBerita->penulis_nama, 0, 2)) }}
+                                </span>
+                                <span class="flex flex-col">
+                                    <span class="text-sm font-semibold">{{ $heroBerita->penulis_nama }}</span>
+                                    <span class="text-xs text-brand-ink/60">{{ $heroBerita->penulis_jabatan ?? 'Sekretariat Penus Cibinong' }}</span>
+                                </span>
+                            </div>
+                            <a href="{{ $heroUrl }}" class="inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                                Baca Selengkapnya
+                                <x-sketch.arrow :delay="400" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <x-sketch.corner class="-left-4 -top-4 w-24 h-10 md:w-32 md:h-12" />
+                <x-sketch.corner :delay="350" class="-right-4 -bottom-4 rotate-180 w-24 h-10 md:w-32 md:h-12" />
+            </article>
+        @endif
+
+        <div class="grid items-start gap-14 lg:grid-cols-[1fr_20rem] xl:gap-16">
+            {{-- Daftar berita --}}
+            <div class="min-w-0">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <h2 class="text-left font-display text-2xl md:text-3xl font-bold uppercase tracking-wide leading-tight">
+                        @if ($kategoriSlug)
+                            Kategori: <x-sketch.underline>{{ $activeCategory }}</x-sketch.underline>
+                        @elseif ($searchQuery)
+                            Hasil Pencarian: <x-sketch.underline>"{{ $searchQuery }}"</x-sketch.underline>
+                        @else
+                            Semua Publikasi <x-sketch.underline>Terkini</x-sketch.underline>
+                        @endif
+                    </h2>
+                    <p class="shrink-0 text-xs font-semibold uppercase tracking-[0.2em] text-brand-ink/50">
+                        Menampilkan {{ $beritas->firstItem() ?? 0 }} - {{ $beritas->lastItem() ?? 0 }} dari {{ $beritas->total() }} Kabar
+                    </p>
+                </div>
+
+                <div class="mt-10 grid gap-6 sm:grid-cols-2">
+                    @forelse ($beritas as $item)
+                        <x-landing.berita-item :item="$item" />
+                    @empty
+                        <div class="relative flex flex-col items-center gap-3 rounded-card border-2 border-dashed border-brand-ink/15 bg-white px-8 py-14 text-center sm:col-span-2">
+                            <span class="flex w-16 h-16 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred">
+                                <x-landing.icon name="newspaper" class="w-8 h-8" />
+                            </span>
+                            <h3 class="mt-2 font-display text-xl font-bold uppercase tracking-wide">Belum Ada Artikel</h3>
+                            <p class="max-w-md text-sm leading-relaxed text-brand-ink/65">
+                                Belum ditemukan publikasi berita yang sesuai dengan kategori atau kata kunci pencarian yang dipilih.
+                            </p>
+                            <a href="{{ route('bkk.berita') }}" class="group mt-3 inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                                Lihat Semua Artikel
+                                <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                            </a>
+                        </div>
+                    @endforelse
+                </div>
+
+                @if ($beritas->hasPages())
+                    @php $arrowClass = 'shrink-0 w-11 h-11 rounded-lg flex items-center justify-center text-white transition-colors'; @endphp
+                    <nav aria-label="Navigasi halaman berita" class="mt-12 flex flex-col-reverse items-center gap-5 sm:flex-row sm:justify-between">
+                        <p class="text-sm text-brand-ink/60">
+                            Halaman <strong class="text-brand-ink">{{ $beritas->currentPage() }}</strong> dari <strong class="text-brand-ink">{{ $beritas->lastPage() }}</strong> (Total {{ $beritas->total() }} Catatan Berita)
+                        </p>
+                        <div class="flex items-center gap-2">
+                            @if ($beritas->onFirstPage())
+                                <span aria-hidden="true" class="{{ $arrowClass }} bg-brand-darkred/40 cursor-not-allowed">
+                                    <x-sketch.arrow class="w-6 h-3 -scale-x-100" />
+                                </span>
+                            @else
+                                <a href="{{ $beritas->previousPageUrl() }}" rel="prev" aria-label="Halaman sebelumnya" class="{{ $arrowClass }} bg-brand-darkred shadow-lg shadow-brand-darkred/25 hover:bg-brand-deepred">
+                                    <x-sketch.arrow class="w-6 h-3 -scale-x-100" />
+                                </a>
+                            @endif
+
+                            <ul class="flex flex-wrap items-center justify-center gap-1">
+                                @foreach ($beritas->getUrlRange(1, $beritas->lastPage()) as $page => $url)
+                                    <li>
+                                        <a href="{{ $url }}" aria-label="Halaman {{ $page }}" @if ($page == $beritas->currentPage()) aria-current="page" @endif
+                                            class="flex min-w-9 h-9 items-center justify-center rounded-full px-2.5 text-sm font-semibold transition-colors {{ $page == $beritas->currentPage() ? 'bg-brand-darkred text-white' : 'text-brand-ink/60 hover:bg-white hover:text-brand-ink' }}">{{ $page }}</a>
+                                    </li>
+                                @endforeach
+                            </ul>
+
+                            @if ($beritas->hasMorePages())
+                                <a href="{{ $beritas->nextPageUrl() }}" rel="next" aria-label="Halaman berikutnya" class="{{ $arrowClass }} bg-brand-darkred shadow-lg shadow-brand-darkred/25 hover:bg-brand-deepred">
+                                    <x-sketch.arrow class="w-6 h-3" />
+                                </a>
+                            @else
+                                <span aria-hidden="true" class="{{ $arrowClass }} bg-brand-darkred/40 cursor-not-allowed">
+                                    <x-sketch.arrow class="w-6 h-3" />
+                                </span>
+                            @endif
+                        </div>
+                    </nav>
+                @endif
+            </div>
+
+            {{-- Sidebar --}}
+            <aside class="flex flex-col gap-10">
+                {{-- Kalender agenda: bingkai coretan penuh, pemisah antar agenda juga coretan --}}
+                <div class="relative bg-white p-6">
+                    <x-sketch.box />
+                    <div class="flex items-start justify-between gap-3">
+                        <h3 class="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-wide">
+                            <x-landing.icon name="calendar" class="w-5 h-5 text-brand-darkred" />
+                            Kalender Agenda BKK
+                        </h3>
+                        <span class="shrink-0 rounded-full bg-brand-softmist px-2.5 py-1 text-[11px] font-semibold text-brand-ink/60">Mei - Juni 2025</span>
+                    </div>
+
+                    <ul class="mt-5">
+                        @foreach ($agendas as $i => $agenda)
+                            <li class="relative flex items-start gap-3.5 py-4 first:pt-0 last:pb-0">
+                                @if ($i > 0)
+                                    <x-sketch.rule :delay="$i * 100" class="text-brand-darkred/30 -left-1 -right-1 -top-1.5 h-3" />
+                                @endif
+                                <span class="flex w-12 h-12 shrink-0 flex-col items-center justify-center rounded-lg {{ $agenda['tone'] }}">
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide opacity-80">{{ $agenda['month'] }}</span>
+                                    <span class="font-display text-lg font-bold leading-none">{{ $agenda['day'] }}</span>
+                                </span>
+                                <span class="flex min-w-0 flex-col">
+                                    <span class="truncate text-sm font-semibold">{{ $agenda['title'] }}</span>
+                                    <span class="text-xs text-brand-ink/60">{{ $agenda['place'] }}</span>
+                                    <span class="mt-0.5 text-xs font-semibold {{ $agenda['highlight'] ? 'text-brand-darkred' : 'text-brand-ink/50' }}">{{ $agenda['note'] }}</span>
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+
+                    <a href="#" class="group mt-6 flex items-center justify-center gap-2 rounded-full border-2 border-brand-darkred/20 px-4 py-2.5 text-center text-sm font-semibold text-brand-darkred transition-colors hover:border-brand-darkred hover:bg-brand-darkred/5">
+                        Lihat Jadwal Lengkap Semester Ini
+                    </a>
+                </div>
+
+                {{-- Unduhan berkas --}}
+                <div class="rounded-card bg-white p-6 ring-1 ring-brand-ink/10">
+                    <h3 class="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-wide">
+                        <x-landing.icon name="download" class="w-5 h-5 text-brand-darkred" />
+                        Pusat Unduhan Siswa
+                    </h3>
+                    <p class="mt-2 text-sm leading-relaxed text-brand-ink/65">
+                        Unduh format resmi berkas administratif prakerin magang dan template portofolio standar industri.
+                    </p>
+                    <ul class="mt-4 flex flex-col gap-2">
+                        @foreach ($downloads as $download)
+                            <li>
+                                <a href="#" class="group flex items-center justify-between gap-3 rounded-xl bg-brand-softmist/60 p-3 transition-colors hover:bg-brand-darkred/5">
+                                    <span class="flex min-w-0 items-center gap-3">
+                                        <span class="flex w-9 h-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-darkred shadow-sm">
+                                            <x-landing.icon :name="$download['icon']" class="w-4.5 h-4.5" />
+                                        </span>
+                                        <span class="flex min-w-0 flex-col">
+                                            <span class="truncate text-sm font-semibold transition-colors group-hover:text-brand-darkred">{{ $download['title'] }}</span>
+                                            <span class="text-xs text-brand-ink/55">{{ $download['meta'] }}</span>
+                                        </span>
+                                    </span>
+                                    <x-landing.icon name="download" class="w-5 h-5 shrink-0 text-brand-ink/40 transition-colors group-hover:text-brand-darkred" />
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+
+                {{-- Langganan info karier, warna & coretan sama dengan banner ajakan di footer --}}
+                <div class="relative overflow-hidden rounded-card bg-linear-135 from-brand-darkred to-brand-deepred p-6 text-white shadow-softpill">
+                    <div aria-hidden="true" class="pointer-events-none absolute -right-10 -bottom-10 w-36 h-36 rounded-full bg-white/10 blur-2xl"></div>
+                    <p class="relative flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.25em] text-[#F5C2C7]">
+                        <x-landing.icon name="megaphone" class="w-4 h-4" />
+                        <x-sketch.sparks tone="text-[#F5C2C7]">Langganan Info Karir</x-sketch.sparks>
+                    </p>
+                    <h3 class="relative mt-4 text-left font-display text-xl font-bold uppercase tracking-wide leading-snug">
+                        Dapatkan Info Lowongan &amp; Walk-in Wawancara Langsung di Ponselmu
+                    </h3>
+                    <p class="relative mt-3 text-sm leading-relaxed text-white/85">
+                        Bergabung dengan 1.200+ siswa dan alumni dalam siaran kabar eksklusif BKK Penus setiap Jumat pagi.
+                    </p>
+                    <form class="relative mt-5 flex flex-col gap-2.5" onsubmit="event.preventDefault(); alert('Terima kasih! Anda telah terdaftar dalam sistem broadcast BKK Penus.');">
+                        <label class="sr-only" for="langganan-nama">Nama Lengkap Siswa / Alumni</label>
+                        <input id="langganan-nama" type="text" required placeholder="Nama Lengkap Siswa / Alumni" class="w-full rounded-full bg-white px-4 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/45 focus:outline-none focus:ring-4 focus:ring-white/30">
+                        <label class="sr-only" for="langganan-wa">No. WhatsApp Aktif</label>
+                        <input id="langganan-wa" type="tel" required placeholder="No. WhatsApp Aktif (08xx)" class="w-full rounded-full bg-white px-4 py-2.5 text-sm text-brand-ink placeholder:text-brand-ink/45 focus:outline-none focus:ring-4 focus:ring-white/30">
+                        <button type="submit" class="mt-1 inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-white/30 py-2.5 text-sm font-semibold text-white transition-all hover:border-white hover:bg-white/10 active:scale-95">
+                            <x-landing.icon name="send" class="w-4 h-4" />
+                            Daftar Notifikasi WhatsApp
+                        </button>
+                    </form>
+                    <p class="relative mt-4 flex items-center justify-center gap-1.5 text-[11px] text-white/70">
+                        <x-landing.icon name="lock" class="w-3.5 h-3.5" />
+                        Data privat terproteksi &amp; bebas spam iklan luar.
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
 @endsection

@@ -1,175 +1,182 @@
-@extends('index.master')
+{{--
+    Profil BKK SMK Plus Pelita Nusantara. Gaya mengikuti landing page sekolah (coretan tangan, merah marun).
+--}}
+@php
+    $navSection = ''; // tidak ada section beranda yang ditandai aktif
+
+    $missions = [
+        'Menjembatani komunikasi intensif antara siswa/alumni dengan institusi dunia usaha dan dunia industri (DUDI).',
+        'Menyelenggarakan pembekalan etika kerja, pembuatan CV standar ATS, dan uji kompetensi berkala.',
+        'Melakukan penelusuran tamatan (tracer study) terpadu untuk evaluasi kurikulum yang relevan dengan kebutuhan industri.',
+    ];
+
+    $services = [
+        ['icon' => 'briefcase', 'title' => 'Penyaluran PKL Terpadu', 'desc' => 'Penempatan siswa kelas XI dan XII di ratusan perusahaan rekanan resmi dengan sistem administrasi jurnal digital dan monitoring teratur.'],
+        ['icon' => 'users', 'title' => 'Walk-in Rekrutmen Kampus', 'desc' => 'Penyelenggaraan seleksi wawancara dan tes psikotes langsung di lingkungan sekolah bersama HRD perusahaan mitra.'],
+        ['icon' => 'school', 'title' => 'Konseling Karier & ATS', 'desc' => 'Bimbingan karier 1-on-1 bersama guru BK dan konselor BKK untuk mematangkan kesiapan wawancara dan portofolio profesional siswa.'],
+    ];
+
+    // photo = foto pengurus; selama belum ada, ditampilkan ikon perannya
+    $team = [
+        ['name' => 'Dra. Hj. Sri Wahyuni, M.Pd.', 'role' => 'Ketua Bursa Kerja Khusus', 'icon' => 'award', 'lead' => true, 'photo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuB63mLO-BnMgFFgqx1mTuwPFGCzTmwLyy8_J4aLTzOGznPDmlW9ogUP_BfzTLkJ0xlAceEAOeRFi6oS_ZIKOEISZaexn-6scwvS0zs0dbPRAtJzIBlUYU2AMsnkYW-A-8Jh1zw-wQ4iRtEhhvoE1Ukg7i6-1XSC3KrQ8MOWP1Mp2FIYqYepTfVt-76KoTaeWJF2gXKoGd38EgQEhJhlThO8F6cMObBxynYkKpZ54dFAgJrgWayRbAbo'],
+        ['name' => 'Ahmad Fauzi, S.Kom.', 'role' => 'Koordinator Hubungan Industri (Hubin)', 'icon' => 'handshake', 'lead' => false, 'photo' => null],
+        ['name' => 'Rina Marlina, S.Psi.', 'role' => 'Konselor Karier & Psikotes', 'icon' => 'bulb', 'lead' => false, 'photo' => null],
+        ['name' => 'Budi Santoso, S.T.', 'role' => 'Admin Tracer Study & Data PKL', 'icon' => 'chart', 'lead' => false, 'photo' => null],
+    ];
+@endphp
+
+@extends('index.layouts.landing')
 
 @section('title', 'Tentang BKK - SMK Plus Pelita Nusantara')
 
 @section('content')
-<div class="flex flex-col w-full">
-    <!-- Header & Hero Profil -->
-    <section class="w-full bg-surface-container-low py-12 lg:py-16">
-        <div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-6">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary font-label-dense text-label-dense">
-                    <span class="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-                    Profil Lembaga
-                </span>
-                <span class="text-on-surface-variant font-label-dense text-label-dense">/ Bursa Kerja Khusus</span>
-            </div>
+{{-- ============================================================
+     1. KEPALA HALAMAN
+     ============================================================ --}}
+<section class="relative overflow-hidden bg-white px-6 pt-32 pb-16 md:pt-40 md:pb-24">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-size-[44px_44px] mask-[radial-gradient(ellipse_60%_70%_at_20%_20%,#000_50%,transparent_100%)]"></div>
+        <div class="absolute -top-40 -right-32 w-140 h-140 rounded-full bg-brand-signal/10 blur-[120px]"></div>
+    </div>
 
-            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-                <div class="max-w-3xl flex flex-col gap-3">
-                    <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight font-bold">
-                        Mengenal BKK SMK Plus Pelita Nusantara
-                    </h1>
-                    <p class="font-body-editorial text-body-editorial text-on-surface-variant">
-                        Lembaga resmi di bawah naungan SMK Plus Pelita Nusantara yang berdedikasi mengoptimalkan penyerapan lulusan ke dunia kerja, fasilitasi praktik kerja lapangan (PKL), dan kemitraan strategis dengan IDUKA nasional dan multinasional.
-                    </p>
-                </div>
-            </div>
+    <div class="relative max-w-6xl mx-auto grid gap-14 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+        <div class="animate-fade-up">
+            <p class="flex flex-wrap items-center gap-x-10 gap-y-2 text-xs font-semibold uppercase tracking-[0.25em]">
+                <span class="text-brand-darkred"><x-sketch.sparks>Profil Lembaga</x-sketch.sparks></span>
+                <span class="text-brand-ink/40">/ Bursa Kerja Khusus</span>
+            </p>
+            <h1 class="mt-6 text-left font-display text-4xl sm:text-5xl lg:text-6xl font-bold uppercase tracking-wide leading-[1.05]">
+                Mengenal BKK
+                <span class="block mt-2 text-brand-darkred">SMK Plus Pelita <x-sketch.underline size="lg" tone="text-brand-signal" :delay="500">Nusantara</x-sketch.underline></span>
+            </h1>
+            <p class="mt-10 max-w-xl text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Lembaga resmi di bawah naungan SMK Plus Pelita Nusantara yang berdedikasi mengoptimalkan penyerapan lulusan ke dunia kerja, fasilitasi praktik kerja lapangan (PKL), dan kemitraan strategis dengan IDUKA nasional dan multinasional.
+            </p>
         </div>
-    </section>
 
-    <!-- Visi & Misi Bento Grid -->
-    <section class="max-w-7xl mx-auto px-6 lg:px-12 py-16 w-full">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Visi Card -->
-            <div class="p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col justify-between border border-surface-container">
-                <div class="flex flex-col gap-4">
-                    <div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-[26px]">visibility</span>
-                    </div>
-                    <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Visi BKK</h2>
-                    <p class="font-body-default text-body-default text-on-surface-variant leading-relaxed">
-                        Menjadi unit Bursa Kerja Khusus vokasi yang terpercaya, adaptif terhadap perkembangan revolusi industri 4.0, dan unggul dalam mencetak tenaga kerja muda yang profesional, berkarakter, serta berdaya saing global.
-                    </p>
-                </div>
-                <div class="mt-6 pt-4 border-t border-surface-container flex items-center gap-2 text-primary font-label-dense text-label-dense">
-                    <span class="material-symbols-outlined text-[18px]">verified</span>
-                    <span>Terakreditasi dan Tersinkronisasi Disnaker</span>
-                </div>
+        <div class="relative">
+            <div class="relative overflow-hidden rounded-card shadow-softpill ring-1 ring-brand-ink/5">
+                <img src="{{ asset('images/fotogedung.jpg') }}" alt="Gedung SMK Plus Pelita Nusantara di Cibinong, Bogor" class="w-full aspect-4/3 object-cover">
+                <div class="absolute inset-0 bg-linear-to-t from-brand-ink/80 via-brand-ink/10 to-transparent"></div>
+                <p class="absolute inset-x-5 bottom-5 font-display text-2xl font-bold uppercase tracking-wide text-white">We Are Different</p>
             </div>
-
-            <!-- Misi Card -->
-            <div class="p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col justify-between border border-surface-container">
-                <div class="flex flex-col gap-4">
-                    <div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
-                        <span class="material-symbols-outlined text-[26px]">flag</span>
-                    </div>
-                    <h2 class="font-headline-md text-headline-md text-on-surface font-bold">Misi BKK</h2>
-                    <ul class="flex flex-col gap-3 font-body-default text-body-default text-on-surface-variant">
-                        <li class="flex items-start gap-2.5">
-                            <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">check_circle</span>
-                            <span>Menjembatani komunikasi intensif antara siswa/alumni dengan institusi dunia usaha dan dunia industri (DUDI).</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">check_circle</span>
-                            <span>Menyelenggarakan pembekalan etika kerja, pembuatan CV standar ATS, dan uji kompetensi berkala.</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">check_circle</span>
-                            <span>Melakukan penelusuran tamatan (*tracer study*) terpadu untuk evaluasi kurikulum yang relevan dengan kebutuhan industri.</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
+            <x-sketch.corner class="-left-4 -top-4 w-24 h-10 md:w-32 md:h-12" />
+            <x-sketch.corner :delay="350" class="-right-4 -bottom-4 rotate-180 w-24 h-10 md:w-32 md:h-12" />
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- Program Unggulan -->
-    <section class="w-full bg-surface-container-low py-16">
-        <div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-10">
-            <div class="flex flex-col gap-2 max-w-2xl">
-                <span class="font-label-dense text-label-dense uppercase tracking-wider text-primary font-bold">Layanan &amp; Program</span>
-                <h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">Layanan Prioritas BKK Penus</h2>
-                <p class="font-body-default text-body-default text-on-surface-variant">
-                    Fasilitas terpadu untuk menunjang transisi siswa dari bangku sekolah menuju dunia kerja profesional.
+{{-- ============================================================
+     2. VISI & MISI
+     ============================================================ --}}
+<section class="relative bg-brand-softmist px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto grid gap-10 md:grid-cols-2 md:gap-8 items-stretch">
+        {{-- Visi: kartu merah, kutipan besar --}}
+        <div class="relative flex flex-col justify-between overflow-hidden rounded-card bg-linear-135 from-brand-darkred to-brand-deepred p-8 md:p-10 text-white shadow-softpill">
+            <div aria-hidden="true" class="pointer-events-none absolute -right-10 -bottom-10 w-44 h-44 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="relative">
+                <p class="text-xs font-bold uppercase tracking-[0.25em] text-[#F5C2C7]">
+                    <x-sketch.sparks tone="text-[#F5C2C7]">Visi BKK</x-sketch.sparks>
+                </p>
+                <p class="mt-6 text-left font-display text-2xl md:text-3xl font-bold uppercase tracking-wide leading-snug">
+                    Menjadi unit Bursa Kerja Khusus vokasi yang terpercaya, adaptif terhadap perkembangan revolusi industri 4.0, dan unggul dalam mencetak tenaga kerja muda yang profesional, berkarakter, serta berdaya saing global.
                 </p>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-[24px]">business_center</span>
-                    </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Penyaluran PKL Terpadu</h3>
-                    <p class="font-body-dense text-body-dense text-on-surface-variant">
-                        Penempatan siswa kelas XI dan XII di ratusan perusahaan rekanan resmi dengan sistem administrasi jurnal digital dan monitoring teratur.
-                    </p>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-tertiary-fixed flex items-center justify-center text-tertiary">
-                        <span class="material-symbols-outlined text-[24px]">co_present</span>
-                    </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Walk-in Rekrutmen Kampus</h3>
-                    <p class="font-body-dense text-body-dense text-on-surface-variant">
-                        Penyelenggaraan seleksi wawancara dan tes psikotes langsung di lingkungan sekolah bersama HRD perusahaan mitra.
-                    </p>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
-                    <div class="w-12 h-12 rounded-xl bg-secondary-fixed flex items-center justify-center text-secondary">
-                        <span class="material-symbols-outlined text-[24px]">school</span>
-                    </div>
-                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Konseling Karier &amp; ATS</h3>
-                    <p class="font-body-dense text-body-dense text-on-surface-variant">
-                        Bimbingan karier 1-on-1 bersama guru BK dan konselor BKK untuk mematangkan kesiapan wawancara dan portofolio profesional siswa.
-                    </p>
-                </div>
-            </div>
+            <p class="relative mt-10 flex items-center gap-2 border-t border-white/15 pt-5 text-sm font-semibold text-white/85">
+                <x-landing.icon name="badgeCheck" class="w-5 h-5 text-[#F5C2C7]" />
+                Terakreditasi dan Tersinkronisasi Disnaker
+            </p>
         </div>
-    </section>
 
-    <!-- Tim Sekretariat BKK -->
-    <section class="max-w-7xl mx-auto px-6 lg:px-12 py-16 w-full">
-        <div class="flex flex-col gap-10">
-            <div class="flex flex-col gap-2 text-center max-w-xl mx-auto">
-                <span class="font-label-dense text-label-dense uppercase tracking-wider text-primary font-bold">Struktur Lembaga</span>
-                <h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">Pengurus BKK SMK Penus</h2>
-                <p class="font-body-default text-body-default text-on-surface-variant">
-                    Dedikasi para pendidik dan praktisi hubungan industri demi masa depan gemilang lulusan vokasi.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm flex flex-col items-center text-center gap-4">
-                    <img class="w-20 h-20 rounded-full object-cover shadow-sm ring-2 ring-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB63mLO-BnMgFFgqx1mTuwPFGCzTmwLyy8_J4aLTzOGznPDmlW9ogUP_BfzTLkJ0xlAceEAOeRFi6oS_ZIKOEISZaexn-6scwvS0zs0dbPRAtJzIBlUYU2AMsnkYW-A-8Jh1zw-wQ4iRtEhhvoE1Ukg7i6-1XSC3KrQ8MOWP1Mp2FIYqYepTfVt-76KoTaeWJF2gXKoGd38EgQEhJhlThO8F6cMObBxynYkKpZ54dFAgJrgWayRbAbo" alt="Ketua BKK"/>
-                    <div class="flex flex-col">
-                        <span class="font-title-md text-title-md text-on-surface font-semibold">Dra. Hj. Sri Wahyuni, M.Pd.</span>
-                        <span class="font-label-dense text-label-dense text-primary font-semibold">Ketua Bursa Kerja Khusus</span>
-                    </div>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm flex flex-col items-center text-center gap-4">
-                    <div class="w-20 h-20 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold text-xl shadow-sm">
-                        <span class="material-symbols-outlined text-[36px]">support_agent</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="font-title-md text-title-md text-on-surface font-semibold">Ahmad Fauzi, S.Kom.</span>
-                        <span class="font-label-dense text-label-dense text-on-surface-variant">Koordinator Hubungan Industri (Hubin)</span>
-                    </div>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm flex flex-col items-center text-center gap-4">
-                    <div class="w-20 h-20 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary font-bold text-xl shadow-sm">
-                        <span class="material-symbols-outlined text-[36px]">psychology</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="font-title-md text-title-md text-on-surface font-semibold">Rina Marlina, S.Psi.</span>
-                        <span class="font-label-dense text-label-dense text-on-surface-variant">Konselor Karier &amp; Psikotes</span>
-                    </div>
-                </div>
-
-                <div class="p-6 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm flex flex-col items-center text-center gap-4">
-                    <div class="w-20 h-20 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xl shadow-sm">
-                        <span class="material-symbols-outlined text-[36px]">query_stats</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="font-title-md text-title-md text-on-surface font-semibold">Budi Santoso, S.T.</span>
-                        <span class="font-label-dense text-label-dense text-on-surface-variant">Admin Tracer Study &amp; Data PKL</span>
-                    </div>
-                </div>
-            </div>
+        {{-- Misi: bingkai coretan penuh, poin bertanda panah coretan --}}
+        <div class="relative bg-white p-8 md:p-10">
+            <x-sketch.box />
+            <h2 class="flex items-center gap-3 font-display text-2xl md:text-3xl font-bold uppercase tracking-wide">
+                <x-landing.icon name="flag" class="w-7 h-7 text-brand-darkred" />
+                Misi BKK
+            </h2>
+            <ul class="mt-8 space-y-5">
+                @foreach ($missions as $i => $mission)
+                    <li class="flex gap-4">
+                        <span class="mt-1.5 shrink-0 text-brand-darkred">
+                            <x-sketch.arrow :delay="$i * 200" class="w-8 h-4" />
+                        </span>
+                        <span class="leading-relaxed text-brand-ink/80">{{ $mission }}</span>
+                    </li>
+                @endforeach
+            </ul>
         </div>
-    </section>
-</div>
+    </div>
+</section>
+
+{{-- ============================================================
+     3. LAYANAN PRIORITAS
+     ============================================================ --}}
+<section class="relative bg-white px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto">
+        <div class="max-w-2xl">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Layanan &amp; Program</p>
+            <h2 class="mt-4 text-left font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                Layanan Prioritas <x-sketch.underline>BKK Penus</x-sketch.underline>
+            </h2>
+            <p class="mt-6 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Fasilitas terpadu untuk menunjang transisi siswa dari bangku sekolah menuju dunia kerja profesional.
+            </p>
+        </div>
+
+        <div class="mt-14 grid gap-6 md:grid-cols-3">
+            @foreach ($services as $i => $service)
+                <div class="group relative flex flex-col rounded-card bg-brand-softmist p-7 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-softpill hover:ring-1 hover:ring-brand-darkred/15">
+                    <div class="flex items-start justify-between">
+                        <span class="flex w-14 h-14 items-center justify-center rounded-2xl bg-white text-brand-darkred shadow-sm transition-colors group-hover:bg-brand-darkred group-hover:text-white">
+                            <x-landing.icon :name="$service['icon']" class="w-7 h-7" />
+                        </span>
+                        <span class="font-display text-4xl font-bold text-brand-ink/10">{{ sprintf('%02d', $i + 1) }}</span>
+                    </div>
+                    <h3 class="mt-6 text-left font-display text-xl font-bold uppercase tracking-wide">{{ $service['title'] }}</h3>
+                    <p class="mt-3 text-sm leading-relaxed text-brand-ink/70">{{ $service['desc'] }}</p>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
+     4. PENGURUS BKK
+     ============================================================ --}}
+<section class="relative bg-brand-softmist px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto">
+        <div class="mx-auto max-w-xl text-center">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Struktur Lembaga</p>
+            <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                <x-sketch.frame>Pengurus BKK SMK Penus</x-sketch.frame>
+            </h2>
+            <p class="mt-6 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Dedikasi para pendidik dan praktisi hubungan industri demi masa depan gemilang lulusan vokasi.
+            </p>
+        </div>
+
+        <ul class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            @foreach ($team as $member)
+                <li class="relative flex flex-col items-center rounded-card bg-white px-6 pt-8 pb-7 text-center shadow-sm ring-1 ring-brand-ink/5">
+                    <div class="relative">
+                        @if ($member['photo'])
+                            <img src="{{ $member['photo'] }}" alt="{{ $member['name'] }}" class="w-24 h-24 rounded-full object-cover ring-4 ring-brand-darkred/10">
+                        @else
+                            <span class="flex w-24 h-24 items-center justify-center rounded-full bg-linear-to-br from-brand-signal to-brand-deepred text-white ring-4 ring-brand-darkred/10">
+                                <x-landing.icon :name="$member['icon']" class="w-10 h-10" />
+                            </span>
+                        @endif
+                        @if ($member['lead'])
+                            {{-- Ketua ditandai lingkaran coretan --}}
+                            <span data-sketch="circle" data-duration="900" aria-hidden="true" class="pointer-events-none absolute -inset-3 text-brand-darkred"></span>
+                        @endif
+                    </div>
+                    <p class="mt-6 font-semibold leading-snug">{{ $member['name'] }}</p>
+                    <p class="mt-1 text-xs font-semibold uppercase tracking-[0.15em] {{ $member['lead'] ? 'text-brand-darkred' : 'text-brand-ink/50' }}">{{ $member['role'] }}</p>
+                </li>
+            @endforeach
+        </ul>
+    </div>
+</section>
 @endsection

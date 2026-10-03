@@ -1,942 +1,707 @@
-@extends('index.master')
+{{--
+    Beranda BKK SMK Plus Pelita Nusantara.
+    Memakai index.layouts.landing (Tailwind v4, navbar, footer & mesin coretan data-sketch), bukan index.master,
+    karena komponen x-landing.* & x-sketch.* ditulis untuk Tailwind v4 sedangkan index.master masih Tailwind v3 CDN.
+    Data dari PublicController@index: $featuredLowongan, $latestBerita, $mitraCount. PublicController@info memakai
+    view yang sama tanpa data, jadi semuanya diberi nilai cadangan di bawah.
+--}}
+@php
+    $featuredLowongan = $featuredLowongan ?? collect();
+    $latestBerita = $latestBerita ?? collect();
+    $mitraCount = (int) ($mitraCount ?? 0);
 
-@section('title', 'BKK Penus - Bursa Kerja Khusus SMK Plus Pelita Nusantara')
+    $whatsappUrl = 'https://wa.me/6281210868958';
+    $cvStudioUrl = route('bkk.me.cv.edit');
+    $portalUrl = route('bkk.me.index');
+
+    $jurusanFilters = ['RPL' => 'RPL', 'TKJ' => 'TKJ', 'MM' => 'Multimedia', 'PKM' => 'Perbankan', 'TOI' => 'Otomasi'];
+
+    // target_jurusan berupa teks bebas ("TKJ & RPL", "Desain Komunikasi Visual (DKV)"), jadi dicocokkan ke kode filter
+    $detectJurusan = function (?string $text): array {
+        $patterns = [
+            'RPL' => '/\bRPL\b|perangkat lunak/i',
+            'TKJ' => '/\bTKJ\b|komputer\s*(dan|&)?\s*jaringan/i',
+            'MM' => '/multimedia|\bMM\b|\bDKV\b|desain komunikasi/i',
+            'PKM' => '/perbankan|keuangan|akuntansi|\bPKM\b/i',
+            'TOI' => '/otomasi|\bTOI\b|mekatronika/i',
+        ];
+
+        return array_keys(array_filter($patterns, fn ($pattern) => preg_match($pattern, $text ?? '')));
+    };
+
+    // Label tenggat sama dengan x-landing.lowongan-card
+    $deadlineInfo = function ($deadline): array {
+        $daysLeft = $deadline ? (int) now()->startOfDay()->diffInDays($deadline->copy()->startOfDay(), false) : null;
+
+        return match (true) {
+            $daysLeft === null => ['Tanpa batas waktu', false],
+            $daysLeft < 0 => ['Pendaftaran ditutup', false],
+            $daysLeft === 0 => ['Hari terakhir', true],
+            $daysLeft <= 7 => [$daysLeft . ' hari lagi', true],
+            default => ['Tutup ' . $deadline->locale('id')->translatedFormat('j M Y'), false],
+        };
+    };
+
+    $jobs = $featuredLowongan->map(fn ($lowongan) => [
+        'title' => $lowongan->judul,
+        'mitra' => $lowongan->mitra,
+        'company' => $lowongan->mitra->nama_perusahaan ?? 'Mitra Industri BKK',
+        'pkl' => $lowongan->tipe === 'PKL',
+        'jurusan' => $lowongan->target_jurusan,
+        'lokasi' => $lowongan->lokasi,
+        'gaji' => $lowongan->gaji_kompensasi,
+        'deadline' => $lowongan->deadline,
+        'url' => route('bkk.lowongan.detail', $lowongan->slug ?: $lowongan->id),
+    ])->all();
+
+    // Cadangan selama database belum berisi lowongan aktif (isi sama dengan LowonganSeeder)
+    if (empty($jobs)) {
+        $fallbackJobs = [
+            ['Junior Web Developer (Laravel & React)', 'PT Solusi Teknologi Nusantara', false, 'Rekayasa Perangkat Lunak (RPL)', 'Bogor (Hybrid)', 'Rp 4.500.000 - Rp 6.000.000', 60],
+            ['Praktik Kerja Lapangan (PKL) — Web Application Support', 'PT Solusi Teknologi Nusantara', true, 'Rekayasa Perangkat Lunak (RPL)', 'Bogor (On-Site)', 'Uang Saku & Uang Makan Harian', 30],
+            ['Field Technician & Fiber Optic Support (PKL)', 'PT Telkom Akses Semarang', true, 'Teknik Komputer & Jaringan (TKJ)', 'Semarang (Field Ops)', 'Uang Saku Bulanan & Transport', 6],
+            ['Junior IT Operations & Helpdesk Support', 'PT BCA Digital', false, 'TKJ & RPL', 'Jakarta Selatan', 'Rp 5.500.000 - Rp 7.000.000', 90],
+        ];
+
+        $jobs = array_map(fn ($job) => [
+            'title' => $job[0],
+            'mitra' => (object) ['nama_perusahaan' => $job[1], 'logo_url' => null],
+            'company' => $job[1],
+            'pkl' => $job[2],
+            'jurusan' => $job[3],
+            'lokasi' => $job[4],
+            'gaji' => $job[5],
+            'deadline' => now()->addDays($job[6]),
+            'url' => route('bkk.lowongan', ['q' => $job[0]]),
+        ], $fallbackJobs);
+    }
+
+    // Data ringkas untuk filter Alpine (pencarian, kategori, jurusan) di section lowongan
+    $jobFilterData = array_map(fn ($job) => [
+        'tipe' => $job['pkl'] ? 'pkl' : 'kerja',
+        'jurusan' => $detectJurusan($job['jurusan']),
+        'text' => mb_strtolower(implode(' ', [$job['title'], $job['company'], $job['jurusan'], $job['lokasi']])),
+    ], $jobs);
+
+    $news = $latestBerita->all();
+
+    // Cadangan selama belum ada berita terbit (isi sama dengan BeritaSeeder)
+    if (empty($news)) {
+        $placeholderCover = asset('images/news/beritaplaceholder.jpeg');
+        $news = [
+            (object) ['id' => null, 'slug' => 'job-fair-akbar-smk-plus-pelita-nusantara-2025', 'gambar_sampul' => $placeholderCover, 'kategori' => (object) ['nama' => 'Agenda & Event'], 'formatted_date' => 'Agenda 2025', 'judul' => 'Job Fair Akbar SMK Plus Pelita Nusantara 2025: Hadirkan 35 Perusahaan Nasional dan 500+ Lowongan Khusus Lulusan Vokasi'],
+            (object) ['id' => null, 'slug' => 'penyelarasan-kurikulum-vokasi-2025-astra-otoparts-telkom', 'gambar_sampul' => asset('images/fotogedung.jpg'), 'kategori' => (object) ['nama' => 'Kemitraan'], 'formatted_date' => 'Kemitraan IDUKA', 'judul' => 'Penyelarasan Kurikulum Vokasi 2025 bersama PT Astra Otoparts & Telkom Akses'],
+            (object) ['id' => null, 'slug' => 'panduan-praktis-siswa-5-langkah-membuat-cv-digital-standar-ats', 'gambar_sampul' => null, 'kategori' => (object) ['nama' => 'Panduan & Tips Karier'], 'formatted_date' => 'Panduan Karier', 'judul' => 'Panduan Praktis Siswa: 5 Langkah Membuat CV Digital Standar ATS Menggunakan BKK Penus'],
+        ];
+    }
+
+    $pillars = [
+        ['icon' => 'shield', 'label' => 'Lowongan Mitra IDUKA Terverifikasi'],
+        ['icon' => 'bulb', 'label' => 'AI CV Optimizer Berstandar ATS'],
+        ['icon' => 'users', 'label' => 'Jejaring & Mentoring 1.500+ Alumni'],
+    ];
+
+    // Dokumen CV contoh di AI CV Studio: before = CV asli (+ masalahnya), after = hasil saran AI (+ jenis perbaikan)
+    $cvDocRows = [
+        ['label' => 'Kontak', 'before' => 'Ditulis di tabel dua kolom bersama foto dan ikon media sosial.', 'issue' => 'Gagal dibaca parser', 'after' => 'nurul.aisyah@email.com · 0812-1234-5678 · Bogor · github.com/nurulaisyah', 'fix' => 'Struktur kontak standar ATS'],
+        ['label' => 'Ringkasan', 'before' => 'Saya orang yang rajin, jujur, dan mau belajar hal baru.', 'issue' => 'Terlalu umum', 'after' => 'Lulusan RPL dengan pengalaman PKL 6 bulan membangun aplikasi web Laravel dan REST API untuk kebutuhan internal perusahaan.', 'fix' => 'Kata kunci lowongan'],
+        ['label' => 'Pengalaman', 'before' => 'Membuat website sekolah pakai Laravel.', 'issue' => 'Tanpa angka capaian', 'after' => 'Membangun sistem informasi PKL berbasis Laravel 11 untuk 300+ siswa, memangkas waktu rekap jurnal harian hingga 40%.', 'fix' => 'Metrik kuantitatif'],
+        ['label' => 'Sertifikasi', 'before' => 'Belum dicantumkan.', 'issue' => 'Sertifikat terlewat', 'after' => 'Sertifikat Kompetensi BNSP — Pemrogram Junior, LSP P1 SMK Plus Pelita Nusantara (2024)', 'fix' => 'Diambil dari data LSP'],
+    ];
+    $cvSkills = [
+        'before' => ['Komputer', 'Internet', 'Ms Office'],
+        'after' => ['Laravel', 'REST API', 'MySQL', 'Git', 'Tailwind CSS'],
+    ];
+
+    // Tebalkan kata kunci industri di teks hasil AI. Teks di-escape dulu, baru dibungkus <mark>
+    $highlightKeywords = fn (string $text): string => preg_replace(
+        '/(Laravel 11|Laravel|REST API|PKL 6 bulan|300\+ siswa|40%|BNSP)/',
+        '<mark class="rounded-sm bg-brand-warmred/15 font-semibold text-brand-darkred">$1</mark>',
+        e($text),
+    );
+
+    $cvParsedSections = ['Nama & Kontak', 'Ringkasan', 'Pendidikan', 'Pengalaman PKL', 'Keahlian', 'Sertifikasi'];
+
+    // Kata kunci yang sering muncul di kualifikasi lowongan mitra, per jurusan (kunci = kode di $jurusanFilters)
+    $cvKeywords = [
+        'RPL' => ['Laravel', 'REST API', 'MySQL', 'Git', 'Tailwind CSS', 'Unit Testing'],
+        'TKJ' => ['MikroTik', 'Fiber Optic', 'Linux Server', 'Troubleshooting', 'Cisco CCNA', 'Helpdesk'],
+        'MM' => ['Adobe Premiere', 'Figma', 'Motion Graphic', 'Fotografi Produk', 'Content Planning', 'Canva'],
+        'PKM' => ['Pelayanan Prima', 'Teller', 'Akuntansi Dasar', 'Ms Excel', 'Literasi Keuangan', 'Customer Service'],
+        'TOI' => ['PLC', 'Wiring Panel', 'Sensor & Aktuator', 'Pneumatik', 'HMI', 'K3 Industri'],
+    ];
+
+    $cvSources = [
+        ['icon' => 'book', 'label' => 'Jurnal PKL'],
+        ['icon' => 'award', 'label' => 'Sertifikat LSP'],
+        ['icon' => 'pen', 'label' => 'Tugas Praktik'],
+    ];
+
+    $steps = [
+        ['no' => '01', 'title' => 'Lengkapi Profil & Scan CV (AI)', 'desc' => 'Isi data diri, unggah sertifikat, lalu biarkan AI menilai CV-mu terhadap standar ATS.', 'icon' => 'user'],
+        ['no' => '02', 'title' => 'Pilih Lowongan Sesuai Rekomendasi', 'desc' => 'Sistem menyarankan lowongan PKL & kerja yang paling cocok dengan jurusan dan skormu.', 'icon' => 'search'],
+        ['no' => '03', 'title' => 'Kirim Lamaran 1-Klik', 'desc' => 'CV hasil optimasi langsung terkirim ke mitra IDUKA, statusnya bisa dipantau dari Portal Siswa.', 'icon' => 'send'],
+        ['no' => '04', 'title' => 'Pendampingan Wawancara & Seleksi', 'desc' => 'Guru BKK dan alumni mentor mendampingi simulasi wawancara sampai kamu diterima.', 'icon' => 'handshake'],
+    ];
+
+    $faqs = [
+        [
+            'q' => 'Siapa saja yang bisa memakai layanan BKK Penus?',
+            'a' => 'Seluruh siswa aktif SMK Plus Pelita Nusantara untuk program PKL, serta alumni untuk lowongan kerja dari mitra IDUKA. Cukup masuk ke Portal Siswa memakai akun sekolah.',
+            'link' => ['label' => 'Masuk Portal Siswa', 'href' => $portalUrl],
+        ],
+        [
+            'q' => 'Apakah melamar lewat BKK dipungut biaya?',
+            'a' => 'Tidak. Semua layanan BKK, mulai dari pendaftaran lowongan, AI CV Enhancer, hingga pendampingan wawancara, gratis untuk siswa dan alumni. Laporkan ke sekretariat BKK bila ada pihak yang meminta bayaran atas nama sekolah.',
+        ],
+        [
+            'q' => 'Bagaimana cara kerja AI CV Enhancer?',
+            'a' => 'AI membaca CV-mu seperti sistem ATS milik HRD, memberi skor kesiapan, lalu menyarankan perbaikan format, kata kunci industri, dan poin pencapaian dari jurnal PKL serta sertifikat LSP. Kamu tetap memutuskan saran mana yang dipakai.',
+            'link' => ['label' => 'Buka AI CV Studio', 'href' => $cvStudioUrl],
+        ],
+        [
+            'q' => 'Bagaimana proses penempatan PKL melalui BKK?',
+            'a' => 'Pilih lowongan PKL yang sesuai jurusan, kirim lamaran dari Portal Siswa, lalu ikuti seleksi dari perusahaan. Setelah diterima, jurnal harian dan laporan PKL dikerjakan dan divalidasi langsung di portal.',
+            'link' => ['label' => 'Lihat Lowongan PKL', 'href' => route('bkk.lowongan', ['tipe' => 'pkl'])],
+        ],
+        [
+            'q' => 'Perusahaan kami ingin merekrut lulusan. Bagaimana caranya?',
+            'a' => 'Ajukan permohonan kerja sama melalui halaman Kerja Sama Mitra. Setelah diverifikasi tim BKK, perusahaan mendapat akses dasbor mitra untuk memasang lowongan dan meninjau CV pelamar.',
+            'link' => ['label' => 'Ajukan Kerja Sama', 'href' => route('bkk.kerjasama')],
+        ],
+    ];
+
+@endphp
+
+@extends('index.layouts.landing')
 
 @section('content')
-<div class="flex flex-col w-full">
-<!-- HERO SECTION: BURSA KERJA KHUSUS (BKK) ECOSYSTEM -->
-<div class="relative w-full overflow-hidden bg-surface">
-    <!-- Interactive Background Canvas & Ambient Gradients -->
-    <div aria-hidden="true" class="absolute inset-0 pointer-events-none overflow-hidden select-none z-0">
-        <!-- Canvas for Dynamic Career Mesh Network -->
-        <canvas id="bkk-hero-canvas" class="absolute inset-0 w-full h-full opacity-60"></canvas>
-        
-        <!-- Ambient Glowing Orbs -->
-        <div class="absolute -top-40 left-1/4 w-[750px] h-[450px] bg-gradient-to-tr from-primary/15 via-secondary-container/10 to-transparent blur-[120px] rounded-full pointer-events-none transform -translate-x-1/2"></div>
-        <div class="absolute top-1/3 -right-24 w-[500px] h-[500px] rounded-full bg-[#EB001B]/[0.07] blur-[120px] animate-pulse pointer-events-none" style="animation-duration: 8s;"></div>
-        <div class="absolute bottom-10 -left-20 w-[480px] h-[480px] rounded-full bg-[#F79E1B]/[0.06] blur-[130px] animate-pulse pointer-events-none" style="animation-duration: 11s;"></div>
-        
-        <!-- Architectural Grid Mask -->
-        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(28,28,26,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(28,28,26,0.03)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_40%,#000_65%,transparent_100%)]"></div>
-        
-        <!-- Interactive Mouse Spotlight -->
-        <div class="absolute inset-0 transition-opacity duration-300 opacity-70" id="hero-interactive-spotlight" style="background: radial-gradient(700px circle at var(--mouse-x, 50%) var(--mouse-y, 35%), rgba(235,0,27,0.07), rgba(255,165,37,0.04), transparent 70%);"></div>
+{{-- ============================================================
+     2. HERO
+     ============================================================ --}}
+<section id="beranda" class="relative overflow-hidden bg-white pt-28 md:pt-36 pb-16 md:pb-24 px-6 scroll-mt-24">
+    {{-- Latar: grid halus + semburat merah --}}
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-size-[44px_44px] mask-[radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
+        <div class="absolute -top-40 -right-32 w-140 h-140 rounded-full bg-brand-signal/10 blur-[120px]"></div>
     </div>
 
-    <!-- MAIN HERO CONTENT CONTAINER -->
-    <section class="relative max-w-7xl mx-auto px-6 lg:px-12 pt-8 pb-14 lg:pt-14 lg:pb-20 z-10">
+    <div class="relative max-w-6xl mx-auto grid gap-14 lg:grid-cols-[1.1fr_1fr] lg:gap-12 items-center">
+        <div class="animate-fade-up">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                Bursa Kerja Khusus &amp; Pusat Karier Digital Vokasi
+            </p>
+            <h1 class="mt-5 font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-wide leading-[1.05] text-left">
+                Langsung Terhubung ke
+                <x-sketch.underline size="lg">Industri,</x-sketch.underline>
+                <span class="block mt-2 sm:mt-3 text-brand-darkred">Dibekali Teknologi AI.</span>
+            </h1>
+            <p class="mt-8 max-w-xl text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Satu portal untuk mencari lowongan PKL &amp; kerja dari mitra IDUKA terverifikasi, mengoptimalkan CV agar lolos
+                penyaringan ATS, dan terhubung dengan alumni yang sudah berkarier di perusahaan terkemuka.
+            </p>
 
-        <!-- 2-Column Responsive Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            
-            <!-- LEFT COLUMN: Headline, Mission, Search & Filter Console (Col 7) -->
-            <div class="lg:col-span-7 flex flex-col gap-6 text-left">
-                <!-- Main Kinetic Headline -->
-                <div class="flex flex-col gap-2 hero-anim-item">
-                    <h1 class="font-headline-xl text-3xl sm:text-4xl md:text-5xl lg:text-[46px] font-bold text-on-surface leading-[1.16] tracking-tight">
-                        Wujudkan Karier Impian di 
-                        <span class="relative inline-block whitespace-nowrap text-primary-container">
-                            <span id="hero-rotating-word" class="inline-block transition-transform duration-300">Industri Terpercaya</span>
-                            <span class="absolute bottom-1 left-0 w-full h-3 bg-secondary-container/20 -z-10 rounded-sm -rotate-1"></span>
-                        </span>
-                        Bersama BKK Penus.
-                    </h1>
-                </div>
-
-                <!-- Editorial Description -->
-                <p class="font-body-editorial text-base sm:text-lg text-on-surface-variant leading-relaxed max-w-2xl hero-anim-item">
-                    Platform resmi penyaluran Praktik Kerja Lapangan (PKL), rekrutmen lulusan langsung oleh mitra IDUKA terpercaya, dan pendampingan portofolio berstandar ATS untuk mencetak generasi muda siap kerja dengan gaji terstandarisasi.
-                </p>
-
-                <!-- INTERACTIVE DISCOVERY & SEARCH CONSOLE (Alpine.js Powered) -->
-                <div x-data="bkkHeroSearch()" class="w-full bg-surface-container-lowest p-3 sm:p-4 rounded-lg shadow-lg border border-outline-variant/30 flex flex-col gap-3.5 hero-anim-item transition-all duration-300 hover:shadow-xl">
-                    
-                    <!-- Mode Switcher Tabs -->
-                    <div class="flex items-center justify-between border-b border-surface-container pb-2.5">
-                        <div class="flex items-center gap-2">
-                            <button type="button" 
-                                    @click="mode = 'job'" 
-                                    :class="mode === 'job' ? 'bg-primary-container text-on-primary-container shadow-sm font-semibold' : 'text-on-surface-variant hover:text-on-surface'"
-                                    class="px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[15px]">school</span>
-                                <span>Pencari Kerja & PKL</span>
-                            </button>
-                            <button type="button" 
-                                    @click="mode = 'partner'" 
-                                    :class="mode === 'partner' ? 'bg-primary-container text-on-primary-container shadow-sm font-semibold' : 'text-on-surface-variant hover:text-on-surface'"
-                                    class="px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[15px]">corporate_fare</span>
-                                <span>Mitra Industri (DUDI)</span>
-                            </button>
-                        </div>
-                        <span class="text-[11px] text-on-surface-variant hidden sm:inline">
-                            <span class="text-primary font-bold">140+</span> Perusahaan Terhubung
-                        </span>
-                    </div>
-
-                    <!-- Job Search Form Mode -->
-                    <div x-show="mode === 'job'" x-transition class="flex flex-col gap-3">
-                        <form action="{{ route('bkk.lowongan') }}" method="GET" class="flex flex-col sm:flex-row items-center gap-2">
-                            <!-- Keyword Input -->
-                            <div class="flex-1 flex items-center gap-2.5 px-3.5 py-2.5 w-full bg-surface-container-low rounded-lg border border-transparent focus-within:border-primary-container/40 focus-within:bg-surface-container-lowest transition-all">
-                                <span class="material-symbols-outlined text-[20px] text-outline shrink-0">search</span>
-                                <input type="text" 
-                                       name="keyword" 
-                                       x-model="searchQuery"
-                                       placeholder="Cari lowongan, posisi (Laravel, Mikrotik, Admin)..." 
-                                       class="w-full bg-transparent text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none font-body-default" />
-                                <button type="button" x-show="searchQuery" @click="searchQuery = ''" class="text-outline hover:text-on-surface">
-                                    <span class="material-symbols-outlined text-[16px]">close</span>
-                                </button>
-                            </div>
-
-                            <!-- Major / Jurusan Selector -->
-                            <div class="w-full sm:w-auto shrink-0">
-                                <select name="jurusan" class="w-full bg-surface-container-low text-xs sm:text-sm text-on-surface font-medium rounded-lg px-3.5 py-3 border border-transparent focus:border-primary-container/40 focus:outline-none cursor-pointer">
-                                    <option value="">Semua Jurusan</option>
-                                    <option value="tkj">TKJ (Teknik Komputer & Jaringan)</option>
-                                    <option value="rpl">RPL (Rekayasa Perangkat Lunak)</option>
-                                    <option value="akl">AKL (Akuntansi & Keuangan)</option>
-                                    <option value="otkp">OTKP (Manajemen Perkantoran)</option>
-                                </select>
-                            </div>
-
-                            <!-- Action Button -->
-                            <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary-container text-on-primary-container font-label-md text-sm font-semibold hover:bg-primary transition-all duration-200 shadow-md hover:shadow-lg shrink-0 group">
-                                <span>Cari Loker</span>
-                                <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                            </button>
-                        </form>
-
-                    </div>
-
-                    <!-- Partner Recruitment Form Mode -->
-                    <div x-show="mode === 'partner'" x-transition class="p-3 bg-surface-container-low rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex flex-col gap-1">
-                            <h4 class="font-title-md text-sm font-semibold text-on-surface flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-primary text-[18px]">handshake</span>
-                                Rekrut Talenta Siap Kerja & Siswa PKL Penus
-                            </h4>
-                            <p class="text-xs text-on-surface-variant">Pasang lowongan gratis untuk perusahaan Anda & temukan kandidat lulusan tersertifikasi.</p>
-                        </div>
-                        <a href="{{ route('bkk.kerjasama') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-container transition-colors shadow-sm shrink-0">
-                            <span>Buka Lowongan Mitra</span>
-                            <span class="material-symbols-outlined text-[16px]">open_in_new</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Primary CTAs & Trust Seals -->
-                <div class="flex flex-wrap items-center gap-4 pt-1 hero-anim-item">
-                    <a href="#lowongan" class="inline-flex items-center justify-center px-7 py-3 rounded-full bg-primary-container text-on-primary-container font-label-md text-sm font-semibold shadow-md hover:bg-primary hover:shadow-lg transition-all duration-200 group">
-                        <span>Jelajahi Lowongan PKL & Kerja</span>
-                        <span class="material-symbols-outlined text-[16px] ml-1.5 group-hover:translate-x-1 transition-transform">east</span>
-                    </a>
-                    
-                    <a href="{{ route('bkk.kerjasama') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-surface-container-lowest text-tertiary ring-1 ring-tertiary/30 font-label-md text-sm font-semibold hover:bg-surface-container hover:text-on-surface transition-all duration-200">
-                        <span>Daftar Kemitraan IDUKA</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- RIGHT COLUMN: Interactive 3D "BKK Live Career Matrix & Match Hub" (Col 5) -->
-            <div class="lg:col-span-5 relative flex items-center justify-center hero-anim-item" id="hero-right-visual">
-                
-                <!-- Floating Ambient Glow Behind Cards -->
-                <div class="absolute w-72 h-72 rounded-full bg-gradient-to-br from-primary/20 via-secondary-container/20 to-transparent blur-3xl pointer-events-none -z-10 animate-pulse"></div>
-
-                <!-- Interactive Talent Match Simulator Card (Alpine.js Driven) -->
-                <div x-data="bkkTalentHub()" class="relative w-full max-w-md bg-surface-container-lowest/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-outline-variant/40 flex flex-col gap-5 transition-transform duration-300 hover:-translate-y-1">
-                    
-                    <!-- Card Top Header -->
-                    <div class="flex items-center justify-between pb-3 border-b border-surface-container">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-9 h-9 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
-                                <span class="material-symbols-outlined text-[20px]">hub</span>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-bold uppercase tracking-wider text-on-surface">BKK Smart Matchmaker</span>
-                                <span class="text-[11px] text-on-surface-variant">Live Algoritma Penyaluran Siswa</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Candidate & Industry Live Match Showcase -->
-                    <div class="p-4 bg-surface-container-low rounded-md border border-outline-variant/30 flex flex-col gap-3.5 relative overflow-hidden transition-all duration-300">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <img :src="currentMajorData.avatar" alt="Avatar Siswa" class="w-11 h-11 rounded-full object-cover ring-2 ring-primary-container/30 shrink-0" />
-                                <div class="flex flex-col">
-                                    <span class="text-xs font-bold text-on-surface" x-text="currentMajorData.studentName"></span>
-                                    <span class="text-[11px] text-on-surface-variant" x-text="currentMajorData.className"></span>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <span class="text-xs font-bold text-primary" x-text="currentMajorData.score"></span>
-                                <span class="text-[10px] text-on-surface-variant">ATS Match</span>
-                            </div>
-                        </div>
-
-                        <!-- Matched Vacancy Info -->
-                        <div class="p-2.5 bg-surface-container-lowest rounded-md border border-surface-container flex flex-col gap-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[11px] font-semibold text-primary-container flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[14px]">apartment</span>
-                                    <span x-text="currentMajorData.partner"></span>
-                                </span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold" x-text="currentMajorData.badge"></span>
-                            </div>
-                            <span class="text-xs font-bold text-on-surface" x-text="currentMajorData.position"></span>
-                            <div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-1 border-t border-surface-container">
-                                <span>Gaji & Insentif:</span>
-                                <span class="font-bold text-on-surface" x-text="currentMajorData.salary"></span>
-                            </div>
-                        </div>
-
-                        <!-- Competency Skills Match Chips -->
-                        <div class="flex flex-wrap gap-1">
-                            <template x-for="skill in currentMajorData.skills" :key="skill">
-                                <span class="px-2 py-0.5 rounded-md bg-surface-container text-[10px] font-medium text-on-surface flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[10px] text-emerald-600">check</span>
-                                    <span x-text="skill"></span>
-                                </span>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FLOATING BADGE 1: Recent Placement Notification (Top Right) -->
-                <div class="absolute -top-6 -right-4 sm:-right-8 bg-surface-container-lowest/95 backdrop-blur-md px-3.5 py-2.5 rounded-xl shadow-xl border border-outline-variant/30 flex items-center gap-3 z-20 bkk-floating-badge-1 max-w-[240px]">
-                    <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-[18px]">verified</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-[11px] font-bold text-on-surface leading-tight">Penempatan Walk-In</span>
-                        <span class="text-[10px] text-on-surface-variant truncate">Nurul A. (RPL) di PT Telkom</span>
-                    </div>
-                </div>
-
-                <!-- FLOATING BADGE 2: Automated ATS CV Score (Bottom Left) -->
-                <div class="absolute -bottom-6 -left-4 sm:-left-8 bg-surface-container-lowest/95 backdrop-blur-md px-3.5 py-2.5 rounded-xl shadow-xl border border-outline-variant/30 flex items-center gap-3 z-20 bkk-floating-badge-2 max-w-[240px]">
-                    <div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-[11px] font-bold text-on-surface leading-tight">Standar CV ATS Penus</span>
-                        <span class="text-[10px] text-on-surface-variant">Skor Lolos 96% Terverifikasi</span>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- INFINITE CORPORATE PARTNER MARQUEE RIBBON -->
-        <div class="mt-14 pt-8 border-t border-surface-container flex flex-col gap-4">
-            <div class="flex items-center justify-between text-xs text-on-surface-variant">
-                <span class="uppercase font-bold tracking-wider text-outline flex items-center gap-2">
-                    Jaringan Kemitraan Resmi IDUKA BKK Penus
-                </span>
-                <a href="{{ route('bkk.kerjasama') }}" class="font-semibold text-primary hover:underline flex items-center gap-1">
-                    <span>Lihat Seluruh 140+ Mitra</span>
-                    <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+            <div class="mt-9 flex flex-wrap items-center gap-4">
+                <a href="#lowongan" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                    Cari Lowongan Aktif
+                    <x-sketch.arrow :delay="600" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                </a>
+                <a href="#ai-cv" class="group inline-flex items-center gap-2 rounded-full border-2 border-brand-darkred/20 bg-white px-7 py-3 text-sm font-semibold text-brand-darkred transition-colors hover:border-brand-darkred hover:bg-brand-darkred/5">
+                    <x-landing.icon name="bulb" class="w-4 h-4" />
+                    <span class="mr-4">Tingkatkan CV dengan AI</span>
                 </a>
             </div>
+        </div>
 
-            <!-- Continuous Logo / Partner Strip -->
-            <div class="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-                <div class="flex items-center gap-8 py-2 animate-marquee whitespace-nowrap">
-                    <!-- Partner 1 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">directions_car</span>
-                        <span class="text-xs font-bold text-on-surface">PT Astra Otoparts Tbk</span>
+        {{-- Visual hero: foto gedung + kartu analisis CV interaktif --}}
+        <div class="relative lg:pl-6">
+            <div class="relative overflow-hidden rounded-card shadow-softpill ring-1 ring-brand-ink/5">
+                <img src="{{ asset('images/fotogedung.jpg') }}" alt="Gedung SMK Plus Pelita Nusantara di Cibinong, Bogor" class="w-full aspect-4/5 sm:aspect-4/3 lg:aspect-4/5 object-cover" loading="eager">
+                {{-- Keterangan di atas foto, karena bagian bawahnya tertutup kartu analisis CV di HP & tablet --}}
+                <div class="absolute inset-0 bg-linear-to-b from-brand-ink/75 via-brand-ink/5 to-transparent"></div>
+                <div class="absolute left-5 top-5 right-5 text-white">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">SMK PLUS PELITA NUSANTARA Cibinong, Bogor</p>
+                    <p class="mt-1 font-display text-2xl font-bold uppercase tracking-wide">We Are Different</p>
+                </div>
+            </div>
+            {{-- Siku coretan di luar foto, berjarak 1rem dari tepinya supaya goresannya tidak menimpa foto.
+                 Kiri: di desktop foto bergeser lg:pl-6 (1.5rem), jadi sikunya cukup lg:left-2 agar jaraknya tetap 1rem.
+                 Kanan: foto menempel ke tepi kanan wadah, jadi sikunya keluar -right-4 di semua ukuran. --}}
+            <x-sketch.corner class="-left-4 -top-4 w-24 h-10 md:w-32 md:h-12 lg:left-2" />
+            <x-sketch.corner :delay="350" class="-right-4 -bottom-4 rotate-180 w-24 h-10 md:w-32 md:h-12" />
+        </div>
+    </div>
+
+    {{-- Statistik singkat --}}
+    <dl class="relative max-w-6xl mx-auto mt-16 md:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-card bg-brand-ink/10 ring-1 ring-brand-ink/10">
+        @php
+            $stats = array_values(array_filter([
+                $mitraCount > 0 ? ['value' => $mitraCount, 'label' => 'Mitra IDUKA terverifikasi'] : null,
+                ['value' => '1.500+', 'label' => 'Alumni dalam jejaring'],
+                ['value' => '92%', 'label' => 'Lulusan terserap kerja & studi'],
+                ['value' => 'A', 'label' => 'Akreditasi BAN-PDM 2024–2029'],
+                $mitraCount > 0 ? null : ['value' => '5', 'label' => 'Kompetensi keahlian'],
+            ]));
+        @endphp
+        @foreach ($stats as $stat)
+            <div class="flex flex-col bg-white px-5 py-6 md:px-7">
+                <dt class="text-xs sm:text-sm text-brand-ink/60">{{ $stat['label'] }}</dt>
+                <dd class="order-first font-display text-3xl md:text-4xl font-bold uppercase tracking-wide text-brand-darkred">{{ $stat['value'] }}</dd>
+            </div>
+        @endforeach
+    </dl>
+</section>
+
+{{-- ============================================================
+     3. AI CV ENHANCER & ATS OPTIMIZER
+     ============================================================ --}}
+<section id="ai-cv" class="relative bg-brand-softmist px-6 py-20 md:py-28 scroll-mt-24">
+    <div class="max-w-6xl mx-auto">
+        <div class="max-w-3xl">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                <x-sketch.sparks>AI CV Enhancer</x-sketch.sparks>
+            </p>
+            <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
+                <x-sketch.frame class="-ml-4 md:-ml-5">Buat &amp; Optimalkan CV Digital Siap Kerja Berstandar ATS</x-sketch.frame>
+            </h2>
+            <p class="mt-5 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Sebagian besar HRD menyaring lamaran dengan Applicant Tracking System. AI CV Studio membantu siswa dan alumni
+                menyusun CV yang terbaca mesin sekaligus meyakinkan perekrut.
+            </p>
+        </div>
+
+        <div class="mt-12 grid gap-6 lg:grid-cols-12 items-start">
+            {{-- Studio: dokumen CV contoh dengan sakelar Mode AI (nyala = hasil saran AI, mati = CV asli).
+                 Tabel bergaya coretan tangan seperti tabel identitas di FeLandingPageJhic: bingkai x-sketch.box,
+                 garis baris & kolom x-sketch.rule. Tanpa overflow-hidden supaya ujung coretan (±8px) tidak terpotong. --}}
+            <div x-data="cvStudio" class="relative lg:col-span-7 rounded-sm bg-white text-left">
+                <x-sketch.box />
+
+                {{-- Bilah atas bergaya jendela aplikasi --}}
+                <div class="relative flex flex-wrap items-center justify-between gap-4 px-5 py-4 md:px-7">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="flex shrink-0 gap-1.5" aria-hidden="true">
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-darkred"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-darkred/30"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-darkred/15"></span>
+                        </span>
+                        <p class="truncate font-display text-base font-bold uppercase tracking-wide">AI CV Studio <span class="font-sans text-sm font-normal normal-case tracking-normal text-brand-ink/50">· CV_Nurul_RPL.pdf</span></p>
                     </div>
-                    <!-- Partner 2 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">cell_tower</span>
-                        <span class="text-xs font-bold text-on-surface">PT Telkom Indonesia Tbk</span>
+                    <button type="button" role="switch" aria-checked="true" :aria-checked="ai.toString()" @click="toggle()" class="inline-flex items-center gap-3 rounded-full text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-darkred">
+                        Mode AI
+                        <span class="relative h-6 w-11 rounded-full transition-colors bg-brand-darkred" :class="{ 'bg-brand-darkred': ai, 'bg-brand-ink/20': !ai }" aria-hidden="true">
+                            <span class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform motion-reduce:transition-none translate-x-5" :class="{ 'translate-x-5': ai, 'translate-x-0': !ai }"></span>
+                        </span>
+                    </button>
+                    <x-sketch.rule class="text-brand-darkred/30 -left-1 -right-1 -bottom-1.5 h-3" />
+                </div>
+
+                {{-- overflow-hidden di sini saja, supaya garis pindai tidak keluar dari area dokumen --}}
+                <div class="relative overflow-hidden px-5 pb-2 pt-6 md:px-7">
+                    {{-- Garis pindai, lewat sekali setiap Mode AI dinyalakan --}}
+                    <template x-if="scanning">
+                        <div aria-hidden="true" class="pointer-events-none absolute inset-x-0 z-10 h-24 border-b-2 border-brand-warmred/60 bg-linear-to-b from-transparent via-brand-warmred/10 to-brand-warmred/20 animate-scan motion-reduce:hidden"></div>
+                    </template>
+
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-display text-2xl font-bold uppercase tracking-wide">Nurul Aisyah</p>
+                            <p class="text-sm text-brand-ink/60">Junior Web Developer · Rekayasa Perangkat Lunak</p>
+                        </div>
+                        <div class="shrink-0 text-right" aria-live="polite">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-ink/50">Skor ATS</p>
+                            <p class="font-display text-4xl font-bold leading-none transition-colors text-brand-darkred" :class="{ 'text-brand-darkred': ai, 'text-brand-ink/35': !ai }">
+                                <span x-text="ai ? 94 : 58">94</span><span class="text-base">/100</span>
+                            </p>
+                        </div>
                     </div>
-                    <!-- Partner 3 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">precision_manufacturing</span>
-                        <span class="text-xs font-bold text-on-surface">PT United Tractors Tbk</span>
-                    </div>
-                    <!-- Partner 4 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">laptop_chromebook</span>
-                        <span class="text-xs font-bold text-on-surface">Axioo Smart Education</span>
-                    </div>
-                    <!-- Partner 5 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">account_balance</span>
-                        <span class="text-xs font-bold text-on-surface">PT Bank Central Asia Tbk</span>
-                    </div>
-                    <!-- Partner 6 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">store</span>
-                        <span class="text-xs font-bold text-on-surface">PT Indomarco Prismatama</span>
-                    </div>
-                    <!-- Partner 7 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">two_wheeler</span>
-                        <span class="text-xs font-bold text-on-surface">PT Yamaha Indonesia Motor</span>
-                    </div>
-                    <!-- Partner 8 -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">newspaper</span>
-                        <span class="text-xs font-bold text-on-surface">Kompas Gramedia Group</span>
+                    <div class="mt-4 h-1.5 rounded-full bg-brand-softmist" aria-hidden="true">
+                        <div class="h-full rounded-full bg-linear-to-r from-brand-warmred to-brand-darkred transition-all duration-700 motion-reduce:transition-none" style="width: 94%" :style="{ width: (ai ? 94 : 58) + '%' }"></div>
                     </div>
 
-                    <!-- Duplicate for infinite smooth marquee -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">directions_car</span>
-                        <span class="text-xs font-bold text-on-surface">PT Astra Otoparts Tbk</span>
+                    <dl class="relative mt-5">
+                        {{-- Garis kolom di tengah jarak label & isi: 7rem + setengah gap (0.5rem), dikurangi setengah lebar span (0.375rem) --}}
+                        <x-sketch.rule vertical :delay="600" class="hidden sm:block text-brand-darkred/30 -top-1 -bottom-1 w-3 sm:left-[7.125rem]" />
+
+                        @foreach ($cvDocRows as $row)
+                            <div class="relative grid gap-1.5 py-4 sm:grid-cols-[7rem_1fr] sm:gap-4">
+                                <x-sketch.rule :delay="$loop->index * 100" class="text-brand-darkred/30 -left-1 -right-1 -top-1.5 h-3" />
+                                <dt class="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-ink/50 sm:pt-1">{{ $row['label'] }}</dt>
+                                <dd>
+                                    <div x-show="!ai" x-cloak>
+                                        <p class="text-sm leading-relaxed text-brand-ink/55">{{ $row['before'] }}</p>
+                                        <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-brand-signal/10 px-2 py-0.5 text-[11px] font-semibold text-brand-signal">
+                                            <x-landing.icon name="x" class="w-3 h-3" /> {{ $row['issue'] }}
+                                        </span>
+                                    </div>
+                                    <div x-show="ai">
+                                        <p class="text-sm leading-relaxed text-brand-ink">{!! $highlightKeywords($row['after']) !!}</p>
+                                        <span class="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                            <x-landing.icon name="check" class="w-3 h-3" /> {{ $row['fix'] }}
+                                        </span>
+                                    </div>
+                                </dd>
+                            </div>
+                        @endforeach
+                        <div class="relative grid gap-1.5 py-4 sm:grid-cols-[7rem_1fr] sm:gap-4">
+                            <x-sketch.rule :delay="count($cvDocRows) * 100" class="text-brand-darkred/30 -left-1 -right-1 -top-1.5 h-3" />
+                            <dt class="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-ink/50 sm:pt-1">Keahlian</dt>
+                            <dd>
+                                <ul x-show="!ai" x-cloak class="flex flex-wrap gap-1.5">
+                                    @foreach ($cvSkills['before'] as $skill)
+                                        <li class="rounded-sm bg-brand-softmist px-2 py-1 text-xs text-brand-ink/55">{{ $skill }}</li>
+                                    @endforeach
+                                </ul>
+                                <ul x-show="ai" class="flex flex-wrap gap-1.5">
+                                    @foreach ($cvSkills['after'] as $skill)
+                                        <li class="rounded-sm bg-brand-darkred/10 px-2 py-1 text-xs font-semibold text-brand-darkred">{{ $skill }}</li>
+                                    @endforeach
+                                </ul>
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="relative flex flex-wrap items-center justify-between gap-3 px-5 py-4 md:px-7 text-xs font-semibold">
+                    <x-sketch.rule :delay="700" class="text-brand-darkred/30 -left-1 -right-1 -top-1.5 h-3" />
+                    <p x-show="ai" class="flex items-center gap-2 text-brand-ink">
+                        <x-landing.icon name="link" class="w-4 h-4 text-brand-darkred" />
+                        Siap dipakai melamar · Tersinkron dengan 12 lowongan mitra
+                    </p>
+                    <p x-show="!ai" x-cloak class="flex items-center gap-2 text-brand-signal">
+                        <x-landing.icon name="eye" class="w-4 h-4" />
+                        {{ count($cvDocRows) + 1 }} masalah ditemukan pada CV asli
+                    </p>
+                    <p class="text-brand-ink/50" x-text="ai ? 'Matikan Mode AI untuk melihat CV aslinya' : 'Nyalakan Mode AI untuk memperbaikinya'">Matikan Mode AI untuk melihat CV aslinya</p>
+                </div>
+            </div>
+
+            {{-- Tiga kemampuan utama, masing-masing dengan pratinjau kecil --}}
+            <div class="lg:col-span-5 grid gap-6 text-left">
+                {{-- Format standar ATS: bagian CV yang berhasil dibaca parser --}}
+                <article class="rounded-card bg-white p-5 md:p-6 shadow-softpill ring-1 ring-brand-ink/5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-display text-sm font-bold uppercase tracking-wide text-brand-darkred">01</p>
+                            <h3 class="mt-1 text-lg font-semibold">Format Standar ATS</h3>
+                        </div>
+                        <span class="flex w-10 h-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand-signal to-brand-deepred text-white">
+                            <x-landing.icon name="fileText" class="w-5 h-5" />
+                        </span>
                     </div>
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">cell_tower</span>
-                        <span class="text-xs font-bold text-on-surface">PT Telkom Indonesia Tbk</span>
+                    <p class="mt-2 text-sm leading-relaxed text-brand-ink/70">Terbaca otomatis oleh sistem HRD mitra IDUKA tanpa error parsing.</p>
+                    <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-medium text-brand-ink/80">
+                        @foreach ($cvParsedSections as $section)
+                            <li class="flex items-center gap-2">
+                                <span class="flex w-4 h-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><x-landing.icon name="check" class="w-2.5 h-2.5" /></span>
+                                {{ $section }}
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-4 border-t border-dashed border-brand-ink/15 pt-3 text-xs font-semibold text-emerald-700">{{ count($cvParsedSections) }}/{{ count($cvParsedSections) }} bagian terbaca sempurna</p>
+                </article>
+
+                {{-- Kata kunci industri per jurusan, bisa dipilih --}}
+                <article x-data="{ jurusan: 'RPL' }" class="rounded-card bg-white p-5 md:p-6 shadow-softpill ring-1 ring-brand-ink/5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-display text-sm font-bold uppercase tracking-wide text-brand-darkred">02</p>
+                            <h3 class="mt-1 text-lg font-semibold">Rekomendasi Kata Kunci Industri</h3>
+                        </div>
+                        <span class="flex w-10 h-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand-signal to-brand-deepred text-white">
+                            <x-landing.icon name="search" class="w-5 h-5" />
+                        </span>
                     </div>
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">precision_manufacturing</span>
-                        <span class="text-xs font-bold text-on-surface">PT United Tractors Tbk</span>
+                    <p class="mt-2 text-sm leading-relaxed text-brand-ink/70">AI menyelaraskan keahlian teknismu dengan kualifikasi lowongan. Pilih jurusan:</p>
+                    <div class="mt-4 flex flex-wrap gap-1.5" role="group" aria-label="Pilih jurusan">
+                        @foreach ($jurusanFilters as $code => $label)
+                            <button type="button" @click="jurusan = '{{ $code }}'" :aria-pressed="(jurusan === '{{ $code }}').toString()" aria-pressed="{{ $code === 'RPL' ? 'true' : 'false' }}"
+                                class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors {{ $code === 'RPL' ? 'bg-brand-darkred text-white' : 'bg-brand-softmist text-brand-ink/70 hover:text-brand-darkred' }}"
+                                :class="{ 'bg-brand-darkred text-white': jurusan === '{{ $code }}', 'bg-brand-softmist text-brand-ink/70 hover:text-brand-darkred': jurusan !== '{{ $code }}' }">
+                                {{ $label }}
+                            </button>
+                        @endforeach
                     </div>
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container-low border border-surface-container shrink-0">
-                        <span class="material-symbols-outlined text-primary text-[20px]">laptop_chromebook</span>
-                        <span class="text-xs font-bold text-on-surface">Axioo Smart Education</span>
+                    <div class="mt-4 grid" aria-live="polite">
+                        @foreach ($cvKeywords as $code => $keywords)
+                            <ul x-show="jurusan === '{{ $code }}'" @if ($code !== 'RPL') x-cloak @endif class="col-start-1 row-start-1 flex flex-wrap content-start gap-1.5">
+                                @foreach ($keywords as $keyword)
+                                    <li class="rounded-md border border-dashed border-brand-darkred/30 px-2 py-1 text-xs font-semibold text-brand-darkred">{{ $keyword }}</li>
+                                @endforeach
+                            </ul>
+                        @endforeach
                     </div>
+                </article>
+
+                {{-- Portofolio otomatis: sumber data sekolah -> poin pencapaian --}}
+                <article class="relative overflow-hidden rounded-card bg-linear-135 from-brand-darkred to-brand-deepred p-5 md:p-6 text-white shadow-softpill">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="font-display text-sm font-bold uppercase tracking-wide text-[#F5C2C7]">03</p>
+                            <h3 class="mt-1 text-lg font-semibold">Auto-Generate Portofolio</h3>
+                        </div>
+                        <span class="flex w-10 h-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                            <x-landing.icon name="award" class="w-5 h-5" />
+                        </span>
+                    </div>
+                    <p class="mt-2 text-sm leading-relaxed text-white/75">Tugas praktik, jurnal PKL, dan sertifikat LSP dirangkai menjadi poin pencapaian profesional.</p>
+                    <div class="mt-5 flex items-center gap-3">
+                        <ul class="flex flex-1 flex-wrap gap-1.5">
+                            @foreach ($cvSources as $source)
+                                <li class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
+                                    <x-landing.icon :name="$source['icon']" class="w-3.5 h-3.5" /> {{ $source['label'] }}
+                                </li>
+                            @endforeach
+                        </ul>
+                        <x-sketch.arrow class="w-8 h-4 shrink-0 text-[#F5C2C7]" />
+                        <span class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-brand-darkred">Poin Pencapaian</span>
+                    </div>
+                </article>
+            </div>
+
+            {{-- Ajakan --}}
+            <div class="lg:col-span-12 flex flex-col gap-5 rounded-card bg-brand-ink p-6 md:p-8 text-white sm:flex-row sm:items-center sm:justify-between">
+                <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/80">
+                    @foreach (['Gratis untuk siswa & alumni', 'Ekspor PDF ramah ATS', 'Langsung dipakai melamar'] as $perk)
+                        <li class="flex items-center gap-2"><x-landing.icon name="check" class="w-4 h-4 text-brand-warmred" /> {{ $perk }}</li>
+                    @endforeach
+                </ul>
+                <div class="flex shrink-0 flex-wrap items-center gap-4">
+                    <a href="{{ route('bkk.berita.detail', 'panduan-praktis-siswa-5-langkah-membuat-cv-digital-standar-ats') }}" class="text-sm font-semibold text-white/80 underline-offset-4 hover:text-white hover:underline">
+                        Baca panduan CV ATS
+                    </a>
+                    <a href="{{ $cvStudioUrl }}" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-black/20 transition-transform hover:-translate-y-0.5">
+                        Buka AI CV Studio
+                        <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                    </a>
                 </div>
             </div>
         </div>
-    </section>
-</div>
-<!-- SECTION 2: 3 PILAR FITUR UNGGULAN BKK DIGITAL -->
-<section class="w-full bg-surface-container-low py-20">
-<div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-12">
-<!-- Section Header -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-<div class="flex flex-col gap-3 max-w-2xl">
-<span class="inline-flex items-center self-start px-3 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-dense text-label-dense uppercase tracking-widest font-bold">Arsitektur Ekosistem Karier</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tiga Pilar Utama Mempersiapkan Talenta Vokasi Unggulan</h2>
-<p class="font-body-default text-body-default text-on-surface-variant">Integrasi komprehensif antara administrasi sekolah terstruktur, keterbukaan bursa kerja nyata, serta pendampingan portofolio profesional berstandar industri modern.</p>
-</div>
-<div class="shrink-0">
-<a class="inline-flex items-center font-label-md text-label-md text-tertiary font-semibold hover:text-primary transition-colors" href="#">Lihat Alur Kerja Sistem<span class="material-symbols-outlined text-[18px] ml-1">arrow_forward</span></a>
-</div>
-</div>
-<!-- 3 Pillar Bento Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-<!-- Pilar 1 -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow group">
-<div class="flex flex-col gap-5">
-<div class="w-14 h-14 rounded-full bg-primary-fixed flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-[28px]">assignment</span>
-</div>
-<div class="flex flex-col gap-2">
-<span class="font-label-dense text-label-dense text-primary uppercase font-bold tracking-wider">Pilar 01 • Praktik Kerja</span>
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Penyaluran PKL Terstruktur</h3>
-</div>
-<!-- Feature Checkpoints -->
-<ul class="flex flex-col gap-2.5 pt-2 text-on-surface-variant font-body-dense text-body-dense">
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Surat Pengantar &amp; Pakta Integritas Digital</span>
-</li>
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Logbook kegiatan harian dengan geotagging</span>
-</li>
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Penilaian rubrik kompetensi terpusat</span>
-</li>
-</ul>
-</div>
-</div>
-<!-- Pilar 2 -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm ring-1 ring-tertiary/20 flex flex-col justify-between hover:shadow-md transition-all group">
-  <div class="flex flex-col gap-5">
-    <div class="w-14 h-14 rounded-DEFAULT bg-tertiary-fixed rounded-full flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
-      <span class="material-symbols-outlined text-[28px]">verified_user</span></div><div class="flex flex-col gap-2">
-        <span class="font-label-dense text-label-dense text-tertiary uppercase font-bold tracking-wider">Pilar 02 • Kesempatan Kerja</span>
-        <h3 class="font-headline-sm text-headline-sm text-on-surface">Lowongan Kerja Terkurasi</h3>
-      </div>
-      <ul class="flex flex-col gap-2.5 pt-2 text-on-surface-variant font-body-dense text-body-dense"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">check</span><span>Prioritas walk-in interview kampus</span></li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">check</span><span>Sesuai standar UMK &amp; legalitas resmi</span></li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">check</span><span>Penyaluran terarah per jurusan</span></li></ul></div>
     </div>
-<!-- Pilar 3 -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow group">
-<div class="flex flex-col gap-5">
-<div class="w-14 h-14 rounded-DEFAULT bg-tertiary-fixed rounded-full flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
-<span class="material-symbols-outlined text-[28px]">auto_stories</span>
-</div>
-<div class="flex flex-col gap-2">
-<span class="font-label-dense text-label-dense text-tertiary uppercase font-bold tracking-wider">Pilar 03 • Portofolio Siap Pakai</span>
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Automated CV &amp; Career Builder</h3>
-</div>
-<!-- Feature Checkpoints -->
-<ul class="flex flex-col gap-2.5 pt-2 text-on-surface-variant font-body-dense text-body-dense">
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Format ATS-Friendly siap ekspor PDF</span>
-</li>
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Pustaka kata kunci skill teknis per kejuruan</span>
-</li>
-<li class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary">check</span>
-<span class="">Review langsung oleh tim konselor BKK</span>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
 </section>
-<!-- SECTION 3: FEATURED LOWONGAN PKL & KERJA -->
-<section class="max-w-7xl mx-auto px-6 lg:px-12 py-20 w-full" id="lowongan">
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-<div class="flex flex-col gap-2 max-w-xl">
-<span class="inline-flex items-center self-start px-3 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-dense text-label-dense uppercase tracking-widest font-bold">Peluang Emas Terbuka</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Lowongan PKL &amp; Rekrutmen Kerja Terkini</h2>
-<p class="font-body-default text-body-default text-on-surface-variant">Lowongan eksklusif dari jaringan kemitraan resmi IDUKA SMK Plus Pelita Nusantara.</p>
-</div>
-<div class="flex items-center gap-3"><button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-dense text-label-dense font-semibold shadow-sm">Semua Jurusan</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Khusus PKL</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Lulusan Baru</button></div>
-</div>
-<!-- 3 Job Cards Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-<!-- Card 1 -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-md flex flex-col justify-between hover:-translate-y-1 transition-transform">
-<div class="flex flex-col gap-4">
-<div class="flex items-start justify-between gap-4">
-<span class="px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-dense text-label-dense font-semibold">
-              PKL / Magang Bersertifikat
-            </span>
-<span class="font-label-dense text-label-dense text-on-surface-variant flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">schedule</span> 5 Hari Lagi
-            </span>
-</div>
-<div class="flex items-center gap-3 pt-1"><button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-dense text-label-dense font-semibold shadow-sm">Semua Jurusan</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Khusus PKL</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Lulusan Baru</button></div>
-<div class="flex flex-wrap gap-2 pt-2">
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">Jurusan TKJ</span>
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">Cibinong, Bogor</span>
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">MikroTik MTCNA</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">
-            Membantu instalasi topologi jaringan LAN/WLAN kantor cabang, pemeliharaan router, dan troubleshooting tiket bantuan pengguna internal.
-          </p>
-</div>
-<div class="mt-6 pt-5 bg-surface-container-low -mx-6 -mb-6 p-6 rounded-b-lg flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant">Uang Saku &amp; Fasilitas</span>
-<span class="font-title-md text-title-md text-on-surface font-bold">Rp 1.500.000 /bln</span>
-</div>
-<button class="px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary shadow-sm transition-colors">
-            Lamar Cepat
-          </button>
-</div>
-</div>
-<!-- Card 2 -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-md ring-1 ring-tertiary/20 flex flex-col justify-between hover:-translate-y-1 transition-transform"><div class="flex flex-col gap-4"><div class="flex items-start justify-between gap-4"><span class="px-3 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-dense text-label-dense font-semibold">PKL Unggulan IDUKA</span><span class="font-label-dense text-label-dense text-tertiary flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-tertiary">schedule</span> 3 Hari Lagi</span></div><div class="flex items-center gap-3 pt-1"><div class="w-12 h-12 rounded-DEFAULT bg-tertiary-fixed flex items-center justify-center font-bold text-tertiary text-lg"><span class="material-symbols-outlined text-[28px] text-tertiary">design_services</span></div><div><h3 class="font-title-md text-title-md text-on-surface">UI/UX &amp; Graphic Creative Intern</h3><p class="font-body-dense text-body-dense text-on-surface-variant">PT Digital Media Kreasi Indonesia</p></div></div><div class="flex flex-wrap gap-2 pt-2"><span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-tertiary">Jurusan RPL / DKV</span><span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-tertiary">Bogor Selatan</span><span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-tertiary">Figma &amp; Adobe CC</span></div><p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">Kolaborasi tim kreatif merancang aset visual marketing promosi digital, prototipe antarmuka website, dan katalog interaktif.</p></div><div class="mt-6 pt-5 bg-surface-container-low -mx-6 -mb-6 p-6 rounded-b-lg flex items-center justify-between"><div class="flex flex-col"><span class="font-label-dense text-label-dense text-tertiary">Uang Saku &amp; Fasilitas</span><span class="font-title-md text-title-md text-on-surface font-bold">Rp 1.750.000 /bln</span></div><button class="px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary shadow-sm transition-colors">Lamar Cepat</button></div></div>
-<!-- Card 3 -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-md flex flex-col justify-between hover:-translate-y-1 transition-transform">
-<div class="flex flex-col gap-4">
-<div class="flex items-start justify-between gap-4">
-<span class="px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-dense text-label-dense font-semibold">
-              Full-time Lulusan SMK
-            </span>
-<span class="font-label-dense text-label-dense text-on-surface-variant flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">schedule</span> 2 Minggu Lagi
-            </span>
-</div>
-<div class="flex items-center gap-3 pt-1"><button class="px-4 py-2 rounded-full bg-primary-container text-on-primary-container font-label-dense text-label-dense font-semibold shadow-sm">Semua Jurusan</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Khusus PKL</button><button class="px-4 py-2 rounded-full bg-surface-container text-tertiary hover:bg-surface-container-high font-label-dense text-label-dense font-medium transition-colors">Lulusan Baru</button></div>
-<div class="flex flex-wrap gap-2 pt-2">
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">Jurusan AKL / OTKP</span>
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">Bogor Kota</span>
-<span class="px-2.5 py-1 rounded-full bg-surface-container font-label-dense text-label-dense text-on-surface">MS Excel Mahir</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">
-            Pencatatan mutasi harian, rekonsiliasi arsip dokumen kredit perbankan, pelayanan nasabah loket unit mikro, serta kearsipan digital.
-          </p>
-</div>
-<div class="mt-6 pt-5 bg-surface-container-low -mx-6 -mb-6 p-6 rounded-b-lg flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant">Gaji &amp; Insentif</span>
-<span class="font-title-md text-title-md text-on-surface font-bold">Rp 4.800.000+</span>
-</div>
-<button class="px-5 py-2.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary shadow-sm transition-colors">
-            Lamar Cepat
-          </button>
-</div>
-</div>
-</div>
-<!-- View All Button -->
-<div class="mt-10 flex justify-center">
-<a class="inline-flex items-center px-6 py-3 rounded-full bg-surface-container text-tertiary ring-1 ring-tertiary/20 font-label-md text-label-md font-semibold hover:bg-tertiary hover:text-on-tertiary transition-all duration-200" href="#">Tampilkan Seluruh 45+ Lowongan Aktif<span class="material-symbols-outlined text-[18px] ml-2 text-tertiary group-hover:text-on-tertiary">east</span></a>
-</div>
-</section>
-<!-- SECTION 4: BERITA & AGENDA BKK TERKINI -->
-<section class="w-full bg-surface-container-low py-20">
-<div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col gap-10">
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-<div class="flex flex-col gap-2">
-<span class="inline-flex items-center px-3 py-1 rounded-full bg-tertiary-fixed text-tertiary font-label-dense text-label-dense uppercase tracking-widest font-bold">Kisah Keberhasilan Nyata</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Berita &amp; Agenda Walk-in BKK Penus</h2>
-</div>
-<a class="font-label-md text-label-md text-primary font-semibold hover:text-on-surface transition-colors flex items-center gap-1" href="{{ route('bkk.berita') }}">
-          Arsip Berita &amp; Agenda Lengkap <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</a>
-</div>
-<!-- Articles Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-@forelse($latestBerita ?? [] as $article)
-<!-- Dynamic Article Card -->
-<article class="flex flex-col rounded-lg bg-surface-container-lowest overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-<div class="relative h-48 w-full bg-surface-container overflow-hidden">
-@if($article->gambar_sampul)
-    <img class="w-full h-full object-cover transition-transform duration-500 hover:scale-105" alt="{{ $article->judul }}" src="{{ $article->gambar_sampul }}"/>
-@else
-    <div class="w-full h-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-        <span class="material-symbols-outlined text-[36px]">newspaper</span>
-    </div>
-@endif
-<span class="absolute top-3 left-3 px-3 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-md font-label-dense text-label-dense text-on-surface font-semibold">
-    {{ $article->kategori->nama ?? 'Berita & Agenda' }}
-</span>
-</div>
-<div class="p-6 flex flex-col gap-3 flex-1 justify-between">
-<div class="flex flex-col gap-2">
-<span class="font-label-dense text-label-dense text-on-surface-variant flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">calendar_today</span> {{ $article->formatted_date }} • {{ $article->penulis_nama }}
-</span>
-<h3 class="font-title-md text-title-md text-on-surface hover:text-primary transition-colors line-clamp-2">
-<a href="{{ route('bkk.berita.detail', $article->slug) }}">{{ $article->judul }}</a>
-</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-3">
-    {{ $article->ringkasan }}
-</p>
-</div>
-<a href="{{ route('bkk.berita.detail', $article->slug) }}" class="pt-4 flex items-center justify-between font-label-dense text-label-dense text-primary font-semibold hover:translate-x-1 transition-transform">
-<span>Baca Selengkapnya</span>
-<span class="material-symbols-outlined text-[16px]">chevron_right</span>
-</a>
-</div>
-</article>
-@empty
-<div class="col-span-3 py-12 flex flex-col items-center justify-center gap-3 bg-surface-container-lowest rounded-lg p-8 text-center">
-    <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">feed</span>
-    <h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Belum Ada Berita Terbaru</h4>
-    <p class="font-body-dense text-body-dense text-on-surface-variant max-w-md">
-        Nantikan kabar terbaru seputar rekrutmen kerja dan agenda kegiatan bursa kerja di sini.
-    </p>
-</div>
-@endforelse
-</div>
-</div>
-</section>
-<!-- SECTION 5: TESTIMONI ALUMNI & MITRA INDUSTRI DUDI -->
-<section class="max-w-7xl mx-auto px-6 lg:px-12 py-20 w-full">
-<div class="flex flex-col items-center text-center max-w-2xl mx-auto mb-14 gap-3">
-<span class="font-label-dense text-label-dense uppercase tracking-widest text-secondary font-bold">Kisah Keberhasilan Nyata</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Dipercaya Mitra Industri, Dibuktikan oleh Rekam Jejak Alumni</h2>
-<p class="font-body-default text-body-default text-on-surface-variant">Dengarkan penuturan lulusan yang sukses berkarier dan apresiasi dari pimpinan perusahaan mitra.</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-<!-- Testi 1: Alumni TKJ -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col justify-between">
-<div class="flex flex-col gap-4">
-<div class="flex items-center gap-1 text-secondary-container">
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-</div>
-<p class="font-body-default text-body-default text-on-surface italic">
-            "Berkat fitur CV Builder BKK Penus, portofolio jaringan komputer dan sertifikasi Mikrotik saya tersusun rapi. Belum genap 1 bulan setelah wisuda, saya langsung diterima melalui seleksi walk-in di kampus."
-          </p>
-</div>
-<div class="flex items-center gap-3 pt-6 mt-6 border-t-0 bg-surface-container-low p-3 rounded-DEFAULT">
-<img class="w-12 h-12 rounded-full object-cover" data-alt="Portrait of young Indonesian male professional in IT data center polo shirt, smiling confidently, clean modern lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS4FPVROda6rluwoB6SKZPdk0vWQNZE1jlTqLqsOTzI7hmvbAE73zWQ-klikycR2p46OWSnjhJojLa98eQPy-4QCWiByo4neKBVF1sDkmiqpFihbgmu-RrNrIcl4PEK7zBIVVIg_f279a3hyNFegKVkCCNwshZ0mtG_7ixgvEh-Ynb02c62dRF8GMnK4ZsSnKUUTCXhgC2akxoqBPuygcm9T8j9_d94tlrq1c3bii9nKw1b3UQrZO2"/>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface text-sm font-semibold">Rian Pratama, A.Md.</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Alumni TKJ 2023 • Network Engineer di PT Solusi Data Prima</span>
-</div>
-</div>
-</div>
-<!-- Testi 2: Mitra Industri HR Director -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm ring-1 ring-tertiary/30 flex flex-col justify-between"><div class="flex flex-col gap-4"><div class="flex items-center justify-between"><div class="flex items-center gap-1 text-secondary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span></div><span class="px-2.5 py-0.5 rounded-full bg-tertiary-fixed text-tertiary font-label-dense text-label-dense font-semibold">Mitra Industri DUDI</span></div><p class="font-body-default text-body-default text-on-surface italic">"Lulusan SMK Plus Pelita Nusantara memiliki kedisiplinan kerja tinggi dan adaptasi teknis yang sangat cepat. Kerja sama penyaluran BKK ini memangkas durasi rekrutmen teknisi kami hingga 50%."</p></div><div class="flex items-center gap-3 pt-6 mt-6 bg-surface-container-low p-3 rounded-DEFAULT"><div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold"><span class="material-symbols-outlined text-[24px]">apartment</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface text-sm font-semibold">Bambang Hermanto, S.T.</span><span class="font-body-dense text-body-dense text-tertiary">HR Operations Head • PT Astra Otoparts Div. Komponen</span></div></div></div>
-<!-- Testi 3: Alumni RPL -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col justify-between">
-<div class="flex flex-col gap-4">
-<div class="flex items-center gap-1 text-secondary-container">
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-<span class="material-symbols-outlined text-[20px]" style='font-variation-settings: "FILL" 1;'>star</span>
-</div>
-<p class="font-body-default text-body-default text-on-surface italic">
-            "Jurnal PKL digital memudahkan kami dipantau tanpa ribet fotokopi dokumen. Dari tempat PKL yang difasilitasi BKK, saya langsung ditawari kontrak kerja permanen sebelum ijazah resmi keluar."
-          </p>
-</div>
-<div class="flex items-center gap-3 pt-6 mt-6 bg-surface-container-low p-3 rounded-DEFAULT">
-<img class="w-12 h-12 rounded-full object-cover" data-alt="Portrait of young Indonesian female software engineer wearing modest hijab, working with laptop at creative agency" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFfV05rKeXurjQCwpzJ078Bv7HRSSojaT9KuXBshKraoQtjmkhPbIhpyfvjam90ajQ_gXrFdQ3IpvlT5y-c81Tiq2zHaLDfqF_YzJvCeoIxfjHXrvlY3nlOzhwkY0CytYpdNQd-ddslLQ0rbr22UfofHkMwle1auezpl2msjjiXy0s81vNo6_WLE5Vb_HSVwXje1FRVlGwCiut_6XPWW-2gF2k1MRkvI6SgQrTXYrc5cch6Ezhp_Hn"/>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface text-sm font-semibold">Nurul Azizah</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Alumni RPL 2024 • Web QA di Creative Studio Nusantara</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- SECTION 6: BANNER CTA PENUTUP -->
-<section class="max-w-7xl mx-auto px-6 lg:px-12 pb-20 w-full">
-<div class="relative overflow-hidden rounded-xl bg-gradient-to-r from-on-background via-[#252523] to-[#1c1c1a] p-10 lg:p-16 text-surface-container-lowest shadow-2xl">
-<!-- Background Ambient Geometric Rings -->
-<div class="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-primary/20 blur-3xl pointer-events-none"></div>
-<div class="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-secondary-container/20 blur-2xl pointer-events-none"></div>
-<div class="relative z-10 max-w-3xl flex flex-col gap-6">
-<div class="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full bg-surface-container-lowest/10 backdrop-blur-md">
-<span class="material-symbols-outlined text-[16px] text-secondary-container">rocket_launch</span>
-<span class="font-label-dense text-label-dense text-surface-container-lowest uppercase tracking-wider font-semibold">Akselerasi Karier Mandiri</span>
-</div>
-<h2 class="font-headline-xl text-headline-xl text-surface-container-lowest tracking-tight leading-tight">
-          Siap Melangkah ke Dunia Profesional? Buat CV Digital dan Lamar Posisi Impianmu Sekarang.
-        </h2>
-<p class="font-body-editorial text-body-editorial text-surface-variant max-w-2xl">
-          Masuk dengan akun portal siswa SMK Plus Pelita Nusantara, perbarui sertifikasi kompetensimu, dan akses ratusan relasi perusahaan mitra resmi BKK.
+
+{{-- ============================================================
+     4. LOWONGAN PKL & KERJA TERVERIFIKASI
+     ============================================================ --}}
+<section id="lowongan" class="relative bg-white px-6 py-20 md:py-28 scroll-mt-24" x-data="jobFilter(@js($jobFilterData))">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div class="max-w-2xl">
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Lowongan PKL &amp; Kerja Terverifikasi</p>
+                <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
+                    Eksplorasi Lowongan <x-sketch.underline>Industri Mitra</x-sketch.underline>
+                </h2>
+                <p class="mt-6 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                    Setiap lowongan sudah diverifikasi tim BKK, mulai dari legalitas perusahaan hingga kesesuaian kompensasi.
+                </p>
+            </div>
+            <a href="{{ route('bkk.lowongan') }}" class="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-brand-darkred">
+                Lihat semua lowongan
+                <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+            </a>
+        </div>
+
+        {{-- Filter langsung menyaring kartu di bawah; tombol submit mencari di seluruh lowongan (halaman /bkk/lowongan) --}}
+        <form action="{{ route('bkk.lowongan') }}" method="GET" role="search" class="mt-10 rounded-card bg-brand-softmist p-4 md:p-5">
+            <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
+                <label class="relative block">
+                    <span class="sr-only">Kata kunci lowongan</span>
+                    <x-landing.icon name="search" class="pointer-events-none absolute left-4 top-1/2 w-4 h-4 -translate-y-1/2 text-brand-ink/40" />
+                    <input
+                        type="search"
+                        name="q"
+                        x-model.debounce.150ms="q"
+                        placeholder="Cari posisi, perusahaan, atau lokasi…"
+                        class="w-full rounded-full border border-brand-ink/10 bg-white py-3 pl-11 pr-4 text-sm outline-none transition focus:border-brand-darkred focus:ring-4 focus:ring-brand-darkred/10"
+                    >
+                </label>
+
+                <fieldset class="flex rounded-full bg-white p-1 ring-1 ring-brand-ink/10">
+                    <legend class="sr-only">Kategori lowongan</legend>
+                    @foreach (['' => 'Semua', 'pkl' => 'PKL Siswa', 'kerja' => 'Kerja Alumni'] as $value => $label)
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="tipe" value="{{ $value }}" x-model="tipe" class="peer sr-only" @checked($value === '')>
+                            <span class="block whitespace-nowrap rounded-full px-3.5 py-2 text-xs sm:text-sm font-semibold text-brand-ink/60 transition-colors peer-checked:bg-brand-darkred peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-darkred">{{ $label }}</span>
+                        </label>
+                    @endforeach
+                </fieldset>
+
+                <label class="block">
+                    <span class="sr-only">Jurusan</span>
+                    <select name="jurusan" x-model="jurusan" class="w-full rounded-full border border-brand-ink/10 bg-white py-3 pl-4 pr-10 text-sm font-semibold outline-none transition focus:border-brand-darkred focus:ring-4 focus:ring-brand-darkred/10">
+                        <option value="all">Semua Jurusan</option>
+                        @foreach ($jurusanFilters as $code => $label)
+                            <option value="{{ $code }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-full bg-brand-ink px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-darkred">
+                    Cari di Semua Lowongan
+                </button>
+            </div>
+        </form>
+
+        <p class="mt-5 text-sm text-brand-ink/60" aria-live="polite">
+            Menampilkan <span class="font-semibold text-brand-ink" x-text="visibleCount">{{ count($jobs) }}</span> dari {{ count($jobs) }} lowongan terbaru
         </p>
-<div class="flex flex-wrap items-center gap-4 pt-2">
-<a class="inline-flex items-center justify-center px-8 py-4 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-bold shadow-lg hover:bg-primary transition-all duration-200" href="#">
-<span class="material-symbols-outlined text-[20px] mr-2">contact_page</span>
-            Mulai Buat CV Digital Siswa
-          </a>
-<a class="inline-flex items-center justify-center px-7 py-4 rounded-full bg-tertiary-fixed/20 backdrop-blur-md text-surface-container-lowest ring-1 ring-tertiary-fixed/40 font-label-md text-label-md font-semibold hover:bg-tertiary hover:ring-tertiary transition-all duration-200" href="#"><span class="material-symbols-outlined text-[20px] mr-2">business</span>Portal Pendaftaran Mitra Perusahaan</a>
-</div>
-</div>
-</div>
+
+        <div class="mt-5 grid gap-6 md:grid-cols-2">
+            @foreach ($jobs as $i => $job)
+                @php [$deadlineLabel, $urgent] = $deadlineInfo($job['deadline']); @endphp
+                <article x-show="isVisible({{ $i }})" class="group relative flex h-full flex-col rounded-card bg-white p-5 md:p-6 text-left shadow-softpill ring-1 ring-brand-ink/5 transition-all duration-300 hover:-translate-y-1 hover:ring-brand-darkred/25">
+                    <div class="flex items-start justify-between gap-4">
+                        <x-landing.company-logo :mitra="$job['mitra']" class="w-12 h-12 rounded-xl text-base" />
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                                <x-landing.icon name="shield" class="w-3 h-3" /> Terverifikasi
+                            </span>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $job['pkl'] ? 'bg-brand-darkred/10 text-brand-darkred' : 'bg-brand-ink text-white' }}">
+                                {{ $job['pkl'] ? 'PKL Siswa' : 'Kerja Alumni' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h3 class="mt-5 text-lg font-semibold leading-snug line-clamp-2 transition-colors group-hover:text-brand-darkred">
+                        <a href="{{ $job['url'] }}" class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darkred rounded">{{ $job['title'] }}</a>
+                    </h3>
+                    <p class="mt-1 text-sm text-brand-ink/60 line-clamp-1">{{ $job['company'] }}</p>
+
+                    <ul class="mt-5 grid gap-2.5 text-sm text-brand-ink/75 sm:grid-cols-2">
+                        <li class="flex items-start gap-2.5">
+                            <x-landing.icon name="mapPin" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                            <span class="line-clamp-1"><span class="sr-only">Lokasi: </span>{{ $job['lokasi'] }}</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <x-landing.icon name="school" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                            <span class="line-clamp-1"><span class="sr-only">Jurusan: </span>{{ $job['jurusan'] }}</span>
+                        </li>
+                        @if ($job['gaji'])
+                            <li class="flex items-start gap-2.5 sm:col-span-2">
+                                <x-landing.icon name="wallet" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                                <span class="line-clamp-1 font-medium text-brand-ink"><span class="sr-only">Gaji: </span>{{ $job['gaji'] }}</span>
+                            </li>
+                        @endif
+                    </ul>
+
+                    <div class="mt-auto pt-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-brand-ink/15 pt-4">
+                            <span class="flex items-center gap-1.5 text-xs font-semibold {{ $urgent ? 'text-brand-signal' : 'text-brand-ink/50' }}">
+                                <x-landing.icon name="clock" class="w-3.5 h-3.5" />
+                                {{ $deadlineLabel }}
+                            </span>
+                            <a href="{{ $job['url'] }}#btn-lamar" class="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-md shadow-brand-darkred/20 transition-transform hover:-translate-y-0.5">
+                                <x-landing.icon name="bulb" class="w-4 h-4" />
+                                Lamar dengan CV AI
+                                <span class="sr-only">: {{ $job['title'] }}</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+
+        <div x-show="visibleCount === 0" x-cloak class="mt-6 rounded-card border border-dashed border-brand-ink/20 p-10 text-center">
+            <x-landing.icon name="search" class="mx-auto w-10 h-10 text-brand-ink/30" />
+            <p class="mt-4 text-base font-semibold">Belum ada lowongan terbaru yang cocok</p>
+            <p class="mt-1 text-sm text-brand-ink/60">Coba kata kunci lain, atau cari di seluruh lowongan aktif.</p>
+            <button type="button" @click="reset()" class="mt-5 text-sm font-semibold text-brand-darkred underline-offset-4 hover:underline">Hapus filter</button>
+        </div>
+    </div>
 </section>
-</div>
+
+{{-- ============================================================
+     6. ALUR 4 LANGKAH MENUJU KARIER
+     ============================================================ --}}
+<section id="alur" class="relative bg-white px-6 py-20 md:py-28 scroll-mt-24">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Alur Layanan</p>
+            <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                <x-sketch.frame>4 Langkah Menuju Karier</x-sketch.frame>
+            </h2>
+        </div>
+
+        <ol class="mt-14 grid gap-y-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] lg:gap-x-3 items-stretch">
+            @foreach ($steps as $s => $step)
+                <li class="relative flex flex-col rounded-card bg-brand-softmist p-6 text-left">
+                    <div class="flex items-center justify-between">
+                        <span class="font-display text-4xl font-bold uppercase tracking-wide text-brand-darkred">{{ $step['no'] }}</span>
+                        <span class="flex w-10 h-10 items-center justify-center rounded-full bg-white text-brand-darkred shadow-sm">
+                            <x-landing.icon :name="$step['icon']" class="w-5 h-5" />
+                        </span>
+                    </div>
+                    <h3 class="mt-5 text-base font-semibold leading-snug">{{ $step['title'] }}</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-brand-ink/70">{{ $step['desc'] }}</p>
+                </li>
+                @unless ($loop->last)
+                    <li aria-hidden="true" class="flex items-center justify-center text-brand-darkred">
+                        <x-sketch.arrow :delay="$s * 250" class="hidden lg:block w-8 h-4" />
+                        <x-sketch.arrow direction="down" :delay="$s * 250" class="lg:hidden w-3 h-6" />
+                    </li>
+                @endunless
+            @endforeach
+        </ol>
+    </div>
+</section>
+
+{{-- ============================================================
+     7. BERITA & INFORMASI TERKINI
+     ============================================================ --}}
+<section id="berita" class="relative bg-brand-softmist px-6 py-20 md:py-28 scroll-mt-24">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">BKK News &amp; Agenda</p>
+                <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
+                    Berita &amp; Informasi <x-sketch.underline>Terkini</x-sketch.underline>
+                </h2>
+            </div>
+            <a href="{{ route('bkk.berita') }}" class="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-brand-darkred">
+                Semua berita &amp; agenda
+                <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+            </a>
+        </div>
+
+        <div class="mt-10 grid gap-6 md:grid-cols-2">
+            @foreach ($news as $n => $item)
+                @if ($n === 0)
+                    <x-landing.berita-card :item="$item" featured class="md:col-span-2" />
+                @else
+                    <x-landing.berita-card :item="$item" />
+                @endif
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
+     8. FAQ & DUKUNGAN WHATSAPP
+     ============================================================ --}}
+<section id="faq" class="relative bg-white px-6 py-20 md:py-28 scroll-mt-24">
+    <div class="max-w-6xl mx-auto grid gap-10 lg:gap-16 lg:grid-cols-[2fr_3fr] items-start">
+        <div class="lg:sticky lg:top-32">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                <x-sketch.sparks>FAQ</x-sketch.sparks>
+            </p>
+            <h2 class="mt-3 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
+                Pertanyaan yang Sering Diajukan
+            </h2>
+            <p class="mt-4 text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Jawaban singkat seputar lowongan, PKL, AI CV Enhancer, dan kemitraan IDUKA.
+            </p>
+
+            <div class="mt-8 rounded-card bg-brand-softmist p-6">
+                <h3 class="text-base font-semibold">Masih punya pertanyaan?</h3>
+                <p class="mt-1 text-sm leading-relaxed text-brand-ink/70">Hubungi sekretariat BKK lewat WhatsApp, kami siap membantu.</p>
+                <a href="{{ $whatsappUrl }}" target="_blank" rel="noreferrer" class="mt-5 inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-darkred to-brand-deepred px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                    <x-landing.icon name="whatsapp" class="w-5 h-5" />
+                    Chat via WhatsApp
+                </a>
+            </div>
+        </div>
+
+        <x-landing.faq :items="$faqs" />
+    </div>
+</section>
 @endsection
-
-@push('styles')
-<style>
-    /* Continuous Infinite Partner Marquee Animation */
-    @keyframes bkkMarquee {
-        0% { transform: translateX(0%); }
-        100% { transform: translateX(-50%); }
-    }
-    .animate-marquee {
-        display: flex;
-        width: max-content;
-        animation: bkkMarquee 32s linear infinite;
-    }
-    .animate-marquee:hover {
-        animation-play-state: paused;
-    }
-
-    /* 3D Perspective and Card Transitions */
-    #hero-right-visual {
-        perspective: 1200px;
-    }
-    .hero-anim-item {
-        will-change: transform, opacity;
-    }
-    
-    /* Interactive Mouse Spotlight transition */
-    #hero-interactive-spotlight {
-        pointer-events: none;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<!-- GSAP & Alpine.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-
-<script>
-    // Alpine.js Component: Hero Search & Discovery State
-    function bkkHeroSearch() {
-        return {
-            mode: 'job',
-            searchQuery: '',
-            popularTags: ['MagangPKL', 'LokerRPL', 'TeknisiTKJ', 'StaffAdmin', 'AstraOtoparts', 'GajiUMK']
-        };
-    }
-
-    // Alpine.js Component: Interactive Talent Match Hub
-    function bkkTalentHub() {
-        return {
-            activeMajor: 'RPL',
-            majors: [
-                { code: 'RPL', name: 'Rekayasa Perangkat Lunak' },
-                { code: 'TKJ', name: 'Teknik Komputer & Jaringan' },
-                { code: 'AKL', name: 'Akuntansi & Keuangan' },
-                { code: 'OTKP', name: 'Manajemen Perkantoran' }
-            ],
-            majorData: {
-                'RPL': {
-                    studentName: 'Aditya Pratama',
-                    className: 'Siswa RPL • Siap PKL / Kerja',
-                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-                    partner: 'PT Astra Graphia Information Tech',
-                    badge: 'Prioritas Walk-In',
-                    position: 'Junior Fullstack & Web Developer',
-                    score: '98%',
-                    salary: 'Rp 4.800.000 - Rp 6.500.000 / bln',
-                    skills: ['Laravel', 'Vue.js', 'REST API', 'Git & CI/CD'],
-                    quotaText: '5 Kuota Terbuka'
-                },
-                'TKJ': {
-                    studentName: 'Fikri Maulana',
-                    className: 'Siswa TKJ • Sertifikasi MTCNA',
-                    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-                    partner: 'PT Telkom Indonesia (Div. Akses)',
-                    badge: 'Mitra Unggulan',
-                    position: 'Junior Network & Cloud Engineer',
-                    score: '96%',
-                    salary: 'Rp 4.500.000 - Rp 5.800.000 / bln',
-                    skills: ['MikroTik', 'Fiber Optic', 'Cisco CCNA', 'Linux Server'],
-                    quotaText: '8 Kuota Terbuka'
-                },
-                'AKL': {
-                    studentName: 'Siti Nurhaliza',
-                    className: 'Siswi AKL • Brevet Pajak A/B',
-                    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
-                    partner: 'PT Bank Central Asia Tbk Mitra',
-                    badge: 'Seleksi Kampus',
-                    position: 'Accounting & Tax Associate Staff',
-                    score: '95%',
-                    salary: 'Rp 4.600.000 - Rp 5.500.000 / bln',
-                    skills: ['Excel Mahir', 'SAP Finance', 'Rekonsiliasi Bank', 'PPh 21/23'],
-                    quotaText: '6 Kuota Terbuka'
-                },
-                'OTKP': {
-                    studentName: 'Nabila Larasati',
-                    className: 'Siswi OTKP • Administrasi Perkantoran',
-                    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80',
-                    partner: 'PT United Tractors Tbk',
-                    badge: 'Kerja Sama DUDI',
-                    position: 'Corporate Admin & Executive Secretary',
-                    score: '97%',
-                    salary: 'Rp 4.500.000 - Rp 5.400.000 / bln',
-                    skills: ['Digital Filing', 'Public Relations', 'Notulensi Rapat', 'ERP Office'],
-                    quotaText: '4 Kuota Terbuka'
-                }
-            },
-            get currentMajorData() {
-                return this.majorData[this.activeMajor];
-            }
-        };
-    }
-
-    // GSAP and Interactive Canvas Animations on DOM Ready
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. Mouse Spotlight tracking
-        const spotlight = document.getElementById('hero-interactive-spotlight');
-        if (spotlight) {
-            window.addEventListener('mousemove', (e) => {
-                const x = ((e.clientX / window.innerWidth) * 100).toFixed(1);
-                const y = ((e.clientY / window.innerHeight) * 100).toFixed(1);
-                spotlight.style.setProperty('--mouse-x', `${x}%`);
-                spotlight.style.setProperty('--mouse-y', `${y}%`);
-            });
-        }
-
-        // 2. Interactive Canvas: Career Mesh Network
-        const canvas = document.getElementById('bkk-hero-canvas');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            let width, height, dpr;
-            let particles = [];
-            const particleCount = 42;
-            let mouse = { x: null, y: null, radius: 140 };
-
-            function resizeCanvas() {
-                dpr = window.devicePixelRatio || 1;
-                width = canvas.parentElement.clientWidth;
-                height = canvas.parentElement.clientHeight;
-                canvas.width = width * dpr;
-                canvas.height = height * dpr;
-                ctx.scale(dpr, dpr);
-            }
-
-            class Particle {
-                constructor() {
-                    this.x = Math.random() * width;
-                    this.y = Math.random() * height;
-                    this.vx = (Math.random() - 0.5) * 0.7;
-                    this.vy = (Math.random() - 0.5) * 0.7;
-                    this.radius = Math.random() * 2 + 1.2;
-                    // Color variety: Primary Red (#bc0013), Ember Gold (#ffa525), Soft Slate (#875300)
-                    const colors = ['rgba(188, 0, 19, ', 'rgba(255, 165, 37, ', 'rgba(235, 0, 27, '];
-                    this.colorPrefix = colors[Math.floor(Math.random() * colors.length)];
-                    this.alpha = Math.random() * 0.4 + 0.2;
-                }
-
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-
-                    if (this.x < 0 || this.x > width) this.vx *= -1;
-                    if (this.y < 0 || this.y > height) this.vy *= -1;
-
-                    // Mouse interaction
-                    if (mouse.x !== null && mouse.y !== null) {
-                        const dx = mouse.x - this.x;
-                        const dy = mouse.y - this.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < mouse.radius) {
-                            const force = (mouse.radius - dist) / mouse.radius;
-                            this.x -= (dx / dist) * force * 1.5;
-                            this.y -= (dy / dist) * force * 1.5;
-                        }
-                    }
-                }
-
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = this.colorPrefix + this.alpha + ')';
-                    ctx.fill();
-                }
-            }
-
-            function initParticles() {
-                resizeCanvas();
-                particles = [];
-                for (let i = 0; i < particleCount; i++) {
-                    particles.push(new Particle());
-                }
-            }
-
-            function animateParticles() {
-                ctx.clearRect(0, 0, width, height);
-
-                // Draw connecting network lines
-                for (let i = 0; i < particles.length; i++) {
-                    for (let j = i + 1; j < particles.length; j++) {
-                        const dx = particles[i].x - particles[j].x;
-                        const dy = particles[i].y - particles[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-
-                        if (dist < 115) {
-                            const lineAlpha = (1 - dist / 115) * 0.18;
-                            ctx.beginPath();
-                            ctx.moveTo(particles[i].x, particles[i].y);
-                            ctx.lineTo(particles[j].x, particles[j].y);
-                            ctx.strokeStyle = `rgba(188, 0, 19, ${lineAlpha})`;
-                            ctx.lineWidth = 0.8;
-                            ctx.stroke();
-                        }
-                    }
-                }
-
-                // Update & draw particles
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
-
-                requestAnimationFrame(animateParticles);
-            }
-
-            initParticles();
-            requestAnimationFrame(animateParticles);
-
-            window.addEventListener('resize', initParticles);
-            window.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                mouse.x = e.clientX - rect.left;
-                mouse.y = e.clientY - rect.top;
-            });
-            window.addEventListener('mouseleave', () => {
-                mouse.x = null;
-                mouse.y = null;
-            });
-        }
-
-        // 3. GSAP Entrance Timeline & Micro-Animations
-        if (typeof gsap !== 'undefined') {
-            const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-            // Stagger hero elements in
-            tl.fromTo('.hero-anim-item', 
-                { opacity: 0, y: 28 }, 
-                { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, delay: 0.15 }
-            );
-
-            // Floating Levitation for Micro-Badges
-            gsap.to('.bkk-floating-badge-1', {
-                y: -12,
-                rotation: 1.2,
-                duration: 3.2,
-                ease: 'sine.inOut',
-                repeat: -1,
-                yoyo: true
-            });
-
-            gsap.to('.bkk-floating-badge-2', {
-                y: 10,
-                rotation: -1,
-                duration: 3.6,
-                ease: 'sine.inOut',
-                repeat: -1,
-                yoyo: true,
-                delay: 0.6
-            });
-
-            // Kinetic Rotating Headline Words
-            const rotatingWords = [
-                'Industri Terpercaya',
-                'Korporasi Global',
-                'Dunia Kerja Nyata',
-                'Karier Cemerlang',
-                'Mitra Industri IDUKA'
-            ];
-            let currentWordIndex = 0;
-            const wordEl = document.getElementById('hero-rotating-word');
-
-            if (wordEl) {
-                setInterval(() => {
-                    currentWordIndex = (currentWordIndex + 1) % rotatingWords.length;
-                    const nextWord = rotatingWords[currentWordIndex];
-
-                    gsap.to(wordEl, {
-                        opacity: 0,
-                        y: -14,
-                        duration: 0.35,
-                        ease: 'power2.in',
-                        onComplete: () => {
-                            wordEl.textContent = nextWord;
-                            gsap.fromTo(wordEl, 
-                                { opacity: 0, y: 14 }, 
-                                { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }
-                            );
-                        }
-                    });
-                }, 3400);
-            }
-
-            // Numerical Counters Rollup
-            const statCounters = document.querySelectorAll('.bkk-stat-counter');
-            statCounters.forEach(counter => {
-                const target = parseFloat(counter.getAttribute('data-target'));
-                const isDecimal = counter.getAttribute('data-decimal') === '1';
-
-                const obj = { val: 0 };
-                gsap.to(obj, {
-                    val: target,
-                    duration: 2.2,
-                    ease: 'power2.out',
-                    delay: 0.5,
-                    onUpdate: () => {
-                        counter.textContent = isDecimal ? obj.val.toFixed(1) : Math.floor(obj.val).toLocaleString('id-ID');
-                    }
-                });
-            });
-        }
-    });
-</script>
-@endpush

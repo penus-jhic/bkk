@@ -1,0 +1,4 @@
+{{-- Garis tabel coretan. bold = bingkai luar, selain itu garis tipis pemisah. vertical = garis tegak.
+     class wajib berisi posisi, ukuran & warna: mendatar setinggi h-3, tegak selebar w-3. scale = pengali tebal goresan. --}}
+@props(['delay' => 0, 'vertical' => false, 'bold' => false, 'scale' => 1])
+<span data-sketch="{{ $vertical ? ($bold ? 'lineDown' : 'ruleDown') : ($bold ? 'line' : 'rule') }}" data-scale="{{ $scale }}" data-duration="900" data-delay="{{ $delay }}" data-threshold="{{ $vertical ? '0.1' : '0.6' }}" aria-hidden="true" {{ $attributes->class('pointer-events-none absolute') }}></span>

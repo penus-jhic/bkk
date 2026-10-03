@@ -1,445 +1,464 @@
-@extends('index.master')
+{{--
+    Informasi & formulir kerja sama mitra IDUKA. Gaya mengikuti landing page sekolah (coretan tangan, merah marun).
+    Data dari PublicController@kerjasama: $mitraList (mitra terverifikasi terbaru).
+    Formulir dikirim ke PublicController@storeKerjasama (POST bkk.kerjasama.store).
+--}}
+@php
+    $navSection = '';
+
+    $metrics = [
+        ['value' => '120+', 'label' => 'Mitra DUDI Aktif'],
+        ['value' => '94%', 'label' => 'Kesiapan Kerja Siswa'],
+        ['value' => '<24 Jam', 'label' => 'Respon Cepat Hubin'],
+    ];
+
+    $flow = [
+        ['icon' => 'fileText', 'title' => 'Pengisian Kebutuhan', 'desc' => 'Perusahaan mengisi formulir kebutuhan talenta, posisi PKL, rekrutmen kerja, atau rencana program kelas industri.', 'note' => 'Estimasi: 5 Menit'],
+        ['icon' => 'users', 'title' => 'Verifikasi & Diskusi', 'desc' => 'Tim Hubin & Pengurus BKK menghubungi HRD mitra untuk penyelarasan kualifikasi teknis dan jadwal rekrutmen.', 'note' => 'Maks. 1x24 Jam Kerja'],
+        ['icon' => 'pen', 'title' => 'Penandatanganan MoU', 'desc' => 'Penerbitan surat perjanjian kerja sama resmi (MoU / PKS) bermaterai secara digital maupun luring di sekolah.', 'note' => 'Legalitas Terjamin'],
+        ['icon' => 'flag', 'title' => 'Seleksi & Penempatan', 'desc' => 'Fasilitasi tes psikotes, wawancara kandidat di kampus BKK Penus, dan onboarding peserta magang/karyawan baru.', 'note' => 'Siap Bertugas'],
+    ];
+
+    $programs = [
+        ['icon' => 'school', 'title' => 'Praktik Kerja Lapangan (PKL)', 'tag' => 'Durasi 3 - 6 Bulan Penuh', 'desc' => 'Penempatan siswa tingkat XI dan XII untuk menjalani magang intensif dengan modul kerja operasional nyata di perusahaan Anda, dilengkapi sertifikat kompetensi.', 'points' => ['Siswa terlatih etika kerja', 'Didampingi guru pamong']],
+        ['icon' => 'briefcase', 'title' => 'Rekrutmen & Walk-In Interview', 'tag' => 'Fasilitas Kampus Gratis', 'desc' => 'Penyelenggaraan rekrutmen eksklusif lulusan baru (fresh graduates) langsung di aula sekolah dengan dukungan logistik tim BKK untuk tes tulis dan wawancara massal.', 'points' => ['Database 400+ lulusan/thn', 'Ruang wawancara AC & Lab Komputer']],
+        ['icon' => 'factory', 'title' => 'Kelas Industri & TEFA', 'tag' => 'Sinkronisasi Kurikulum', 'desc' => 'Penyelarasan silabus mata pelajaran dengan Standard Operating Procedure (SOP) mitra sehingga siswa langsung paham teknologi spesifik perusahaan Anda.', 'points' => ['Teaching Factory bersama', 'Skema prioritas rekrutmen']],
+        ['icon' => 'users', 'title' => 'Guru Tamu & Kunjungan Industri', 'tag' => 'Transfer Pengetahuan Praktis', 'desc' => 'Hadirkan praktisi atau pimpinan perusahaan Anda sebagai narasumber seminar vokasi, serta menerima sesi company visit edukatif siswa dan dewan guru.', 'points' => ['Branding perusahaan di civitas', 'CSR Pendidikan terukur']],
+    ];
+
+    $sectors = [
+        'Teknologi Informasi & Software' => 'Teknologi Informasi & Software',
+        'Manufaktur & Otomotif' => 'Manufaktur & Perakitan',
+        'Perbankan & Jasa Keuangan' => 'Perbankan & Jasa Keuangan',
+        'Logistik & Supply Chain' => 'Logistik, Ekspedisi & Gudang',
+        'Retail & Distribusi' => 'Retail, E-Commerce & Perdagangan',
+        'Media, Desain & Percetakan' => 'Media Digital & Creative Agency',
+        'Lainnya' => 'Lainnya',
+    ];
+    $headcounts = [
+        '1-5 Siswa' => '1 - 5 Orang',
+        '6-15 Siswa' => '6 - 15 Orang',
+        '16-30 Siswa' => '16 - 30 Orang',
+        'Lebih dari 30 Siswa' => '> 30 Orang (Perekrutan Massal)',
+    ];
+    // Nilai disimpan apa adanya ke kolom jenis_kerjasama (JSON)
+    $programChoices = ['PKL / Magang Siswa', 'Rekrutmen Lulusan / Walk-in', 'Kelas Industri / MoU Silabus', 'Guru Tamu & Kunjungan Industri'];
+    $chosenPrograms = old('jenis_kerjasama', $errors->any() ? [] : ['PKL / Magang Siswa']);
+
+    $contactRows = [
+        ['icon' => 'mapPin', 'label' => 'Alamat Kampus', 'value' => 'Kampus SMK Plus Pelita Nusantara, Jl. Golf No. 1, Ciriung, Cibinong, Kab. Bogor, Jawa Barat 16918', 'href' => null, 'note' => null],
+        ['icon' => 'mail', 'label' => 'Email Korespondensi Kemitraan', 'value' => 'kemitraan@smkpenus.sch.id', 'href' => 'mailto:kemitraan@smkpenus.sch.id', 'note' => 'Alternatif: bkk@smkpenus.sch.id'],
+        ['icon' => 'whatsapp', 'label' => 'WhatsApp Resmi Hubin Penus', 'value' => '+62 812-8875-4321', 'href' => null, 'note' => 'Tersedia panggilan telepon kantor & chat instan'],
+        ['icon' => 'clock', 'label' => 'Jam Operasional Layanan', 'value' => 'Senin – Jumat : 08.00 – 16.00 WIB', 'href' => null, 'note' => 'Sabtu – Minggu & Libur Nasional : Tutup'],
+    ];
+
+    $partnerFaqs = [
+        ['q' => 'Apakah ada biaya administrasi untuk membuka walk-in interview atau rekrutmen di kampus?', 'a' => 'Tidak ada. Program rekrutmen lulusan dan seleksi walk-in interview di SMK Plus Pelita Nusantara disediakan secara gratis tanpa dipungut biaya fasilitas sebagai bentuk komitmen penyaluran kerja alumni BKK kami.'],
+        ['q' => 'Kompetensi keahlian apa saja yang tersedia di SMK Plus Pelita Nusantara?', 'a' => 'Siswa kami terlatih dalam 3 klaster keahlian utama: 1) Rekayasa Perangkat Lunak & Jaringan Komputer, 2) Manajemen Perkantoran & Otomatisasi Administrasi, dan 3) Akuntansi & Keuangan Lembaga, lengkap dengan sertifikasi BNSP.'],
+        ['q' => 'Bagaimana proses penandatanganan dokumen MoU kerja sama?', 'a' => 'Tim Hubin kami menyediakan draf nota kesepahaman (MoU) standar Kemendikbudristek yang dapat ditandatangani secara digital (e-sign dengan sertifikat elektronik) maupun pertemuan seremoni resmi secara tatap muka di kantor mitra atau di sekolah.'],
+    ];
+
+    $mapsQuery = 'SMK+Plus+Pelita+Nusantara+Cibinong+Bogor';
+    $inputClass = 'w-full rounded-xl border-2 bg-white px-4 py-3 text-sm text-brand-ink placeholder:text-brand-ink/40 transition focus:border-brand-darkred focus:outline-none focus:ring-4 focus:ring-brand-darkred/10';
+    $fieldClass = fn (string $field) => $inputClass . ' ' . ($errors->has($field) ? 'border-brand-signal' : 'border-brand-ink/10');
+
+    // Marquee mitra: satu putaran diulang sampai minimal 8 kartu supaya lebarnya selalu melebihi layar,
+    // lalu dirender dua kali dan digeser -50% agar sambungannya tidak terlihat
+    $marqueeMitra = $mitraList->isEmpty()
+        ? collect()
+        : collect(array_fill(0, (int) ceil(8 / $mitraList->count()), $mitraList))->flatten(1);
+    $marqueeDuration = max(30, $marqueeMitra->count() * 5);
+@endphp
+
+@extends('index.layouts.landing')
 
 @section('title', 'Kerja Sama Mitra - BKK SMK Plus Pelita Nusantara')
 
+@push('styles')
+<style>
+    /* Tepi kiri & kanan memudar supaya kartu terlihat masuk dan keluar dengan halus */
+    .mitra-marquee { mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent); }
+    .mitra-marquee-track { animation: mitra-marquee var(--marquee-duration, 40s) linear infinite; }
+    .mitra-marquee:hover .mitra-marquee-track,
+    .mitra-marquee:focus-within .mitra-marquee-track { animation-play-state: paused; }
+    @keyframes mitra-marquee { to { transform: translateX(-50%); } }
+
+    /* Tanpa animasi: cukup satu set kartu yang bisa digeser manual */
+    @media (prefers-reduced-motion: reduce) {
+        .mitra-marquee { overflow-x: auto; scrollbar-width: none; }
+        .mitra-marquee-track { animation: none; }
+        .mitra-marquee-track > [aria-hidden="true"], .mitra-marquee .marquee-repeat { display: none; }
+    }
+</style>
+@endpush
+
 @section('content')
-<div class="flex flex-col w-full">
-<!-- Top Visual Hero / Partnership Header -->
-<section class="relative w-full overflow-hidden bg-surface-container-low px-6 lg:px-12 py-16 lg:py-24">
-<div class="absolute -right-24 -top-24 w-96 h-96 rounded-full bg-primary-container/5 blur-3xl pointer-events-none"></div>
-<div class="absolute left-1/3 -bottom-20 w-80 h-80 rounded-full bg-secondary-container/10 blur-3xl pointer-events-none"></div>
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative">
-<div class="lg:col-span-7 flex flex-col gap-6">
-<div class="inline-flex items-center gap-2 self-start px-3.5 py-1.5 rounded-full bg-surface-container-highest shadow-sm">
-<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
-<span class="font-label-dense text-label-dense text-on-surface uppercase tracking-wider">Portal Hubungan Industri (Hubin &amp; BKK)</span>
-</div>
-<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight leading-tight">
-          Bangun Kemitraan Strategis Bersama <span class="text-primary-container">SMK Plus Pelita Nusantara</span>
-</h1>
-<p class="font-body-editorial text-body-editorial text-on-surface-variant max-w-2xl">
-          Akses talenta muda siap kerja dengan kompetensi teruji di bidang Teknologi Informasi, Administrasi Perkantoran, dan Akuntansi Bisnis. Kami membuka peluang program PKL terstruktur, rekrutmen lulusan langsung, hingga sinkronisasi kurikulum industri.
-        </p>
-<div class="flex flex-wrap items-center gap-4 pt-2">
-<a class="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary shadow-md transition-all duration-200 hover:shadow-lg" href="#form-kemitraan">
-<span class="material-symbols-outlined text-[20px] mr-2">edit_document</span>
-            Ajukan Formulir Kerja Sama
-          </a>
-<button class="inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold hover:bg-surface-container shadow-sm transition-all duration-200" onclick="alert('Mengunduh Company Profile &amp; Silabus Vokasi SMK Plus Pelita Nusantara (PDF)...')" type="button">
-<span class="material-symbols-outlined text-[20px] mr-2 text-secondary">download</span>
-            Unduh Company Profile &amp; Silabus (PDF)
-          </button>
-</div>
-<!-- Metric micro-strip -->
-<div class="grid grid-cols-3 gap-4 pt-6 max-w-lg">
-<div class="flex flex-col p-3 rounded bg-surface-container-lowest/80 backdrop-blur-sm shadow-sm">
-<span class="font-metric-stat text-metric-stat text-primary-container leading-none">120+</span>
-<span class="font-label-dense text-label-dense text-on-surface-variant mt-1">Mitra DUDI Aktif</span>
-</div>
-<div class="flex flex-col p-3 rounded bg-surface-container-lowest/80 backdrop-blur-sm shadow-sm">
-<span class="font-metric-stat text-metric-stat text-secondary-container leading-none">94%</span>
-<span class="font-label-dense text-label-dense text-on-surface-variant mt-1">Kesiapan Kerja Siswa</span>
-</div>
-<div class="flex flex-col p-3 rounded bg-surface-container-lowest/80 backdrop-blur-sm shadow-sm">
-<span class="font-metric-stat text-metric-stat text-on-surface leading-none">&lt;24 Jam</span>
-<span class="font-label-dense text-label-dense text-on-surface-variant mt-1">Respon Cepat Hubin</span>
-</div>
-</div>
-</div>
-<div class="lg:col-span-5 relative">
-<div class="relative w-full rounded-lg overflow-hidden shadow-xl aspect-[4/3]">
-<img class="w-full h-full object-cover" data-alt="Modern collaborative workspace meeting in a high-tech corporate office where an industry manager conducts an interview and mentorship session with skilled vocational technology interns, natural warm office lighting, contemporary Indonesian corporate atmosphere with laptops and curriculum diagrams on a glass board" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBILTNE1MvwstCaVbES78F_3AryC-yYnYOq0zXQfjiNBFJcHrYuY9FSX-kt52bbmiSl21incTc5wzBjNmEMvMAc1piyhzfYHZMHmVRBQra3VikvJ_6dPVcZOXHXhWiL3JnlIcTXS4lEk7ltzgY1qknuAMFuG7eeDpqHVVmfE6q90TzBiaIhuSp7Qkuj73NsOUx191pnOLc3aWl_IysSl2jO2uDLg1NOEf3f_tY7A8BCW4bwRwEYPKq_"/>
-<div class="absolute inset-0 bg-gradient-to-t from-on-background/70 via-transparent to-transparent flex flex-col justify-end p-6">
-<div class="flex items-center gap-2 mb-1">
-<span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-dense text-label-dense font-bold">MoU DUDI Resmi</span>
-<span class="text-on-tertiary-container font-body-dense text-body-dense">Link &amp; Match Vokasi</span>
-</div>
-<p class="font-label-md text-label-md text-surface-lowest text-white font-medium">Penguatan Ekosistem Vokasi Berbasis Standardisasi Industri Nasional</p>
-</div>
-</div>
-<!-- Overlapping trust badge -->
-<div class="absolute -bottom-6 -left-6 hidden sm:flex items-center gap-3 p-4 rounded-DEFAULT bg-surface-container-lowest shadow-lg">
-<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[24px]">verified</span>
-</div>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface leading-none">Mitra Tersertifikasi</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant mt-0.5">Sesuai Regulasi Ditjen Pendidikan Vokasi</span>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- 4-Step Partnership Flow -->
-<section class="w-full px-6 lg:px-12 py-20 bg-surface">
-<div class="max-w-7xl mx-auto flex flex-col gap-14">
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
-<div>
-<span class="font-label-dense text-label-dense uppercase tracking-widest text-primary-container font-bold">Proses Terstruktur &amp; Cepat</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface mt-1">Alur Mudah Kemitraan Industri</h2>
-</div>
-<p class="font-body-default text-body-default text-on-surface-variant max-w-md">
-          Prosedur birokrasi yang ramping dan transparan agar perusahaan Anda dapat segera menjalin kolaborasi produktif tanpa hambatan administratif.
-        </p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-<!-- Step 1 -->
-<div class="flex flex-col p-6 rounded-DEFAULT bg-surface-container-low shadow-sm relative group hover:bg-surface-container transition-colors">
-<div class="flex items-center justify-between mb-4">
-<span class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-metric-stat text-[18px]">1</span>
-<span class="material-symbols-outlined text-primary-container text-[28px]">assignment_turned_in</span>
-</div>
-<h3 class="font-title-md text-title-md text-on-surface mb-2">Pengisian Kebutuhan</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Perusahaan mengisi formulir kebutuhan talenta, posisi PKL, rekrutmen kerja, atau rencana program kelas industri.</p>
-<div class="mt-4 pt-3 flex items-center text-primary text-label-dense font-label-dense font-semibold">
-            Estimasi: 5 Menit
-          </div>
-</div>
-<!-- Step 2 -->
-<div class="flex flex-col p-6 rounded-DEFAULT bg-surface-container-low shadow-sm relative group hover:bg-surface-container transition-colors">
-<div class="flex items-center justify-between mb-4">
-<span class="w-10 h-10 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-metric-stat text-[18px]">2</span>
-<span class="material-symbols-outlined text-secondary text-[28px]">forum</span>
-</div>
-<h3 class="font-title-md text-title-md text-on-surface mb-2">Verifikasi &amp; Diskusi</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Tim Hubin &amp; Pengurus BKK menghubungi HRD mitra untuk penyelarasan kualifikasi teknis dan jadwal rekrutmen.</p>
-<div class="mt-4 pt-3 flex items-center text-secondary text-label-dense font-label-dense font-semibold">
-            Maks. 1x24 Jam Kerja
-          </div>
-</div>
-<!-- Step 3 -->
-<div class="flex flex-col p-6 rounded-DEFAULT bg-surface-container-low shadow-sm relative group hover:bg-surface-container transition-colors">
-<div class="flex items-center justify-between mb-4">
-<span class="w-10 h-10 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-metric-stat text-[18px]">3</span>
-<span class="material-symbols-outlined text-tertiary text-[28px]">ink_pen</span>
-</div>
-<h3 class="font-title-md text-title-md text-on-surface mb-2">Penandatanganan MoU</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Penerbitan surat perjanjian kerja sama resmi (MoU / PKS) bermaterai secara digital maupun luring di sekolah.</p>
-<div class="mt-4 pt-3 flex items-center text-tertiary text-label-dense font-label-dense font-semibold">
-            Legalitas Terjamin
-          </div>
-</div>
-<!-- Step 4 -->
-<div class="flex flex-col p-6 rounded-DEFAULT bg-surface-container-low shadow-sm relative group hover:bg-surface-container transition-colors">
-<div class="flex items-center justify-between mb-4">
-<span class="w-10 h-10 rounded-full bg-surface-container-highest text-on-surface flex items-center justify-center font-metric-stat text-[18px]">4</span>
-<span class="material-symbols-outlined text-primary text-[28px]">rocket_launch</span>
-</div>
-<h3 class="font-title-md text-title-md text-on-surface mb-2">Seleksi &amp; Penempatan</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Fasilitasi tes psikotes, wawancara kandidat di kampus BKK Penus, dan onboarding peserta magang/karyawan baru.</p>
-<div class="mt-4 pt-3 flex items-center text-primary-container text-label-dense font-label-dense font-semibold">
-            Siap Bertugas
-          </div>
-</div>
-</div>
-</div>
-</section>
-<!-- Bentuk-Bentuk Kerja Sama (Pillars) -->
-<section class="w-full px-6 lg:px-12 py-20 bg-surface-container-low">
-<div class="max-w-7xl mx-auto flex flex-col gap-12">
-<div class="text-center max-w-3xl mx-auto">
-<span class="font-label-dense text-label-dense uppercase tracking-widest text-primary-container font-bold">Skema Kolaborasi Komprehensif</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface mt-2">Bentuk Program Kerja Sama Industri (DUDI)</h2>
-<p class="font-body-default text-body-default text-on-surface-variant mt-3">Kami menawarkan integrasi berkelanjutan yang menguntungkan industri mitra melalui penyediaan sumber daya manusia berdaya saing tinggi.</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-<!-- Card 1 -->
-<div class="p-6 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
-<div class="flex flex-col gap-4">
-<div class="w-12 h-12 rounded-DEFAULT bg-primary-fixed/50 flex items-center justify-center text-primary-container">
-<span class="material-symbols-outlined text-[28px]">school</span>
-</div>
-<div>
-<h3 class="font-title-md text-title-md text-on-surface">Praktik Kerja Lapangan (PKL)</h3>
-<span class="font-label-dense text-label-dense text-secondary font-semibold">Durasi 3 - 6 Bulan Penuh</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant">
-              Penempatan siswa tingkat XI dan XII untuk menjalani magang intensif dengan modul kerja operasional nyata di perusahaan Anda, dilengkapi sertifikat kompetensi.
+{{-- ============================================================
+     1. HERO KEMITRAAN
+     ============================================================ --}}
+<section class="relative overflow-hidden bg-white px-6 pt-32 pb-20 md:pt-40 md:pb-28">
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-size-[44px_44px] mask-[radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
+        <div class="absolute -top-40 -right-32 w-140 h-140 rounded-full bg-brand-signal/10 blur-[120px]"></div>
+    </div>
+
+    <div class="relative max-w-6xl mx-auto grid gap-16 lg:grid-cols-[1.15fr_1fr] lg:gap-12 lg:items-center">
+        <div class="animate-fade-up">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                <x-sketch.sparks>Portal Hubungan Industri (Hubin &amp; BKK)</x-sketch.sparks>
             </p>
-</div>
-<ul class="mt-6 pt-4 space-y-2 font-body-dense text-body-dense text-on-surface-variant">
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>Siswa terlatih etika kerja</li>
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>Didampingi guru pamong</li>
-</ul>
-</div>
-<!-- Card 2 -->
-<div class="p-6 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
-<div class="flex flex-col gap-4">
-<div class="w-12 h-12 rounded-DEFAULT bg-secondary-fixed/50 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[28px]">badge</span>
-</div>
-<div>
-<h3 class="font-title-md text-title-md text-on-surface">Rekrutmen &amp; Walk-In Interview</h3>
-<span class="font-label-dense text-label-dense text-secondary font-semibold">Fasilitas Kampus Gratis</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant">
-              Penyelenggaraan rekrutmen eksklusif lulusan baru (fresh graduates) langsung di aula sekolah dengan dukungan logistik tim BKK untuk tes tulis dan wawancara massal.
+            <h1 class="mt-6 text-left font-display text-4xl sm:text-5xl lg:text-6xl font-bold uppercase tracking-wide leading-[1.05]">
+                Bangun Kemitraan Strategis Bersama
+                <span class="block mt-2 text-brand-darkred">SMK Plus Pelita <x-sketch.underline size="lg" tone="text-brand-signal" :delay="500">Nusantara</x-sketch.underline></span>
+            </h1>
+            <p class="mt-10 max-w-2xl text-base md:text-lg leading-relaxed text-brand-ink/70">
+                Akses talenta muda siap kerja dengan kompetensi teruji di bidang Teknologi Informasi, Administrasi Perkantoran, dan Akuntansi Bisnis. Kami membuka peluang program PKL terstruktur, rekrutmen lulusan langsung, hingga sinkronisasi kurikulum industri.
             </p>
-</div>
-<ul class="mt-6 pt-4 space-y-2 font-body-dense text-body-dense text-on-surface-variant">
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>Database 400+ lulusan/thn</li>
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-secondary">check_circle</span>Ruang wawancara AC &amp; Lab Komputer</li>
-</ul>
-</div>
-<!-- Card 3 -->
-<div class="p-6 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
-<div class="flex flex-col gap-4">
-<div class="w-12 h-12 rounded-DEFAULT bg-surface-variant flex items-center justify-center text-tertiary">
-<span class="material-symbols-outlined text-[28px]">precision_manufacturing</span>
-</div>
-<div>
-<h3 class="font-title-md text-title-md text-on-surface">Kelas Industri &amp; TEFA</h3>
-<span class="font-label-dense text-label-dense text-secondary font-semibold">Sinkronisasi Kurikulum</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant">
-              Penyelarasan silabus mata pelajaran dengan Standard Operating Procedure (SOP) mitra sehingga siswa langsung paham teknologi spesifik perusahaan Anda.
+
+            <div class="mt-9 flex flex-wrap items-center gap-4">
+                <a href="#form-kemitraan" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                    Ajukan Formulir Kerja Sama
+                    <x-sketch.arrow :delay="600" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                </a>
+                <button type="button" onclick="alert('Mengunduh Company Profile & Silabus Vokasi SMK Plus Pelita Nusantara (PDF)...')" class="inline-flex items-center gap-2 rounded-full border-2 border-brand-darkred/20 bg-white px-6 py-3 text-sm font-semibold text-brand-darkred transition-colors hover:border-brand-darkred hover:bg-brand-darkred/5">
+                    <x-landing.icon name="download" class="w-4 h-4" />
+                    Unduh Company Profile &amp; Silabus (PDF)
+                </button>
+            </div>
+
+            <dl class="mt-12 grid max-w-lg grid-cols-3 gap-px overflow-hidden rounded-card bg-brand-ink/10 ring-1 ring-brand-ink/10">
+                @foreach ($metrics as $metric)
+                    <div class="flex flex-col bg-white px-4 py-4">
+                        <dt class="text-[11px] sm:text-xs text-brand-ink/60">{{ $metric['label'] }}</dt>
+                        <dd class="order-first font-display text-2xl md:text-3xl font-bold uppercase tracking-wide text-brand-darkred">{{ $metric['value'] }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+        </div>
+
+        <div class="relative">
+            <div class="relative overflow-hidden rounded-card shadow-softpill ring-1 ring-brand-ink/5">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBILTNE1MvwstCaVbES78F_3AryC-yYnYOq0zXQfjiNBFJcHrYuY9FSX-kt52bbmiSl21incTc5wzBjNmEMvMAc1piyhzfYHZMHmVRBQra3VikvJ_6dPVcZOXHXhWiL3JnlIcTXS4lEk7ltzgY1qknuAMFuG7eeDpqHVVmfE6q90TzBiaIhuSp7Qkuj73NsOUx191pnOLc3aWl_IysSl2jO2uDLg1NOEf3f_tY7A8BCW4bwRwEYPKq_" alt="Sesi mentoring perwakilan industri bersama siswa magang SMK" class="w-full aspect-4/3 object-cover bg-brand-softmist">
+                {{-- Keterangan di atas foto, karena bagian bawahnya tertutup lencana "Mitra Tersertifikasi" --}}
+                <div class="absolute inset-0 bg-linear-to-b from-brand-ink/85 via-brand-ink/10 to-transparent"></div>
+                <div class="absolute inset-x-5 top-5 text-white">
+                    <p class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="rounded-full bg-white px-2.5 py-0.5 font-bold text-brand-darkred">MoU DUDI Resmi</span>
+                        <span class="text-white/75">Link &amp; Match Vokasi</span>
+                    </p>
+                    <p class="mt-2 text-sm font-semibold leading-snug">Penguatan Ekosistem Vokasi Berbasis Standardisasi Industri Nasional</p>
+                </div>
+            </div>
+            <x-sketch.corner class="-left-4 -top-4 w-24 h-10 md:w-32 md:h-12" />
+            <x-sketch.corner :delay="350" class="-right-4 -bottom-4 rotate-180 w-24 h-10 md:w-32 md:h-12" />
+
+            {{-- Lencana kepercayaan menumpuk di kiri bawah foto --}}
+            <div class="absolute -bottom-10 left-6 hidden sm:flex items-center gap-3 rounded-card bg-white p-4 pr-6 shadow-softpill ring-1 ring-brand-ink/5">
+                <span class="flex w-11 h-11 shrink-0 items-center justify-center rounded-full bg-brand-darkred text-white">
+                    <x-landing.icon name="badgeCheck" class="w-6 h-6" />
+                </span>
+                <span class="flex flex-col">
+                    <span class="font-semibold leading-tight">Mitra Tersertifikasi</span>
+                    <span class="text-xs text-brand-ink/60">Sesuai Regulasi Ditjen Pendidikan Vokasi</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    @if ($mitraList->isNotEmpty())
+        {{-- Mitra yang sudah terverifikasi --}}
+        <div class="relative max-w-6xl mx-auto mt-20 md:mt-24">
+            <p class="text-center text-xs font-semibold uppercase tracking-[0.25em] text-brand-ink/50">
+                Telah Bergabung <x-sketch.underline size="sm">Bersama Kami</x-sketch.underline>
             </p>
-</div>
-<ul class="mt-6 pt-4 space-y-2 font-body-dense text-body-dense text-on-surface-variant">
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>Teaching Factory bersama</li>
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>Skema prioritas rekrutmen</li>
-</ul>
-</div>
-<!-- Card 4 -->
-<div class="p-6 rounded-DEFAULT bg-surface-container-lowest shadow-sm flex flex-col justify-between group hover:shadow-md transition-shadow">
-<div class="flex flex-col gap-4">
-<div class="w-12 h-12 rounded-DEFAULT bg-primary-fixed/40 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-[28px]">co_present</span>
-</div>
-<div>
-<h3 class="font-title-md text-title-md text-on-surface">Guru Tamu &amp; Kunjungan Industri</h3>
-<span class="font-label-dense text-label-dense text-secondary font-semibold">Transfer Pengetahuan Praktis</span>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant">
-              Hadirkan praktisi atau pimpinan perusahaan Anda sebagai narasumber seminar vokasi, serta menerima sesi company visit edukatif siswa dan dewan guru.
+
+            {{-- py: ruang untuk bayangan & efek angkat kartu, karena mask memotong apa pun di luar kotaknya --}}
+            <div class="mitra-marquee mt-8 -mx-6 py-4 sm:mx-0" style="--marquee-duration: {{ $marqueeDuration }}s">
+                <div class="mitra-marquee-track flex w-max">
+                    @foreach ([false, true] as $duplicate)
+                        {{-- pr-4 = gap-4, supaya jarak di sambungan kedua set sama dengan jarak antar kartu --}}
+                        <ul class="flex gap-4 pr-4" @if ($duplicate) aria-hidden="true" @else aria-label="Mitra IDUKA terverifikasi" @endif>
+                            @foreach ($marqueeMitra as $i => $mitra)
+                                <li class="{{ $i >= $mitraList->count() ? 'marquee-repeat' : '' }} group flex w-80 shrink-0 items-center gap-4 rounded-card bg-white p-4 shadow-softpill ring-1 ring-brand-ink/5 transition-all duration-300 hover:-translate-y-1 hover:ring-brand-darkred/25">
+                                    <x-landing.company-logo :mitra="$mitra" class="w-14 h-14 rounded-xl text-base" />
+                                    <div class="min-w-0">
+                                        <p class="flex items-start gap-1.5 font-semibold leading-snug">
+                                            <span class="line-clamp-2 transition-colors group-hover:text-brand-darkred">{{ $mitra->nama_perusahaan }}</span>
+                                            <x-landing.icon name="badgeCheck" class="mt-0.5 w-4 h-4 shrink-0 text-brand-darkred" />
+                                        </p>
+                                        <p class="mt-0.5 truncate text-xs text-brand-ink/60">{{ $mitra->sektor_industri }}</p>
+                                        @if ($mitra->kota)
+                                            <p class="mt-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-ink/45">
+                                                <x-landing.icon name="mapPin" class="w-3 h-3 text-brand-darkred" />
+                                                {{ $mitra->kota }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
+</section>
+
+{{-- ============================================================
+     2. ALUR KEMITRAAN
+     ============================================================ --}}
+<section class="relative bg-brand-softmist px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Proses Terstruktur &amp; Cepat</p>
+                <h2 class="mt-4 text-left font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                    Alur Mudah Kemitraan <x-sketch.underline>Industri</x-sketch.underline>
+                </h2>
+            </div>
+            <p class="max-w-md leading-relaxed text-brand-ink/70">
+                Prosedur birokrasi yang ramping dan transparan agar perusahaan Anda dapat segera menjalin kolaborasi produktif tanpa hambatan administratif.
             </p>
-</div>
-<ul class="mt-6 pt-4 space-y-2 font-body-dense text-body-dense text-on-surface-variant">
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>Branding perusahaan di civitas</li>
-<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>CSR Pendidikan terukur</li>
-</ul>
-</div>
-</div>
-</div>
+        </div>
+
+        <ol class="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            @foreach ($flow as $i => $step)
+                <li class="relative flex flex-col rounded-card bg-white p-6 shadow-sm ring-1 ring-brand-ink/5">
+                    <div class="flex items-center justify-between">
+                        <span class="font-display text-5xl font-bold leading-none {{ $i === 0 ? 'text-brand-darkred' : 'text-brand-ink/15' }}">{{ sprintf('%02d', $i + 1) }}</span>
+                        <span class="flex w-11 h-11 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred">
+                            <x-landing.icon :name="$step['icon']" class="w-5 h-5" />
+                        </span>
+                    </div>
+                    <h3 class="mt-6 text-left font-display text-lg font-bold uppercase tracking-wide">{{ $step['title'] }}</h3>
+                    <p class="mt-2 flex-1 text-sm leading-relaxed text-brand-ink/70">{{ $step['desc'] }}</p>
+                    <p class="relative mt-5 pt-4 text-xs font-semibold uppercase tracking-[0.15em] text-brand-darkred">
+                        <x-sketch.rule :delay="$i * 120" class="text-brand-darkred/30 left-0 right-0 -top-1.5 h-3" />
+                        {{ $step['note'] }}
+                    </p>
+                    {{-- Panah coretan ke langkah berikutnya (desktop) --}}
+                    @if ($i < count($flow) - 1)
+                        <span class="absolute -right-5 top-10 z-10 hidden text-brand-darkred lg:block"><x-sketch.arrow :delay="$i * 200" class="w-8 h-4" /></span>
+                    @endif
+                </li>
+            @endforeach
+        </ol>
+    </div>
 </section>
-<!-- Interactive Partnership Form & Contact Split -->
-<section class="w-full px-6 lg:px-12 py-20 bg-surface" id="form-kemitraan">
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-<!-- Left Column: Form Interactive -->
-<div class="lg:col-span-7 bg-surface-container-lowest rounded-lg p-8 sm:p-10 shadow-md">
-<div class="flex items-center gap-3 mb-6">
-<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-[22px]">handshake</span>
-</div>
-<div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Formulir Pengajuan Kemitraan DUDI</h2>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Mohon lengkapi data resmi kantor Anda di bawah ini.</p>
-</div>
-</div>
-<form class="flex flex-col gap-5" id="partnership-form" onsubmit="event.preventDefault(); document.getElementById('form-success').classList.remove('hidden'); this.reset();">
-<!-- Company Name & Sector -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="comp_name">Nama Perusahaan / Instansi *</label>
-<input class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="comp_name" placeholder="PT. Solusi Digital Nusantara" required="" type="text"/>
-</div>
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="comp_sector">Bidang Industri *</label>
-<select class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="comp_sector" required="">
-<option value="">Pilih Bidang Usaha...</option>
-<option value="Teknologi Informasi &amp; Software">Teknologi Informasi &amp; Software</option>
-<option value="Manufaktur &amp; Otomotif">Manufaktur &amp; Perakitan</option>
-<option value="Perbankan &amp; Jasa Keuangan">Perbankan &amp; Jasa Keuangan</option>
-<option value="Logistik &amp; Supply Chain">Logistik, Ekspedisi &amp; Gudang</option>
-<option value="Retail &amp; Distribusi">Retail, E-Commerce &amp; Perdagangan</option>
-<option value="Media, Desain &amp; Percetakan">Media Digital &amp; Creative Agency</option>
-<option value="Lainnya">Lainnya</option>
-</select>
-</div>
-</div>
-<!-- PIC Name & WhatsApp -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="pic_name">Nama Penanggung Jawab / HRD *</label>
-<input class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="pic_name" placeholder="Bpk. Hendra Wijaya, S.Psi" required="" type="text"/>
-</div>
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="pic_phone">Nomor WhatsApp / Seluler *</label>
-<input class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="pic_phone" placeholder="0812XXXXXXXX" required="" type="tel"/>
-</div>
-</div>
-<!-- Official Email & Estimation -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="comp_email">Email Resmi Kantor *</label>
-<input class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="comp_email" placeholder="recruitment@perusahaan.co.id" required="" type="email"/>
-</div>
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="comp_headcount">Estimasi Kebutuhan Talenta *</label>
-<select class="h-11 px-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="comp_headcount" required="">
-<option value="">Pilih Jumlah Kandidat...</option>
-<option value="1-5 Siswa">1 - 5 Orang</option>
-<option value="6-15 Siswa">6 - 15 Orang</option>
-<option value="16-30 Siswa">16 - 30 Orang</option>
-<option value="Lebih dari 30 Siswa">&gt; 30 Orang (Perekrutan Massal)</option>
-</select>
-</div>
-</div>
-<!-- Checkboxes: Jenis Kerja Sama -->
-<div class="flex flex-col gap-2 pt-2">
-<label class="font-label-md text-label-md text-on-surface font-semibold">Jenis Program yang Diminati (Bisa pilih lebih dari satu) *</label>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-<label class="flex items-center gap-3 p-3 rounded bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
-<input checked="" class="w-4 h-4 rounded text-primary-container accent-primary-container" name="interest" type="checkbox" value="pkl"/>
-<span class="font-body-dense text-body-dense text-on-surface">Praktik Kerja Lapangan (PKL)</span>
-</label>
-<label class="flex items-center gap-3 p-3 rounded bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
-<input class="w-4 h-4 rounded text-primary-container accent-primary-container" name="interest" type="checkbox" value="rekrutmen"/>
-<span class="font-body-dense text-body-dense text-on-surface">Rekrutmen Lulusan / Walk-in</span>
-</label>
-<label class="flex items-center gap-3 p-3 rounded bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
-<input class="w-4 h-4 rounded text-primary-container accent-primary-container" name="interest" type="checkbox" value="kurikulum"/>
-<span class="font-body-dense text-body-dense text-on-surface">Kelas Industri / MoU Silabus</span>
-</label>
-<label class="flex items-center gap-3 p-3 rounded bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
-<input class="w-4 h-4 rounded text-primary-container accent-primary-container" name="interest" type="checkbox" value="seminar"/>
-<span class="font-body-dense text-body-dense text-on-surface">Guru Tamu &amp; Kunjungan Industri</span>
-</label>
-</div>
-</div>
-<!-- Additional Notes -->
-<div class="flex flex-col gap-1.5">
-<label class="font-label-md text-label-md text-on-surface font-semibold" for="comp_notes">Catatan Kualifikasi / Deskripsi Kebutuhan</label>
-<textarea class="p-4 rounded-DEFAULT bg-surface-container-low text-on-surface font-body-default text-body-default focus:bg-surface-container-lowest focus:outline-none shadow-sm transition-all" id="comp_notes" placeholder="Contoh: Kami memerlukan 3 siswa jurusan RPL/TKJ untuk support instalasi jaringan dan 2 siswa Akuntansi untuk staf administrasi logistik..." rows="3"></textarea>
-</div>
-<!-- Guarantee badge & Submit Button -->
-<div class="pt-2 flex flex-col gap-4">
-<div class="flex items-center gap-2 font-body-dense text-body-dense text-on-surface-variant">
-<span class="material-symbols-outlined text-[18px] text-secondary">timer</span>
-<span>Tim Hubin BKK Penus menjamin konfirmasi respons maksimal <strong>1 x 24 jam kerja</strong> via WhatsApp/Email.</span>
-</div>
-<button class="w-full h-12 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary shadow-md transition-all flex items-center justify-center gap-2" type="submit">
-<span class="material-symbols-outlined text-[20px]">send</span>
-              Kirim Pengajuan Kemitraan
-            </button>
-</div>
-</form>
-<!-- Dynamic Success Feedback -->
-<div class="hidden mt-6 p-4 rounded-DEFAULT bg-surface-container-high text-on-surface shadow-sm" id="form-success">
-<div class="flex items-start gap-3">
-<span class="material-symbols-outlined text-primary text-[24px]">task_alt</span>
-<div>
-<h4 class="font-title-md text-title-md text-on-surface">Pengajuan Berhasil Terkirim!</h4>
-<p class="font-body-dense text-body-dense text-on-surface-variant mt-1">Terima kasih atas kepercayaan institusi Anda. Tim kemitraan BKK SMK Plus Pelita Nusantara akan segera menghubungi kontak penanggung jawab dalam kurun waktu 1x24 jam.</p>
-</div>
-</div>
-</div>
-</div>
-<!-- Right Column: Secretariat Details & Office Info -->
-<div class="lg:col-span-5 flex flex-col gap-8">
-<!-- Direct Contact Card -->
-<div class="p-8 rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-6">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface">
-<span class="material-symbols-outlined text-[22px]">contact_phone</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-on-surface">Sekretariat BKK &amp; Hubin</h3>
-</div>
-<div class="flex flex-col gap-4">
-<div class="flex items-start gap-3.5 p-3 rounded bg-surface-container-low">
-<span class="material-symbols-outlined text-[20px] text-primary-container shrink-0 mt-0.5">location_on</span>
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant uppercase">Alamat Kampus</span>
-<span class="font-body-default text-body-default text-on-surface mt-0.5">Kampus SMK Plus Pelita Nusantara, Jl. Golf No. 1, Ciriung, Cibinong, Kab. Bogor, Jawa Barat 16918</span>
-</div>
-</div>
-<div class="flex items-start gap-3.5 p-3 rounded bg-surface-container-low">
-<span class="material-symbols-outlined text-[20px] text-secondary shrink-0 mt-0.5">mail</span>
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant uppercase">Email Korespondensi Kemitraan</span>
-<a class="font-body-default text-body-default text-primary font-semibold hover:underline mt-0.5" href="mailto:kemitraan@smkpenus.sch.id">kemitraan@smkpenus.sch.id</a>
-<span class="text-body-dense font-body-dense text-on-surface-variant">Alternatif: bkk@smkpenus.sch.id</span>
-</div>
-</div>
-<div class="flex items-start gap-3.5 p-3 rounded bg-surface-container-low">
-<span class="material-symbols-outlined text-[20px] text-tertiary shrink-0 mt-0.5">chat</span>
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant uppercase">WhatsApp Resmi Hubin Penus</span>
-<span class="font-title-md text-title-md text-on-surface mt-0.5 font-bold">+62 812-8875-4321</span>
-<span class="text-body-dense font-body-dense text-on-surface-variant">Tersedia panggilan telepon kantor &amp; chat instan</span>
-</div>
-</div>
-<div class="flex items-start gap-3.5 p-3 rounded bg-surface-container-low">
-<span class="material-symbols-outlined text-[20px] text-on-surface shrink-0 mt-0.5">schedule</span>
-<div class="flex flex-col">
-<span class="font-label-dense text-label-dense text-on-surface-variant uppercase">Jam Operasional Layanan</span>
-<span class="font-body-default text-body-default text-on-surface mt-0.5">Senin – Jumat : 08.00 – 16.00 WIB</span>
-<span class="text-body-dense font-body-dense text-on-surface-variant">Sabtu – Minggu &amp; Libur Nasional : Tutup</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Static Map Placeholder -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-md flex flex-col gap-4">
-<div class="flex items-center justify-between">
-<span class="font-title-md text-title-md text-on-surface">Peta Lokasi Kampus</span>
-<span class="font-label-dense text-label-dense px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">Cibinong, Bogor</span>
-</div>
-<div class="w-full h-56 bg-cover bg-center rounded-DEFAULT shadow-inner relative flex items-center justify-center overflow-hidden" data-location="SMK Plus Pelita Nusantara, Jl. Golf No. 1, Ciriung, Cibinong, Bogor, Jawa Barat" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBZkHpfxiXl71GDtQUDy6a6QPOZAzHCeNzwPxr4jDTh9IlvVFA23rdddAH7Zkofx3OER1X78yhD5C1MIZ-wFxiQiNe_ZJL6izch-B8Z8CyvJtqhUWM9ZCeh8sgLONCQiWSULRGOZh44mzhC7nRn4OThea5A8AzVQ4ZMlN8Y-77UhuGj8lsGiDX81in40vebrdQ7Lr1mmDPLpB3lngAu3ZKPXKysPJ-dLv3-9EDIWyJftZeJkrkThK0T')">
-<div class="absolute inset-0 bg-on-background/20 backdrop-blur-[1px]"></div>
-<div class="relative z-10 px-4 py-2 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-md flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-[20px]">location_on</span>
-<span class="font-label-md text-label-md text-on-surface font-semibold">Kampus BKK Pelita Nusantara</span>
-</div>
-</div>
-<div class="flex items-center justify-between text-body-dense font-body-dense text-on-surface-variant">
-<span>Akses 7 menit dari Tol Jagorawi (Gerbang Sirkuit Sentul / Cibinong)</span>
-<a class="text-primary font-semibold hover:underline" href="https://maps.google.com" target="_blank">Buka di Maps →</a>
-</div>
-</div>
-</div>
-</div>
+
+{{-- ============================================================
+     3. BENTUK PROGRAM KERJA SAMA
+     ============================================================ --}}
+<section class="relative bg-white px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto">
+        <div class="mx-auto max-w-3xl text-center">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Skema Kolaborasi Komprehensif</p>
+            <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                <x-sketch.frame>Bentuk Program Kerja Sama Industri (DUDI)</x-sketch.frame>
+            </h2>
+            <p class="mt-6 text-base md:text-lg leading-relaxed text-brand-ink/70">Kami menawarkan integrasi berkelanjutan yang menguntungkan industri mitra melalui penyediaan sumber daya manusia berdaya saing tinggi.</p>
+        </div>
+
+        <div class="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            @foreach ($programs as $program)
+                <div class="group flex flex-col rounded-card bg-brand-softmist p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-softpill hover:ring-1 hover:ring-brand-darkred/15">
+                    <span class="flex w-12 h-12 items-center justify-center rounded-2xl bg-white text-brand-darkred shadow-sm transition-colors group-hover:bg-brand-darkred group-hover:text-white">
+                        <x-landing.icon :name="$program['icon']" class="w-6 h-6" />
+                    </span>
+                    <h3 class="mt-5 text-left font-display text-lg font-bold uppercase tracking-wide leading-snug">{{ $program['title'] }}</h3>
+                    <p class="mt-1 text-xs font-semibold uppercase tracking-[0.15em] text-brand-darkred">{{ $program['tag'] }}</p>
+                    <p class="mt-3 flex-1 text-sm leading-relaxed text-brand-ink/70">{{ $program['desc'] }}</p>
+                    <ul class="mt-5 space-y-2 border-t border-dashed border-brand-ink/15 pt-4 text-sm">
+                        @foreach ($program['points'] as $point)
+                            <li class="flex items-center gap-2"><x-landing.icon name="check" class="w-4 h-4 shrink-0 text-brand-darkred" />{{ $point }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
+        </div>
+    </div>
 </section>
-<!-- FAQ Section for Prospective Partners -->
-<section class="w-full px-6 lg:px-12 py-16 bg-surface-container-low">
-<div class="max-w-4xl mx-auto flex flex-col gap-8">
-<div class="text-center">
-<span class="font-label-dense text-label-dense uppercase tracking-widest text-primary font-bold">Frequently Asked Questions</span>
-<h2 class="font-headline-md text-headline-md text-on-surface mt-1">Pertanyaan Seputar Kemitraan DUDI</h2>
-</div>
-<div class="flex flex-col gap-3">
-<!-- Q1 -->
-<details class="group bg-surface-container-lowest p-5 rounded-DEFAULT shadow-sm cursor-pointer transition-all">
-<summary class="flex items-center justify-between font-title-md text-title-md text-on-surface list-none">
-<span>Apakah ada biaya administrasi untuk membuka walk-in interview atau rekrutmen di kampus?</span>
-<span class="material-symbols-outlined text-[20px] transition-transform group-open:rotate-180 text-on-surface-variant">expand_more</span>
-</summary>
-<p class="mt-3 font-body-default text-body-default text-on-surface-variant pt-2 border-t border-surface-container">
-            Tidak ada. Program rekrutmen lulusan dan seleksi walk-in interview di SMK Plus Pelita Nusantara disediakan secara gratis tanpa dipungut biaya fasilitas sebagai bentuk komitmen penyaluran kerja alumni BKK kami.
-          </p>
-</details>
-<!-- Q2 -->
-<details class="group bg-surface-container-lowest p-5 rounded-DEFAULT shadow-sm cursor-pointer transition-all">
-<summary class="flex items-center justify-between font-title-md text-title-md text-on-surface list-none">
-<span>Kompetensi keahlian apa saja yang tersedia di SMK Plus Pelita Nusantara?</span>
-<span class="material-symbols-outlined text-[20px] transition-transform group-open:rotate-180 text-on-surface-variant">expand_more</span>
-</summary>
-<p class="mt-3 font-body-default text-body-default text-on-surface-variant pt-2 border-t border-surface-container">
-            Siswa kami terlatih dalam 3 klaster keahlian utama: 1) Rekayasa Perangkat Lunak &amp; Jaringan Komputer, 2) Manajemen Perkantoran &amp; Otomatisasi Administrasi, dan 3) Akuntansi &amp; Keuangan Lembaga, lengkap dengan sertifikasi BNSP.
-          </p>
-</details>
-<!-- Q3 -->
-<details class="group bg-surface-container-lowest p-5 rounded-DEFAULT shadow-sm cursor-pointer transition-all">
-<summary class="flex items-center justify-between font-title-md text-title-md text-on-surface list-none">
-<span>Bagaimana proses penandatanganan dokumen MoU kerja sama?</span>
-<span class="material-symbols-outlined text-[20px] transition-transform group-open:rotate-180 text-on-surface-variant">expand_more</span>
-</summary>
-<p class="mt-3 font-body-default text-body-default text-on-surface-variant pt-2 border-t border-surface-container">
-            Tim Hubin kami menyediakan draf nota kesepahaman (MoU) standar Kemendikbudristek yang dapat ditandatangani secara digital (e-sign dengan sertifikat elektronik) maupun pertemuan seremoni resmi secara tatap muka di kantor mitra atau di sekolah.
-          </p>
-</details>
-</div>
-</div>
+
+{{-- ============================================================
+     4. FORMULIR & KONTAK SEKRETARIAT
+     ============================================================ --}}
+<section id="form-kemitraan" class="relative bg-brand-softmist px-6 py-20 md:py-28 scroll-mt-24">
+    <div class="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <div class="relative bg-white p-7 sm:p-10" @if ($errors->any()) x-data x-init="$el.scrollIntoView({ block: 'start' })" @endif>
+            <x-sketch.box />
+            <div class="flex items-start gap-4">
+                <span class="flex w-12 h-12 shrink-0 items-center justify-center rounded-full bg-brand-darkred text-white">
+                    <x-landing.icon name="handshake" class="w-6 h-6" />
+                </span>
+                <div>
+                    <h2 class="text-left font-display text-2xl md:text-3xl font-bold uppercase tracking-wide leading-tight">Formulir Pengajuan Kemitraan DUDI</h2>
+                    <p class="mt-1 text-sm text-brand-ink/60">Mohon lengkapi data resmi kantor Anda di bawah ini.</p>
+                </div>
+            </div>
+
+            @if (session('success'))
+                <div role="status" class="relative mt-8 rounded-xl bg-brand-darkred/5 py-4 pr-4 pl-9">
+                    <x-sketch.rule bold vertical class="text-brand-darkred top-1 bottom-1 left-2 w-3" />
+                    <p class="flex items-center gap-2 font-semibold text-brand-darkred">
+                        <x-landing.icon name="check" class="w-5 h-5" />
+                        Pengajuan Berhasil Terkirim!
+                    </p>
+                    <p class="mt-1 text-sm leading-relaxed text-brand-ink/70">{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div role="alert" class="mt-8 rounded-xl border-2 border-brand-signal/30 bg-brand-signal/5 p-4 text-sm">
+                    <p class="font-semibold text-brand-darkred">Pengajuan belum terkirim. Periksa kembali isian berikut:</p>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-brand-ink/75">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('bkk.kerjasama.store') }}" class="mt-8 flex flex-col gap-5">
+                @csrf
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label for="nama_perusahaan" class="text-sm font-semibold">Nama Perusahaan / Instansi *</label>
+                        <input id="nama_perusahaan" name="nama_perusahaan" type="text" required maxlength="200" value="{{ old('nama_perusahaan') }}" placeholder="PT. Solusi Digital Nusantara" class="mt-1.5 {{ $fieldClass('nama_perusahaan') }}">
+                    </div>
+                    <div>
+                        <label for="bidang_usaha" class="text-sm font-semibold">Bidang Industri *</label>
+                        <select id="bidang_usaha" name="bidang_usaha" required class="mt-1.5 {{ $fieldClass('bidang_usaha') }}">
+                            <option value="">Pilih Bidang Usaha...</option>
+                            @foreach ($sectors as $value => $label)
+                                <option value="{{ $value }}" @selected(old('bidang_usaha') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="nama_pic" class="text-sm font-semibold">Nama Penanggung Jawab / HRD *</label>
+                        <input id="nama_pic" name="nama_pic" type="text" required maxlength="150" value="{{ old('nama_pic') }}" placeholder="Bpk. Hendra Wijaya, S.Psi" class="mt-1.5 {{ $fieldClass('nama_pic') }}">
+                    </div>
+                    <div>
+                        <label for="jabatan_pic" class="text-sm font-semibold">Jabatan Penanggung Jawab *</label>
+                        <input id="jabatan_pic" name="jabatan_pic" type="text" required maxlength="150" value="{{ old('jabatan_pic') }}" placeholder="HR Recruitment Manager" class="mt-1.5 {{ $fieldClass('jabatan_pic') }}">
+                    </div>
+                    <div>
+                        <label for="no_telepon" class="text-sm font-semibold">Nomor WhatsApp / Seluler *</label>
+                        <input id="no_telepon" name="no_telepon" type="tel" required maxlength="50" value="{{ old('no_telepon') }}" placeholder="0812XXXXXXXX" class="mt-1.5 {{ $fieldClass('no_telepon') }}">
+                    </div>
+                    <div>
+                        <label for="email_resmi" class="text-sm font-semibold">Email Resmi Kantor *</label>
+                        <input id="email_resmi" name="email_resmi" type="email" required maxlength="150" value="{{ old('email_resmi') }}" placeholder="recruitment@perusahaan.co.id" class="mt-1.5 {{ $fieldClass('email_resmi') }}">
+                    </div>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label for="alamat_perusahaan" class="text-sm font-semibold">Alamat Kantor *</label>
+                        <textarea id="alamat_perusahaan" name="alamat_perusahaan" rows="3" required placeholder="Jl. Raya Industri No. 10, Kota / Kabupaten" class="mt-1.5 {{ $fieldClass('alamat_perusahaan') }}">{{ old('alamat_perusahaan') }}</textarea>
+                    </div>
+                    <div>
+                        <label for="estimasi_kebutuhan" class="text-sm font-semibold">Estimasi Kebutuhan Talenta *</label>
+                        <select id="estimasi_kebutuhan" name="estimasi_kebutuhan" required class="mt-1.5 {{ $fieldClass('estimasi_kebutuhan') }}">
+                            <option value="">Pilih Jumlah Kandidat...</option>
+                            @foreach ($headcounts as $value => $label)
+                                <option value="{{ $value }}" @selected(old('estimasi_kebutuhan') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <fieldset>
+                    <legend class="text-sm font-semibold">Jenis Program yang Diminati (Bisa pilih lebih dari satu) *</legend>
+                    <div class="mt-2 grid gap-2.5 sm:grid-cols-2">
+                        @foreach ($programChoices as $choice)
+                            <label class="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-brand-ink/10 p-3 text-sm transition-colors hover:border-brand-darkred/30 has-checked:border-brand-darkred has-checked:bg-brand-darkred/5">
+                                <input type="checkbox" name="jenis_kerjasama[]" value="{{ $choice }}" @checked(in_array($choice, (array) $chosenPrograms)) class="w-4 h-4 shrink-0 accent-brand-darkred">
+                                {{ $choice }}
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+
+                <div>
+                    <label for="pesan_tambahan" class="text-sm font-semibold">Catatan Kualifikasi / Deskripsi Kebutuhan</label>
+                    <textarea id="pesan_tambahan" name="pesan_tambahan" rows="3" placeholder="Contoh: Kami memerlukan 3 siswa jurusan RPL/TKJ untuk support instalasi jaringan dan 2 siswa Akuntansi untuk staf administrasi logistik..." class="mt-1.5 {{ $fieldClass('pesan_tambahan') }}">{{ old('pesan_tambahan') }}</textarea>
+                </div>
+
+                <p class="flex items-start gap-2 text-sm text-brand-ink/65">
+                    <x-landing.icon name="clock" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                    <span>Tim Hubin BKK Penus menjamin konfirmasi respons maksimal <strong class="text-brand-ink">1 x 24 jam kerja</strong> via WhatsApp/Email.</span>
+                </p>
+                <button type="submit" class="group inline-flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred py-4 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                    <x-landing.icon name="send" class="w-4 h-4" />
+                    Kirim Pengajuan Kemitraan
+                </button>
+            </form>
+        </div>
+
+        <aside class="flex flex-col gap-8">
+            <div class="rounded-card bg-white p-7 shadow-sm ring-1 ring-brand-ink/5">
+                <h3 class="flex items-center gap-2 font-display text-xl font-bold uppercase tracking-wide">
+                    <x-landing.icon name="phoneCall" class="w-5 h-5 text-brand-darkred" />
+                    Sekretariat BKK &amp; Hubin
+                </h3>
+                <ul class="mt-6">
+                    @foreach ($contactRows as $i => $row)
+                        <li class="relative flex items-start gap-3.5 py-4 first:pt-0 last:pb-0">
+                            @if ($i > 0)
+                                <x-sketch.rule :delay="$i * 100" class="text-brand-darkred/25 -left-1 -right-1 -top-1.5 h-3" />
+                            @endif
+                            <x-landing.icon :name="$row['icon']" class="w-5 h-5 mt-0.5 shrink-0 text-brand-darkred" />
+                            <span class="flex min-w-0 flex-col">
+                                <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-ink/50">{{ $row['label'] }}</span>
+                                @if ($row['href'])
+                                    <a href="{{ $row['href'] }}" class="mt-0.5 font-semibold text-brand-darkred hover:underline">{{ $row['value'] }}</a>
+                                @else
+                                    <span class="mt-0.5 text-sm font-medium leading-relaxed">{{ $row['value'] }}</span>
+                                @endif
+                                @if ($row['note'])
+                                    <span class="text-xs text-brand-ink/55">{{ $row['note'] }}</span>
+                                @endif
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <div class="relative rounded-card bg-white p-6 shadow-sm ring-1 ring-brand-ink/5">
+                <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-display text-lg font-bold uppercase tracking-wide">Peta Lokasi Kampus</h3>
+                    <span class="rounded-full bg-brand-softmist px-2.5 py-0.5 text-xs font-semibold text-brand-ink/60">Cibinong, Bogor</span>
+                </div>
+                <div class="relative mt-4 h-56 overflow-hidden rounded-xl ring-1 ring-brand-ink/10">
+                    <iframe title="Peta Lokasi Kampus BKK Pelita Nusantara" src="https://maps.google.com/maps?q={{ $mapsQuery }}&t=&z=15&ie=UTF8&iwloc=&output=embed" class="h-full w-full border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-brand-ink/60">
+                    <span>Akses 7 menit dari Tol Jagorawi (Gerbang Sirkuit Sentul / Cibinong)</span>
+                    <a href="https://maps.google.com/?q={{ $mapsQuery }}" target="_blank" rel="noreferrer" class="group inline-flex items-center gap-1.5 font-semibold text-brand-darkred">
+                        Buka di Maps
+                        <x-sketch.arrow class="w-5 h-2.5 transition-transform group-hover:translate-x-1" />
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
 </section>
-</div>
+
+{{-- ============================================================
+     5. FAQ KEMITRAAN
+     ============================================================ --}}
+<section class="relative bg-white px-6 py-20 md:py-28">
+    <div class="max-w-6xl mx-auto grid gap-10 lg:gap-16 lg:grid-cols-[2fr_3fr] items-start">
+        <div class="lg:sticky lg:top-32">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                <x-sketch.sparks>Frequently Asked Questions</x-sketch.sparks>
+            </p>
+            <h2 class="mt-3 text-left font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                Pertanyaan Seputar Kemitraan DUDI
+            </h2>
+        </div>
+        <x-landing.faq :items="$partnerFaqs" />
+    </div>
+</section>
 @endsection
