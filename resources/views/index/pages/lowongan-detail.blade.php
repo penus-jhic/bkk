@@ -1,531 +1,430 @@
-@extends('index.master')
+{{--
+    Detail lowongan PKL & kerja. Gaya mengikuti landing page sekolah (coretan tangan, merah marun).
+    Data dari PublicController@lowonganDetail: $lowongan (null kalau slug tidak ditemukan, dengan lamarans_count),
+    $relatedLowongan, $totalLowongan.
+--}}
+@php
+    $navSection = 'lowongan';
 
-@section('title', 'Detail Lowongan - BKK SMK Plus Pelita Nusantara')
+    if ($lowongan) {
+        $mitra = $lowongan->mitra;
+        $isPkl = $lowongan->tipe === 'PKL';
+        $companyName = $mitra->nama_perusahaan ?? 'Mitra Industri BKK';
+        $shareUrl = url()->current();
+
+        $deadline = $lowongan->deadline;
+        $daysLeft = $deadline ? (int) now()->startOfDay()->diffInDays($deadline->copy()->startOfDay(), false) : null;
+        $isOpen = $lowongan->status === 'Aktif' && ($daysLeft === null || $daysLeft >= 0);
+        $deadlineText = $deadline ? $deadline->locale('id')->translatedFormat('j F Y') : 'Tanpa batas waktu';
+        $deadlineHint = match (true) {
+            $daysLeft === null => null,
+            $daysLeft < 0 => 'Pendaftaran ditutup',
+            $daysLeft === 0 => 'Hari terakhir',
+            default => $daysLeft . ' hari lagi',
+        };
+
+        $kuota = max(1, (int) $lowongan->kuota);
+        $pelamar = (int) $lowongan->lamarans_count;
+        $kuotaUnit = $isPkl ? 'Siswa' : 'Formasi';
+        $fill = min(100, (int) round($pelamar / $kuota * 100));
+
+        $mouRange = $mitra?->tanggal_mou_mulai && $mitra?->tanggal_mou_selesai
+            ? $mitra->tanggal_mou_mulai->format('Y') . '-' . $mitra->tanggal_mou_selesai->format('Y')
+            : null;
+
+        $requirements = array_values(array_filter((array) $lowongan->persyaratan_json));
+        $benefits = array_values(array_filter((array) $lowongan->benefit_json));
+
+        // Coretan hanya di kata terakhir judul, supaya garisnya tidak ikut melebar saat judul terlipat
+        $titleWords = explode(' ', trim($lowongan->judul));
+        $titleLastWord = array_pop($titleWords);
+        $titleFirstWords = implode(' ', $titleWords);
+
+        $highlights = [
+            ['label' => 'Model Penugasan', 'value' => $lowongan->lokasi, 'icon' => 'mapPin'],
+            ['label' => 'Kategori Posisi', 'value' => $lowongan->kategori_posisi ?: $lowongan->tipe_badge, 'icon' => 'briefcase'],
+            ['label' => 'Kompensasi', 'value' => $lowongan->gaji_kompensasi ?: 'Sesuai ketentuan mitra', 'icon' => 'wallet'],
+        ];
+
+        $selectionSteps = [
+            ['title' => 'Seleksi Berkas CV BKK', 'desc' => 'Kurasi profil siswa, portofolio, dan validasi data absensi sekolah.'],
+            ['title' => 'Tes Praktik Sekolah', 'desc' => 'Live coding / konfigurasi lab di Lab Komputer SMK Penus.'],
+            ['title' => 'Wawancara DUDI', 'desc' => 'Sesi tatap muka online / offline dengan tim HRD & Tech Lead mitra.'],
+            ['title' => $isPkl ? 'Surat Tugas PKL' : 'Penempatan Kerja', 'desc' => $isPkl ? 'Penerbitan Surat Tugas resmi sekolah dan pembekalan pra-keberangkatan.' : 'Penandatanganan kontrak kerja dan onboarding bersama tim HRD mitra.'],
+        ];
+    }
+@endphp
+
+@extends('index.layouts.landing')
+
+@section('title', ($lowongan->judul ?? 'Detail Lowongan') . ' - BKK SMK Plus Pelita Nusantara')
 
 @section('content')
-<div class="flex flex-col w-full">
-<!-- Top Breadcrumb & Status Navigation Bar -->
-<section class="w-full bg-surface-container-low px-6 lg:px-12 py-4">
-<div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-<nav aria-label="Breadcrumb" class="flex items-center gap-2">
-<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="beranda" href="#">Beranda</a>
-<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
-<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="lowongan-pkl-&amp;-kerja" href="#">Lowongan PKL &amp; Kerja</a>
-<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate max-w-[240px] sm:max-w-md">Junior Frontend Developer &amp; IT Support</span>
-</nav>
-<div class="flex items-center gap-2">
-<span class="inline-flex items-center px-3 py-1 rounded-full bg-surface-container-highest font-label-dense text-label-dense text-on-surface font-semibold">
-<span class="w-2 h-2 rounded-full bg-secondary-container mr-2 animate-pulse"></span>
-          Periode Ganjil 2024/2025
-        </span>
-<span class="inline-flex items-center px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant font-label-dense text-label-dense font-semibold">
-          ID: PENUS-PKL-882
-        </span>
-</div>
-</div>
-</section>
-<!-- Hero Header Posisi -->
-<section class="w-full bg-surface-container-lowest shadow-sm px-6 lg:px-12 py-10">
-<div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-<div class="flex items-start sm:items-center gap-6">
-<!-- Logo Perusahaan Mitra -->
-<div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-container-high p-3 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
-<img class="w-full h-full object-contain rounded-xl" data-alt="Modern tech corporation badge logo PT Pelita Teknologi Digital with clean red and charcoal geometric mark on pure white background, sharp vector emblem corporate style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp4c0LCTh1P6jXa5IO3GLJLFXEjdOhYxMXbGAdh7n6IuqfZL_WHHbbVutQuEpxF40ONEznouk2pe91hEiAUrZ25XZ2ut4AjaG03lU6Vb_kJWQNeFcXG1cfZpt6nyVSB_Zb-kTqsve7-aS7VyGFr4Jjc4zA34OQj5GvOvDWxp4qpS2znqoaDP-y7yvLZabv7qe4P0v5Voyu0RqBC2uB1MOb2OI7-8kcudYM_pjZaibg91zgkyX-fJNy"/>
-<div class="absolute -bottom-1 -right-1 bg-surface-container-lowest p-1 rounded-full shadow-sm">
-<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-</div>
-<div class="flex flex-col gap-2 min-w-0">
-<div class="flex flex-wrap items-center gap-2">
-<span class="inline-flex items-center px-3 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-dense text-label-dense">
-<span class="material-symbols-outlined text-[16px] mr-1 text-primary">domain</span>PT Pelita Teknologi Digital
+@if (!$lowongan)
+    {{-- Slug tidak ditemukan --}}
+    <section class="relative bg-white px-6 pt-32 pb-20 md:pt-40 md:pb-28">
+        <div class="max-w-2xl mx-auto text-center animate-fade-up">
+            <span class="mx-auto flex w-20 h-20 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred">
+                <x-landing.icon name="briefcase" class="w-10 h-10" />
             </span>
-<span class="inline-flex items-center px-3 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-dense text-label-dense font-semibold">
-<span class="material-symbols-outlined text-[15px] mr-1" style="font-variation-settings: 'FILL' 1;">shield</span>Terverifikasi BKK Penus
-            </span>
-<span class="inline-flex items-center px-3 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-dense text-label-dense font-semibold">
-              MoU DUDI 2024-2027
-            </span>
-</div>
-<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">
-            Junior Frontend Developer &amp; IT Support
-          </h1>
-<div class="flex flex-wrap items-center gap-y-2 gap-x-5 font-body-dense text-body-dense text-on-surface-variant pt-1">
-<span class="inline-flex items-center gap-1.5 font-label-md text-label-md text-primary font-semibold">
-<span class="material-symbols-outlined text-[18px]">school</span>
-              PKL Siswa SMK — RPL / TKJ
-            </span>
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-tertiary">location_on</span>
-              Cilandak, Jakarta Selatan (Hybrid 3 Hari Kantor)
-            </span>
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-secondary">payments</span>
-              Uang Saku &amp; Transportasi Bulanan
-            </span>
-<span class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-on-surface-variant">calendar_today</span>
-              6 Bulan (Jan – Jun 2025)
-            </span>
-</div>
-</div>
-</div>
-<!-- Quick Action / Share -->
-<div class="flex items-center gap-3 shrink-0 self-stretch md:self-auto justify-end">
-<button class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors shadow-sm" onclick="navigator.clipboard?.writeText(window.location.href); this.querySelector('span').textContent='check'; setTimeout(()=&gt;this.querySelector('span').textContent='share', 2000)" title="Bagikan Lowongan" type="button">
-<span class="material-symbols-outlined text-[20px]">share</span>
-</button>
-<button class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors shadow-sm" onclick="this.classList.toggle('text-primary');" title="Simpan ke Bookmark Siswa" type="button">
-<span class="material-symbols-outlined text-[20px]">bookmark</span>
-</button>
-</div>
-</div>
-</section>
-<!-- Main Content Grid -->
-<div class="max-w-7xl mx-auto px-6 lg:px-12 py-12 w-full">
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-<!-- KOLOM KIRI (Detail Lengkap) -->
-<div class="lg:col-span-8 flex flex-col gap-10">
-<!-- Banner Visual Suasana Kerja DUDI -->
-<div class="relative rounded-lg overflow-hidden shadow-sm bg-surface-container">
-<img class="w-full h-72 object-cover" data-alt="Modern open-plan IT workspace with dual monitors displaying web code, young Indonesian vocational apprentices working alongside senior developers with laptops, natural ambient lighting and sleek ergonomic office aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB845iH7IeHgLiMAqgTL6lALtEGLtrQbloghtz98eopgWP2dfM0ukbejdhTskCwMyJUw_kmFAA-TNDNSI6Mqu6O6Q7nOSSgYhhLmp1L21O1k0wNDCXkl18nVVec-BtePSYQc-f5L_vYCvMWQV2orzd67xBinWpF4pSUzPcc-6GY20JV10G9xuCDhyHcNyWaEGhvquOb5OeN7bTcFfsJD-HxIp426h4MNkMmgIIZKimaZjxgbTA6fhuH"/>
-<div class="absolute inset-0 bg-gradient-to-t from-on-background/80 via-on-background/20 to-transparent flex items-end p-6">
-<div class="flex items-center gap-4 text-on-tertiary">
-<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center font-metric-stat text-metric-stat text-on-primary shadow">
-                6x
-              </div>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md font-semibold text-white">Lingkungan Magang Industri Berstandar Nasional</span>
-<span class="font-body-dense text-body-dense text-surface-variant">Kerja praktek nyata dengan bimbingan langsung arsitek web &amp; infrastruktur cloud.</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Ringkasan Peran & Profil Perusahaan -->
-<section class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex flex-col gap-6">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="w-3 h-8 bg-primary rounded-full"></div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Ringkasan Peran &amp; Profil Perusahaan</h2>
-</div>
-<span class="font-label-dense text-label-dense uppercase tracking-wider text-outline">DUDI Partner Info</span>
-</div>
-<p class="font-body-editorial text-body-editorial text-on-surface-variant leading-relaxed">
-<strong class="text-on-surface font-semibold">PT Pelita Teknologi Digital</strong> adalah software house dan penyedia managed IT services terkemuka di Jabodetabek yang telah menjalin MoU resmi dengan SMK Plus Pelita Nusantara. Perusahaan ini berfokus pada perancangan portal web korporasi, sistem Enterprise Resource Planning (ERP), dan optimalisasi jaringan data perkantoran.
-          </p>
-<p class="font-body-default text-body-default text-on-surface-variant">
-            Program PKL Magang Industri 6 Bulan ini dirancang khusus bagi siswa SMK jurusan <strong class="text-on-surface">Rekayasa Perangkat Lunak (RPL)</strong> dan <strong class="text-on-surface">Teknik Komputer &amp; Jaringan (TKJ)</strong> untuk mengasah keterampilan coding modular, kolaborasi Git di lingkungan Gitlab industri, serta pemecahan masalah operasional IT hardware dan mikrotik secara nyata di lapangan.
-          </p>
-<!-- Key Highlights Bento Mini -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-<div class="bg-surface-container-low rounded-DEFAULT p-4 flex flex-col gap-1">
-<span class="font-label-dense text-label-dense text-on-surface-variant">Model Penugasan</span>
-<span class="font-title-md text-title-md text-on-surface">Hybrid Working</span>
-<span class="font-body-dense text-body-dense text-tertiary">3 Hari WFO / 2 Hari WFH</span>
-</div>
-<div class="bg-surface-container-low rounded-DEFAULT p-4 flex flex-col gap-1">
-<span class="font-label-dense text-label-dense text-on-surface-variant">Jam Praktik</span>
-<span class="font-title-md text-title-md text-on-surface">08.30 – 16.30 WIB</span>
-<span class="font-body-dense text-body-dense text-tertiary">Senin s/d Jumat</span>
-</div>
-<div class="bg-surface-container-low rounded-DEFAULT p-4 flex flex-col gap-1">
-<span class="font-label-dense text-label-dense text-on-surface-variant">Mentor Industri</span>
-<span class="font-title-md text-title-md text-on-surface">1-on-1 Assigned</span>
-<span class="font-body-dense text-body-dense text-tertiary">Senior Tech Lead Bersertifikat</span>
-</div>
-</div>
-</section>
-<!-- Tanggung Jawab Utama -->
-<section class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex flex-col gap-6">
-<div class="flex items-center gap-3">
-<div class="w-3 h-8 bg-secondary rounded-full"></div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Tanggung Jawab Utama Selama PKL</h2>
-</div>
-<p class="font-body-default text-body-default text-on-surface-variant">
-            Peserta didik akan didampingi oleh instruktur profesional dalam mengeksekusi tugas-tugas terstruktur yang sejalan dengan capaian kurikulum merdeka vokasi:
-          </p>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div class="p-5 rounded-DEFAULT bg-surface-container-low flex items-start gap-4">
-<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-[22px]">code</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="font-title-md text-title-md text-on-surface">Slicing UI &amp; Component Builder</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Menerjemahkan desain Figma dari tim UI/UX menjadi komponen web interaktif menggunakan Tailwind CSS dan modern JavaScript framework.</p>
-</div>
-</div>
-<div class="p-5 rounded-DEFAULT bg-surface-container-low flex items-start gap-4">
-<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-secondary text-[22px]">bug_report</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="font-title-md text-title-md text-on-surface">Bug Fixing &amp; Cross-Browser Test</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Membantu proses pengujian tampilan pada berbagai perangkat (mobile, tablet, desktop) dan membersihkan console error.</p>
-</div>
-</div>
-<div class="p-5 rounded-DEFAULT bg-surface-container-low flex items-start gap-4">
-<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-on-surface text-[22px]">router</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="font-title-md text-title-md text-on-surface">Support Jaringan &amp; Hardware Kantor</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Membantu konfigurasi access point internal, crimping kabel LAN, dan monitoring uptime koneksi kantor cabang.</p>
-</div>
-</div>
-<div class="p-5 rounded-DEFAULT bg-surface-container-low flex items-start gap-4">
-<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-tertiary text-[22px]">menu_book</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="font-title-md text-title-md text-on-surface">Dokumentasi Teknis &amp; Jurnal PKL</h3>
-<p class="font-body-dense text-body-dense text-on-surface-variant">Menyusun logbook aktivitas harian BKK serta membuat panduan instalasi modul aplikasi internal untuk kebutuhan tim developer.</p>
-</div>
-</div>
-</div>
-</section>
-<!-- Kualifikasi & Persyaratan -->
-<section class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex flex-col gap-6">
-<div class="flex items-center gap-3">
-<div class="w-3 h-8 bg-tertiary rounded-full"></div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Kualifikasi &amp; Persyaratan Siswa</h2>
-</div>
-<div class="flex flex-col gap-4">
-<div class="flex items-start gap-3.5">
-<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">check_circle</span>
-<p class="font-body-default text-body-default text-on-surface">
-<strong>Status Siswa Aktif:</strong> Siswa SMK Plus Pelita Nusantara kelas XI atau XII tahun ajaran berjalan dari program keahlian <strong>Rekayasa Perangkat Lunak (RPL)</strong> atau <strong>Teknik Komputer &amp; Jaringan (TKJ)</strong>.
-              </p>
-</div>
-<div class="flex items-start gap-3.5">
-<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">check_circle</span>
-<p class="font-body-default text-body-default text-on-surface">
-<strong>Fondasi Teknis:</strong> Memahami dasar logika pemrograman web (HTML5, CSS3, JavaScript ES6) ATAU pemahaman dasar konfigurasi IP Address, DNS, dan subnetting.
-              </p>
-</div>
-<div class="flex items-start gap-3.5">
-<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">check_circle</span>
-<p class="font-body-default text-body-default text-on-surface">
-<strong>Portofolio Proyek:</strong> Memiliki minimal 1 karya tugas sekolah atau proyek mandiri (link GitHub, mockup Figma, screenshot tugas praktikum, atau link website online).
-              </p>
-</div>
-<div class="flex items-start gap-3.5">
-<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">check_circle</span>
-<p class="font-body-default text-body-default text-on-surface">
-<strong>Rekomendasi Sekolah:</strong> Memperoleh persetujuan dan verifikasi rekomendasi dari Wali Kelas dan Kepala Program Keahlian (Kaprogli).
-              </p>
-</div>
-<div class="flex items-start gap-3.5">
-<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">check_circle</span>
-<p class="font-body-default text-body-default text-on-surface">
-<strong>Sikap Kerja:</strong> Disiplin kehadiran, berintegritas tinggi, bersemangat untuk belajar hal baru, dan sanggup mematuhi SOP kerahasiaan data perusahaan.
-              </p>
-</div>
-</div>
-<!-- Alert Dokumen Wajib -->
-<div class="mt-2 p-4 rounded-DEFAULT bg-surface-container flex items-start gap-3.5">
-<span class="material-symbols-outlined text-secondary-container text-[24px] shrink-0">info</span>
-<div class="flex flex-col gap-1">
-<span class="font-label-md text-label-md font-semibold text-on-surface">Dokumen yang disiapkan saat dinyatakan lolos berkas:</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">1. Surat Izin Orang Tua bertandatangan basah, 2. Transkrip Nilai Rapor Semester Terakhir, 3. Surat Pengantar Resmi BKK Penus.</span>
-</div>
-</div>
-</section>
-<!-- Keuntungan / Benefits -->
-<section class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex flex-col gap-6">
-<div class="flex items-center gap-3">
-<div class="w-3 h-8 bg-primary-container rounded-full"></div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Keuntungan &amp; Fasilitas Peserta PKL</h2>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex items-start gap-3">
-<span class="material-symbols-outlined text-primary text-[24px] shrink-0">workspace_premium</span>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface">Sertifikat Industri Resmi SKKNI</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Sertifikasi kompetensi resmi berstandar nasional yang diakui asosiasi DUDI.</span>
-</div>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex items-start gap-3">
-<span class="material-symbols-outlined text-secondary text-[24px] shrink-0">wallet</span>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface">Uang Saku &amp; Uang Makan Bulanan</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Subsidi operasional berkala yang ditransfer langsung ke rekening siswa.</span>
-</div>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex items-start gap-3">
-<span class="material-symbols-outlined text-primary text-[24px] shrink-0">supervisor_account</span>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface">Mentorship 1-on-1 Intensif</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Review kode mingguan langsung dari Software Engineer berpengalaman.</span>
-</div>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex items-start gap-3">
-<span class="material-symbols-outlined text-tertiary text-[24px] shrink-0">badge</span>
-<div class="flex flex-col">
-<span class="font-title-md text-title-md text-on-surface">Golden Ticket Rekrutmen Pasca Lulus</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Peluang kontrak langsung sebagai Junior Staff tanpa tes ulang saat lulus SMK.</span>
-</div>
-</div>
-</div>
-</section>
-<!-- Alur Seleksi Step-by-Step -->
-<section class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex flex-col gap-6">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-3">
-<div class="w-3 h-8 bg-on-surface rounded-full"></div>
-<h2 class="font-headline-md text-headline-md text-on-surface">Alur Tahapan Seleksi Masuk</h2>
-</div>
-<span class="font-label-dense text-label-dense text-primary font-semibold">Total Waktu: ~14 Hari Kerja</span>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex flex-col gap-2 relative">
-<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary font-label-dense text-label-dense flex items-center justify-center font-bold">
-                01
-              </div>
-<span class="font-title-md text-title-md text-on-surface">Seleksi Berkas CV BKK</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Kurasi profil siswa, portofolio, dan validasi data absensi sekolah.</span>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex flex-col gap-2 relative">
-<div class="w-8 h-8 rounded-full bg-secondary text-on-secondary font-label-dense text-label-dense flex items-center justify-center font-bold">
-                02
-              </div>
-<span class="font-title-md text-title-md text-on-surface">Tes Praktik Sekolah</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Live coding / konfigurasi lab di Lab Komputer SMK Penus.</span>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex flex-col gap-2 relative">
-<div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary font-label-dense text-label-dense flex items-center justify-center font-bold">
-                03
-              </div>
-<span class="font-title-md text-title-md text-on-surface">Wawancara DUDI</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Sesi tatap muka online / offline dengan tim HRD &amp; Tech Lead mitra.</span>
-</div>
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex flex-col gap-2 relative">
-<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-label-dense text-label-dense flex items-center justify-center font-bold">
-                04
-              </div>
-<span class="font-title-md text-title-md text-on-surface">Surat Tugas PKL</span>
-<span class="font-body-dense text-body-dense text-on-surface-variant">Penerbitan Surat Tugas resmi sekolah dan pembekalan pra-keberangkatan.</span>
-</div>
-</div>
-</section>
-</div>
-<!-- KOLOM KANAN (Sticky Summary Card & Form Lamaran) -->
-<div class="lg:col-span-4 flex flex-col gap-8 lg:sticky lg:top-24">
-<!-- Card Lamaran Utama -->
-<div class="bg-surface-container-lowest rounded-lg p-6 sm:p-7 shadow-md flex flex-col gap-6 relative overflow-hidden">
-<div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary-container via-secondary-container to-primary"></div>
-<div class="flex flex-col gap-1">
-<span class="font-label-dense text-label-dense uppercase tracking-wider text-outline font-semibold">Status Pendaftaran PKL</span>
-<div class="flex items-center justify-between">
-<span class="font-headline-sm text-headline-sm text-on-surface">Terbuka Untuk Siswa</span>
-<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-dense text-label-dense font-bold">
-                Sisa 2 Kursi
-              </span>
-</div>
-</div>
-<!-- Progress Ring & Kuota Mini Bar -->
-<div class="p-4 rounded-DEFAULT bg-surface-container-low flex flex-col gap-3">
-<div class="flex items-center justify-between font-label-dense text-label-dense">
-<span class="text-on-surface-variant">Kapasitas Diterima DUDI</span>
-<span class="font-bold text-on-surface">2 dari 4 Siswa Terisi</span>
-</div>
-<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden">
-<div class="h-full bg-primary-container rounded-full transition-all duration-500" style="width: 50%;"></div>
-</div>
-<div class="flex items-center justify-between font-body-dense text-body-dense text-on-surface-variant">
-<span>Batas Akhir:</span>
-<span class="font-semibold text-primary">15 November 2024</span>
-</div>
-</div>
-<!-- Snapshot Ringkas Form Data -->
-<div class="flex flex-col gap-3 font-body-dense text-body-dense text-on-surface-variant">
-<div class="flex items-center justify-between py-1.5 bg-surface-container/50 px-3 rounded-DEFAULT">
-<span class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px] text-tertiary">schedule</span>
-                Durasi Magang
-              </span>
-<span class="font-semibold text-on-surface">6 Bulan Penuh</span>
-</div>
-<div class="flex items-center justify-between py-1.5 bg-surface-container/50 px-3 rounded-DEFAULT">
-<span class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px] text-tertiary">badge</span>
-                Status Siswa
-              </span>
-<span class="font-semibold text-on-surface">Kelas XI &amp; XII</span>
-</div>
-<div class="flex items-center justify-between py-1.5 bg-surface-container/50 px-3 rounded-DEFAULT">
-<span class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px] text-tertiary">assignment_turned_in</span>
-                Metode Seleksi
-              </span>
-<span class="font-semibold text-on-surface">Online via BKK Penus</span>
-</div>
-</div>
-<!-- Modal Trigger / Tombol Lamar -->
-<div class="flex flex-col gap-3">
-<button class="w-full py-4 rounded-full bg-primary-container text-on-primary-container font-headline-sm text-headline-sm font-semibold hover:bg-primary shadow-md transition-all flex items-center justify-center gap-2" id="btn-lamar" onclick="document.getElementById('modal-lamar').classList.remove('hidden');" type="button">
-<span class="material-symbols-outlined text-[22px]">send</span>
-              Lamar Posisi Ini Sekarang
-            </button>
-<p class="font-body-dense text-body-dense text-center text-on-surface-variant">
-              Sistem BKK otomatis menyertakan <strong>CV Digital &amp; Nilai Rapor</strong> akun Anda.
+            <h1 class="mt-8 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide">
+                Lowongan <x-sketch.underline tone="text-brand-signal">Tidak Ditemukan</x-sketch.underline>
+            </h1>
+            <p class="mt-8 text-base leading-relaxed text-brand-ink/70">
+                Lowongan yang Anda cari sudah ditutup, dihapus, atau tautannya salah. Lihat lowongan aktif lainnya dari mitra IDUKA BKK Penus.
             </p>
-</div>
-<!-- Action Shortcuts -->
-<div class="flex flex-col gap-2 pt-2">
-<button class="w-full py-2.5 px-4 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold transition-colors flex items-center justify-center gap-2" onclick="alert('Membuka pratinjau CV BKK Siswa...');" type="button">
-<span class="material-symbols-outlined text-[18px] text-primary">visibility</span>
-              Preview CV Kamu Sebelum Melamar
-            </button>
-<a class="w-full py-2.5 px-4 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center justify-center gap-2 text-center" download="" href="#">
-<span class="material-symbols-outlined text-[18px] text-secondary">download</span>
-              Unduh Format Surat Izin Orang Tua (PDF)
+            <a href="{{ route('bkk.lowongan') }}" class="group mt-8 inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                Lihat Semua Lowongan
+                <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
             </a>
-</div>
-<!-- PIC Rekruter / Koordinator BKK -->
-<div class="pt-4 flex items-center gap-3 bg-surface-container-low p-4 rounded-DEFAULT">
-<img class="w-11 h-11 rounded-full object-cover shrink-0" data-alt="Professional Indonesian female teacher and vocational career counselor headshot portrait wearing polite formal uniform with friendly welcoming expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcjjCBfAezmA703GB7G6UMBzuTjpfz2ckJ44u9CcsP6baMLGVwRx8vGC0RlPMUPrFYztJDQ1OAJqD4Zts3LbD7JG-jsCB-qHxzg-YsFXmG4n4K_q2bpW-BnSxVLYyGYo3XdNiQt1HUonOpFHuenH0yj8LZ6bTrb89twO8-l36FOgs024UjJwi_ohbax_lPfxaz8xbHA7iFtj9oc8fssEUuCpX-Rso6SViRGMWJNHqej4fvE5OWmVMS"/>
-<div class="flex flex-col min-w-0">
-<span class="font-label-dense text-label-dense text-on-surface-variant uppercase">Koordinator Hubin &amp; BKK</span>
-<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Ibu Sri Rahayu, M.Pd.</span>
-<span class="font-body-dense text-body-dense text-tertiary">Konsultasi via Ruang BKK Gd. A Lt. 2</span>
-</div>
-</div>
-</div>
-<!-- Mini Banner Bantuan Siswa -->
-<div class="p-6 rounded-lg bg-secondary-fixed text-on-secondary-fixed flex items-start gap-4">
-<span class="material-symbols-outlined text-[28px] shrink-0 text-secondary">help_center</span>
-<div class="flex flex-col gap-1">
-<span class="font-title-md text-title-md font-semibold">Butuh Panduan Portfolio?</span>
-<p class="font-body-dense text-body-dense text-on-secondary-fixed-variant">
-              Ikuti klinik bimbingan CV &amp; simulasi wawancara setiap hari Rabu sepulang sekolah di Lab Multimedia BKK Penus.
-            </p>
-</div>
-</div>
-</div>
-</div>
-<!-- Rekomendasi Lowongan PKL Serupa -->
-<section class="mt-20 pt-10 flex flex-col gap-8">
-<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-<div class="flex flex-col gap-1">
-<span class="font-label-dense text-label-dense uppercase tracking-wider text-primary font-bold">Peluang Karir Alternatif</span>
-<h2 class="font-headline-lg text-headline-lg text-on-surface">Rekomendasi Lowongan PKL &amp; Kerja Terkait</h2>
-</div>
-<a class="inline-flex items-center gap-1.5 font-label-md text-label-md text-primary font-semibold hover:text-on-surface transition-colors" data-path="lowongan-pkl-&amp;-kerja" href="#">
-          Lihat Semua 34 Lowongan Aktif
-          <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</a>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-<!-- Lowongan Serupa 1 -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-6">
-<div class="flex items-start gap-4">
-<div class="w-14 h-14 rounded-DEFAULT bg-surface-container flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-[28px]">network_node</span>
-</div>
-<div class="flex flex-col gap-1 min-w-0">
-<div class="flex flex-wrap items-center gap-2">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-dense text-label-dense font-semibold">
-                  PKL 6 Bulan
+        </div>
+    </section>
+@else
+{{-- ============================================================
+     1. KEPALA: breadcrumb, perusahaan, posisi, ringkasan & bagikan
+     ============================================================ --}}
+<section class="relative bg-white px-6 pt-32 pb-14 md:pt-40 md:pb-16">
+    <div aria-hidden="true" class="pointer-events-none absolute right-6 top-28 hidden md:block w-40 h-28 bg-[radial-gradient(circle,var(--color-brand-mist)_2px,transparent_2.5px)] bg-size-[22px_22px]"></div>
+
+    <div class="relative max-w-6xl mx-auto animate-fade-up">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <nav aria-label="Breadcrumb" class="min-w-0">
+                <ol class="flex items-center gap-2 text-sm text-brand-ink/50">
+                    <li class="shrink-0"><a href="{{ route('bkk.index') }}" class="flex items-center gap-1.5 transition-colors hover:text-brand-darkred"><x-landing.icon name="home" class="w-4 h-4" />Beranda</a></li>
+                    <li class="flex shrink-0 items-center gap-2"><x-landing.icon name="chevronRight" class="w-3.5 h-3.5" /><a href="{{ route('bkk.lowongan') }}" class="transition-colors hover:text-brand-darkred">Lowongan PKL &amp; Kerja</a></li>
+                    <li class="flex min-w-0 items-center gap-2"><x-landing.icon name="chevronRight" class="w-3.5 h-3.5 shrink-0" /><span aria-current="page" class="truncate font-medium text-brand-ink sm:max-w-sm">{{ $lowongan->judul }}</span></li>
+                </ol>
+            </nav>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="inline-flex items-center gap-2 rounded-full bg-brand-softmist px-3 py-1 text-xs font-semibold text-brand-ink/70">
+                    <span class="w-2 h-2 rounded-full {{ $isOpen ? 'bg-brand-signal' : 'bg-brand-ink/30' }}"></span>
+                    {{ $lowongan->tipe_badge ?: ($isPkl ? 'PKL Siswa' : 'Kerja Alumni') }}
                 </span>
-<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-dense text-label-dense">
-                  Jurusan TKJ
+                <span class="rounded-full bg-brand-darkred/10 px-3 py-1 text-xs font-semibold text-brand-darkred">
+                    ID: PENUS-{{ $isPkl ? 'PKL' : 'KRJ' }}-{{ str_pad($lowongan->id, 3, '0', STR_PAD_LEFT) }}
                 </span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-on-surface hover:text-primary transition-colors cursor-pointer truncate">
-                Network &amp; Cloud Infrastructure Intern
-              </h3>
-<span class="font-label-md text-label-md text-on-surface-variant">PT Data Prima Integrasi • Sentul, Bogor</span>
-</div>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">
-            Membantu teknisi lapangan mengonfigurasi perangkat MikroTik, switch manageable, kabel fiber optic, dan pemantauan server Zabbix.
-          </p>
-<div class="flex items-center justify-between pt-2">
-<span class="font-label-dense text-label-dense text-outline">Batas: 20 Nov 2024</span>
-<a class="inline-flex items-center gap-1 font-label-md text-label-md text-primary font-semibold hover:underline" href="#">
-              Detail Lowongan
-              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-</a>
-</div>
-</div>
-<!-- Lowongan Serupa 2 -->
-<div class="p-6 rounded-lg bg-surface-container-lowest shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-6">
-<div class="flex items-start gap-4">
-<div class="w-14 h-14 rounded-DEFAULT bg-surface-container flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-secondary text-[28px]">design_services</span>
-</div>
-<div class="flex flex-col gap-1 min-w-0">
-<div class="flex flex-wrap items-center gap-2">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface font-label-dense text-label-dense font-semibold">
-                  PKL 6 Bulan
-                </span>
-<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-dense text-label-dense">
-                  Jurusan RPL / DKV
-                </span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-on-surface hover:text-primary transition-colors cursor-pointer truncate">
-                Junior UI/UX &amp; Web Content Designer
-              </h3>
-<span class="font-label-md text-label-md text-on-surface-variant">Kreatif Nusa Media • Cibinong, Kab. Bogor</span>
-</div>
-</div>
-<p class="font-body-dense text-body-dense text-on-surface-variant line-clamp-2">
-            Praktek merancang mockup mobile application menggunakan Figma, membuat aset icon, serta menyusun layout landing page promosi sekolah.
-          </p>
-<div class="flex items-center justify-between pt-2">
-<span class="font-label-dense text-label-dense text-outline">Batas: 18 Nov 2024</span>
-<a class="inline-flex items-center gap-1 font-label-md text-label-md text-primary font-semibold hover:underline" href="#">
-              Detail Lowongan
-              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-</a>
-</div>
-</div>
-</div>
+            </div>
+        </div>
+
+        <div class="mt-10 md:mt-12 flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div class="flex min-w-0 flex-col gap-6 sm:flex-row sm:items-start">
+                <div class="relative shrink-0 self-start">
+                    <x-landing.company-logo :mitra="$mitra" class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl text-2xl shadow-softpill" />
+                    @if ($mitra?->is_verified)
+                        <span title="Mitra Terverifikasi" class="absolute -right-2 -bottom-2 flex w-8 h-8 items-center justify-center rounded-full bg-white text-brand-darkred shadow-sm">
+                            <x-landing.icon name="badgeCheck" class="w-5 h-5" />
+                        </span>
+                    @endif
+                </div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-softmist px-3 py-1 text-xs font-semibold text-brand-ink/75">
+                            <x-landing.icon name="building" class="w-3.5 h-3.5 text-brand-darkred" />
+                            {{ $companyName }}
+                        </span>
+                        @if ($mitra?->is_verified)
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-darkred px-3 py-1 text-xs font-semibold text-white">
+                                <x-landing.icon name="shield" class="w-3.5 h-3.5" />
+                                Terverifikasi BKK Penus
+                            </span>
+                        @endif
+                        @if ($mouRange)
+                            <span class="rounded-full border border-brand-darkred/20 px-3 py-1 text-xs font-semibold text-brand-darkred">MoU DUDI {{ $mouRange }}</span>
+                        @endif
+                    </div>
+                    <h1 class="mt-4 max-w-3xl text-left font-display text-3xl md:text-4xl lg:text-5xl font-bold uppercase tracking-wide leading-tight">
+                        @if ($titleFirstWords !== '')
+                            {{ $titleFirstWords }}
+                        @endif
+                        <x-sketch.underline size="lg" tone="text-brand-signal" :delay="500">{{ $titleLastWord }}</x-sketch.underline>
+                    </h1>
+                    <ul class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-brand-ink/70">
+                        <li class="flex items-center gap-2 font-semibold text-brand-darkred">
+                            <x-landing.icon name="school" class="w-4 h-4 shrink-0" />
+                            {{ $isPkl ? 'PKL Siswa SMK' : 'Kerja Alumni' }} — {{ $lowongan->target_jurusan }}
+                        </li>
+                        <li class="flex items-center gap-2"><x-landing.icon name="mapPin" class="w-4 h-4 shrink-0 text-brand-darkred" />{{ $lowongan->lokasi }}</li>
+                        @if ($lowongan->gaji_kompensasi)
+                            <li class="flex items-center gap-2"><x-landing.icon name="wallet" class="w-4 h-4 shrink-0 text-brand-darkred" />{{ $lowongan->gaji_kompensasi }}</li>
+                        @endif
+                        <li class="flex items-center gap-2"><x-landing.icon name="calendar" class="w-4 h-4 shrink-0 text-brand-darkred" />Tutup {{ $deadlineText }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            @php $roundButton = 'inline-flex w-11 h-11 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred transition-colors hover:bg-brand-darkred hover:text-white'; @endphp
+            <div class="flex shrink-0 items-center gap-2.5">
+                <button type="button" x-data="copyLink(@js($shareUrl))" @click="copy()" title="Bagikan Lowongan" aria-label="Salin tautan lowongan" class="{{ $roundButton }}">
+                    <x-landing.icon name="link" class="w-5 h-5" x-show="!copied" />
+                    <x-landing.icon name="check" class="w-5 h-5" x-show="copied" x-cloak />
+                    <span role="status" class="sr-only" x-text="copied ? 'Tautan lowongan berhasil disalin' : ''"></span>
+                </button>
+                <button type="button" x-data="{ saved: false }" @click="saved = !saved" title="Simpan ke Bookmark Siswa" aria-label="Simpan ke Bookmark Siswa" :aria-pressed="saved.toString()"
+                    class="{{ $roundButton }}" :class="{ 'bg-brand-darkred! text-white!': saved }">
+                    <x-landing.icon name="bookmark" class="w-5 h-5" x-bind:class="{ 'fill-current': saved }" />
+                </button>
+            </div>
+        </div>
+    </div>
 </section>
-</div>
-<!-- Interactive Submission Scrim Modal -->
-<div class="fixed inset-0 z-50 hidden bg-on-background/70 backdrop-blur-sm flex items-center justify-center p-4" id="modal-lamar">
-<div class="w-full max-w-lg bg-surface-container-lowest rounded-lg p-6 sm:p-8 shadow-xl flex flex-col gap-6 relative">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-2.5">
-<span class="material-symbols-outlined text-primary text-[24px]">send</span>
-<span class="font-title-md text-title-md text-on-surface">Konfirmasi Pengajuan PKL</span>
-</div>
-<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" onclick="document.getElementById('modal-lamar').classList.add('hidden');" type="button">
-<span class="material-symbols-outlined text-[18px]">close</span>
-</button>
-</div>
-<div class="flex flex-col gap-3 font-body-default text-body-default text-on-surface-variant">
-<p>Anda akan mendaftar pada posisi:</p>
-<div class="p-3 bg-surface-container-low rounded-DEFAULT flex flex-col">
-<span class="font-headline-sm text-headline-sm text-on-surface">Junior Frontend Developer &amp; IT Support</span>
-<span class="font-label-md text-label-md text-tertiary">PT Pelita Teknologi Digital</span>
-</div>
-<div class="flex flex-col gap-2 pt-2">
-<label class="font-label-dense text-label-dense uppercase tracking-wider text-on-surface">Tautan Portofolio / GitHub Siswa</label>
-<input class="w-full px-4 py-2.5 rounded-DEFAULT bg-surface-container-lowest text-on-surface text-body-dense shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="https://github.com/username/project-anda" type="url"/>
-</div>
-<div class="flex flex-col gap-2">
-<label class="font-label-dense text-label-dense uppercase tracking-wider text-on-surface">Catatan Tambahan untuk Kaprogli &amp; DUDI (Opsional)</label>
-<textarea class="w-full px-4 py-2.5 rounded-DEFAULT bg-surface-container-lowest text-on-surface text-body-dense shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Sebutkan proyek sekolah terbaik yang pernah Anda buat..." rows="3"></textarea>
-</div>
-<div class="flex items-start gap-2 pt-1">
-<input class="mt-1 rounded text-primary" id="check-pernyataan" type="checkbox"/>
-<label class="font-body-dense text-body-dense text-on-surface-variant leading-snug" for="check-pernyataan">
-            Saya menyatakan data di profil siswa BKK benar dan bersedia mengikuti seluruh tata tertib PKL SMK Plus Pelita Nusantara.
-          </label>
-</div>
-</div>
-<div class="flex items-center justify-end gap-3 pt-2">
-<button class="px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold transition-colors" onclick="document.getElementById('modal-lamar').classList.add('hidden');" type="button">
-          Batal
-        </button>
-<button class="px-6 py-2.5 rounded-full bg-primary-container text-on-primary-container hover:bg-primary font-label-md text-label-md font-semibold shadow transition-colors" onclick="this.textContent='Mengirim Berkas...'; setTimeout(()=&gt;{ alert('Selamat! Pengajuan PKL berhasil dikirim ke BKK SMK Penus.'); document.getElementById('modal-lamar').classList.add('hidden'); }, 1200);" type="button">
-          Kirim Lamaran Sekarang
-        </button>
-</div>
-</div>
-</div>
-</div>
+
+{{-- ============================================================
+     2. ISI LOWONGAN & KARTU LAMARAN
+     ============================================================ --}}
+<section class="relative bg-brand-softmist px-6 py-16 md:py-24" x-data="{ apply: false }" @keydown.escape.window="apply = false">
+    <div class="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[1fr_22rem] lg:items-start xl:gap-16">
+        <div class="flex min-w-0 flex-col gap-8">
+            {{-- Ringkasan peran & profil perusahaan --}}
+            <article class="relative rounded-card bg-white p-7 md:p-9 shadow-sm ring-1 ring-brand-ink/5">
+                <x-sketch.corner class="-left-3 -top-3 w-20 h-9" />
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <h2 class="text-left font-display text-2xl font-bold uppercase tracking-wide">Ringkasan Peran &amp; Profil Perusahaan</h2>
+                    <span class="text-[11px] font-semibold uppercase tracking-[0.25em] text-brand-ink/40">DUDI Partner Info</span>
+                </div>
+                <p class="mt-6 text-base md:text-lg leading-relaxed text-brand-ink/80">{{ $lowongan->deskripsi }}</p>
+                @if ($mitra)
+                    <p class="mt-4 leading-relaxed text-brand-ink/70">
+                        <strong class="font-semibold text-brand-ink">{{ $companyName }}</strong>
+                        bergerak di sektor {{ $mitra->sektor_industri }}{{ $mitra->kota ? ', berkantor di ' . $mitra->kota : '' }},
+                        dengan status kemitraan <strong class="font-semibold text-brand-ink">{{ $mitra->status_kemitraan ?: 'Mitra IDUKA' }}</strong> di SMK Plus Pelita Nusantara.
+                        @if ($mitra->website)
+                            <a href="{{ Str::startsWith($mitra->website, 'http') ? $mitra->website : 'https://' . $mitra->website }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-brand-darkred hover:underline">Kunjungi situs perusahaan</a>.
+                        @endif
+                    </p>
+                @endif
+
+                <dl class="mt-8 grid gap-4 sm:grid-cols-3">
+                    @foreach ($highlights as $item)
+                        <div class="rounded-xl bg-brand-softmist/70 p-4">
+                            <dt class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-ink/50">
+                                <x-landing.icon :name="$item['icon']" class="w-3.5 h-3.5 text-brand-darkred" />
+                                {{ $item['label'] }}
+                            </dt>
+                            <dd class="mt-1.5 text-sm font-semibold leading-snug">{{ $item['value'] }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </article>
+
+            {{-- Kualifikasi --}}
+            @if ($requirements)
+                <article class="rounded-card bg-white p-7 md:p-9 shadow-sm ring-1 ring-brand-ink/5">
+                    <h2 class="text-left font-display text-2xl font-bold uppercase tracking-wide">
+                        Kualifikasi &amp; <x-sketch.underline>Persyaratan</x-sketch.underline>
+                    </h2>
+                    <ul class="mt-8 space-y-4">
+                        @foreach ($requirements as $i => $requirement)
+                            <li class="flex gap-4">
+                                <span class="mt-1.5 shrink-0 text-brand-darkred"><x-sketch.arrow :delay="$i * 150" class="w-8 h-4" /></span>
+                                <span class="leading-relaxed text-brand-ink/80">{{ $requirement }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    @if ($isPkl)
+                        <div class="relative mt-8 rounded-xl bg-brand-darkred/5 py-4 pr-4 pl-8">
+                            <x-sketch.rule bold vertical class="text-brand-darkred top-1 bottom-1 left-2 w-3" />
+                            <p class="text-sm font-semibold">Dokumen yang disiapkan saat dinyatakan lolos berkas:</p>
+                            <p class="mt-1 text-sm leading-relaxed text-brand-ink/70">1. Surat Izin Orang Tua bertandatangan basah, 2. Transkrip Nilai Rapor Semester Terakhir, 3. Surat Pengantar Resmi BKK Penus.</p>
+                        </div>
+                    @endif
+                </article>
+            @endif
+
+            {{-- Keuntungan --}}
+            @if ($benefits)
+                <article class="rounded-card bg-white p-7 md:p-9 shadow-sm ring-1 ring-brand-ink/5">
+                    <h2 class="text-left font-display text-2xl font-bold uppercase tracking-wide">
+                        Keuntungan &amp; Fasilitas {{ $isPkl ? 'Peserta PKL' : 'Karyawan' }}
+                    </h2>
+                    <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+                        @foreach ($benefits as $benefit)
+                            <li class="flex items-start gap-3 rounded-xl bg-brand-softmist/70 p-4">
+                                <span class="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-darkred shadow-sm">
+                                    <x-landing.icon name="award" class="w-4.5 h-4.5" />
+                                </span>
+                                <span class="text-sm font-medium leading-relaxed">{{ $benefit }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </article>
+            @endif
+
+            {{-- Alur seleksi: nomor besar, dipisah panah coretan --}}
+            <article class="rounded-card bg-white p-7 md:p-9 shadow-sm ring-1 ring-brand-ink/5">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <h2 class="text-left font-display text-2xl font-bold uppercase tracking-wide">Alur Tahapan Seleksi Masuk</h2>
+                    <span class="text-xs font-semibold text-brand-darkred">Total Waktu: ~14 Hari Kerja</span>
+                </div>
+                <ol class="mt-8 grid gap-6 md:grid-cols-4 md:gap-4">
+                    @foreach ($selectionSteps as $i => $step)
+                        <li class="relative">
+                            <div class="flex items-center gap-3">
+                                <span class="font-display text-4xl font-bold leading-none {{ $i === 0 ? 'text-brand-darkred' : 'text-brand-ink/20' }}">{{ sprintf('%02d', $i + 1) }}</span>
+                                @if ($i < count($selectionSteps) - 1)
+                                    <span class="hidden flex-1 text-brand-darkred/40 md:block"><x-sketch.arrow :delay="$i * 200" class="w-full max-w-12 h-4" /></span>
+                                @endif
+                            </div>
+                            <p class="mt-3 text-sm font-semibold">{{ $step['title'] }}</p>
+                            <p class="mt-1 text-xs leading-relaxed text-brand-ink/60">{{ $step['desc'] }}</p>
+                        </li>
+                    @endforeach
+                </ol>
+            </article>
+        </div>
+
+        {{-- Kartu lamaran: bingkai coretan, menempel saat discroll di desktop --}}
+        <aside class="flex flex-col gap-8 lg:sticky lg:top-32">
+            <div class="relative bg-white p-6 sm:p-7">
+                <x-sketch.box />
+                <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-brand-ink/50">Status Pendaftaran {{ $isPkl ? 'PKL' : 'Kerja' }}</p>
+                <div class="mt-2 flex items-center justify-between gap-3">
+                    <p class="font-display text-xl font-bold uppercase tracking-wide {{ $isOpen ? '' : 'text-brand-ink/50' }}">
+                        {{ $isOpen ? ($isPkl ? 'Terbuka Untuk Siswa' : 'Terbuka Untuk Alumni') : 'Pendaftaran Ditutup' }}
+                    </p>
+                    <span class="shrink-0 rounded-full bg-brand-darkred/10 px-2.5 py-1 text-xs font-bold text-brand-darkred">{{ $kuota }} {{ $kuotaUnit }}</span>
+                </div>
+
+                <div class="mt-5 rounded-xl bg-brand-softmist/70 p-4">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-brand-ink/60">Pelamar Terdaftar</span>
+                        <span class="font-bold">{{ $pelamar }} untuk {{ $kuota }} {{ $kuotaUnit }}</span>
+                    </div>
+                    <div class="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-white">
+                        <div class="h-full rounded-full bg-linear-to-r from-brand-signal to-brand-darkred" style="width: {{ max(4, $fill) }}%"></div>
+                    </div>
+                    <div class="mt-2.5 flex items-center justify-between text-xs">
+                        <span class="text-brand-ink/60">Batas Akhir:</span>
+                        <span class="font-semibold text-brand-darkred">{{ $deadlineText }}@if ($deadlineHint) <span class="font-normal text-brand-ink/50">({{ $deadlineHint }})</span>@endif</span>
+                    </div>
+                </div>
+
+                <dl class="mt-4 divide-y divide-dashed divide-brand-ink/10 text-sm">
+                    @foreach ([['clock', 'Tipe Program', $lowongan->tipe_badge ?: $lowongan->tipe], ['school', 'Target Jurusan', $lowongan->target_jurusan], ['check', 'Metode Seleksi', 'Online via BKK Penus']] as [$icon, $label, $value])
+                        <div class="flex items-start justify-between gap-4 py-2.5">
+                            <dt class="flex shrink-0 items-center gap-2 text-brand-ink/60"><x-landing.icon :name="$icon" class="w-4 h-4 text-brand-darkred" />{{ $label }}</dt>
+                            <dd class="text-right font-semibold">{{ $value }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+
+                @if ($isOpen)
+                    <button type="button" @click="apply = true" class="group mt-5 inline-flex w-full items-center justify-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred py-4 text-base font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
+                        Lamar Posisi Ini Sekarang
+                        <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                    </button>
+                    <p class="mt-3 text-center text-xs text-brand-ink/60">Sistem BKK otomatis menyertakan <strong class="text-brand-ink">CV Digital &amp; Nilai Rapor</strong> akun Anda.</p>
+                @else
+                    <p class="mt-5 rounded-full bg-brand-ink/5 py-3.5 text-center text-sm font-semibold text-brand-ink/50">Pendaftaran untuk lowongan ini sudah ditutup</p>
+                @endif
+
+                <div class="mt-5 flex flex-col gap-2">
+                    <a href="{{ route('bkk.me.cv') }}" class="inline-flex items-center justify-center gap-2 rounded-full border-2 border-brand-darkred/20 px-4 py-2.5 text-sm font-semibold text-brand-darkred transition-colors hover:border-brand-darkred hover:bg-brand-darkred/5">
+                        <x-landing.icon name="eye" class="w-4 h-4" />
+                        Preview CV Kamu Sebelum Melamar
+                    </a>
+                    @if ($isPkl)
+                        <a href="#" class="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-brand-ink/60 transition-colors hover:bg-brand-ink/5 hover:text-brand-ink">
+                            <x-landing.icon name="download" class="w-4 h-4" />
+                            Unduh Format Surat Izin Orang Tua (PDF)
+                        </a>
+                    @endif
+                </div>
+
+                <div class="mt-5 flex items-center gap-3 rounded-xl bg-brand-softmist/70 p-4">
+                    <span class="flex w-11 h-11 shrink-0 items-center justify-center rounded-full bg-brand-darkred font-display text-sm font-bold text-white">SR</span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-ink/50">Koordinator Hubin &amp; BKK</p>
+                        <p class="truncate text-sm font-semibold">Ibu Sri Rahayu, M.Pd.</p>
+                        <p class="text-xs text-brand-ink/60">Konsultasi via Ruang BKK Gd. A Lt. 2</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative overflow-hidden rounded-card bg-linear-135 from-brand-darkred to-brand-deepred p-6 text-white shadow-softpill">
+                <p class="flex items-center gap-2 font-display text-lg font-bold uppercase tracking-wide">
+                    <x-landing.icon name="bulb" class="w-5 h-5 text-[#F5C2C7]" />
+                    Butuh Panduan Portfolio?
+                </p>
+                <p class="mt-2 text-sm leading-relaxed text-white/85">
+                    Ikuti klinik bimbingan CV &amp; simulasi wawancara setiap hari Rabu sepulang sekolah di Lab Multimedia BKK Penus.
+                </p>
+            </div>
+        </aside>
+    </div>
+
+    {{-- Konfirmasi lamaran: dikirim ke Portal Siswa (perlu masuk sebagai siswa/alumni) --}}
+    @if ($isOpen)
+        <div x-show="apply" x-cloak x-transition.opacity class="fixed inset-0 z-60 flex items-center justify-center bg-brand-ink/70 p-4 backdrop-blur-sm" @click.self="apply = false">
+            <form method="POST" action="{{ route('bkk.me.daftar', $lowongan->slug ?: $lowongan->id) }}" role="dialog" aria-modal="true" aria-labelledby="judul-lamaran"
+                class="relative w-full max-w-lg rounded-card bg-white p-6 sm:p-8 shadow-2xl">
+                @csrf
+                <div class="flex items-center justify-between gap-4">
+                    <h2 id="judul-lamaran" class="flex items-center gap-2.5 font-display text-xl font-bold uppercase tracking-wide">
+                        <x-landing.icon name="send" class="w-5 h-5 text-brand-darkred" />
+                        Konfirmasi Pengajuan {{ $isPkl ? 'PKL' : 'Lamaran' }}
+                    </h2>
+                    <button type="button" @click="apply = false" aria-label="Tutup" class="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-brand-ink/5 transition-colors hover:bg-brand-ink/10">
+                        <x-landing.icon name="x" class="w-4 h-4" />
+                    </button>
+                </div>
+
+                <p class="mt-5 text-sm text-brand-ink/70">Anda akan mendaftar pada posisi:</p>
+                <div class="relative mt-2 rounded-xl bg-brand-softmist/70 py-3 pr-3 pl-7">
+                    <x-sketch.rule bold vertical class="text-brand-darkred top-1 bottom-1 left-1.5 w-3" />
+                    <p class="font-semibold">{{ $lowongan->judul }}</p>
+                    <p class="text-sm text-brand-darkred">{{ $companyName }}</p>
+                </div>
+
+                <label for="lamaran-portofolio" class="mt-5 block text-xs font-semibold uppercase tracking-[0.15em]">Tautan Portofolio / GitHub Siswa</label>
+                <input id="lamaran-portofolio" name="portofolio_url" type="url" placeholder="https://github.com/username/project-anda" class="mt-2 w-full rounded-xl border-2 border-brand-ink/10 px-4 py-2.5 text-sm focus:border-brand-darkred focus:outline-none focus:ring-4 focus:ring-brand-darkred/10">
+
+                <label for="lamaran-catatan" class="mt-4 block text-xs font-semibold uppercase tracking-[0.15em]">Catatan Tambahan untuk Kaprogli &amp; DUDI (Opsional)</label>
+                <textarea id="lamaran-catatan" name="catatan" rows="3" placeholder="Sebutkan proyek sekolah terbaik yang pernah Anda buat..." class="mt-2 w-full rounded-xl border-2 border-brand-ink/10 px-4 py-2.5 text-sm focus:border-brand-darkred focus:outline-none focus:ring-4 focus:ring-brand-darkred/10"></textarea>
+
+                <label class="mt-4 flex items-start gap-2.5 text-sm leading-snug text-brand-ink/70">
+                    <input type="checkbox" required class="mt-0.5 w-4 h-4 shrink-0 accent-brand-darkred">
+                    Saya menyatakan data di profil siswa BKK benar dan bersedia mengikuti seluruh tata tertib PKL SMK Plus Pelita Nusantara.
+                </label>
+
+                <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+                    <button type="button" @click="apply = false" class="rounded-full px-5 py-2.5 text-sm font-semibold text-brand-ink/70 transition-colors hover:bg-brand-ink/5">Batal</button>
+                    <button type="submit" class="group inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-darkred/25">
+                        Kirim Lamaran Sekarang
+                        <x-sketch.arrow class="w-6 h-3 transition-transform group-hover:translate-x-1" />
+                    </button>
+                </div>
+            </form>
+        </div>
+    @endif
+</section>
+
+{{-- ============================================================
+     3. LOWONGAN LAIN
+     ============================================================ --}}
+@if ($relatedLowongan->isNotEmpty())
+    <section class="relative bg-white px-6 py-20 md:py-28">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">Peluang Karir Alternatif</p>
+                    <h2 class="mt-3 text-left font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight">
+                        <x-sketch.frame class="-ml-4 md:-ml-5">Rekomendasi Lowongan PKL &amp; Kerja Terkait</x-sketch.frame>
+                    </h2>
+                </div>
+                <a href="{{ route('bkk.lowongan') }}" class="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-brand-darkred">
+                    Lihat Semua {{ $totalLowongan }} Lowongan Aktif
+                    <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                </a>
+            </div>
+
+            <ul class="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                @foreach ($relatedLowongan as $i => $related)
+                    {{-- Di tablet hanya 2 kolom, jadi kartu ketiga disembunyikan supaya tidak tersisa sendirian --}}
+                    <li @class(['md:max-lg:hidden' => $i === 2])><x-landing.lowongan-card :lowongan="$related" /></li>
+                @endforeach
+            </ul>
+        </div>
+    </section>
+@endif
+@endif
 @endsection

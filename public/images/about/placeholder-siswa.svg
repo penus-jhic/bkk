@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="200" viewBox="0 0 160 200">
+  <!-- Placeholder: ganti dengan foto siswa berlatar transparan (PNG), dipotong sebatas pinggang -->
+  <g fill="#241012" fill-opacity=".18">
+    <circle cx="80" cy="42" r="36"/>
+    <path d="M12 200v-54c0-32 26-58 58-58h20c32 0 58 26 58 58v54z"/>
+  </g>
+</svg>

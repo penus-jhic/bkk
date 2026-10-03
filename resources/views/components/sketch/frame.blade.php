@@ -1,0 +1,3 @@
+{{-- Bingkai garis siku di kiri atas & kanan bawah judul. Untuk judul rata kiri, beri margin negatif
+     (mis. "-ml-4 md:-ml-5") supaya teks tetap sejajar konten dan garisnya menjorok ke kiri. --}}
+<span {{ $attributes->class('relative inline-block px-4 py-2 md:px-5 md:py-2.5') }}><x-sketch.corner class="left-0 top-0 w-24 h-10 md:w-32 md:h-12" />{{ $slot }}<x-sketch.corner :delay="350" class="right-0 bottom-0 rotate-180 w-24 h-10 md:w-32 md:h-12" /></span>

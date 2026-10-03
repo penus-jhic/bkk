@@ -169,8 +169,10 @@ class PublicController extends Controller
         }
 
         $tipe = $request->input('tipe');
-        if (!empty($tipe) && in_array(strtolower($tipe), ['pkl', 'kerja'])) {
-            $query->where('tipe', ucfirst(strtolower($tipe)));
+        // Nilai enum kolom tipe: 'PKL' & 'Kerja'
+        $tipeValues = ['pkl' => 'PKL', 'kerja' => 'Kerja'];
+        if (!empty($tipe) && isset($tipeValues[strtolower($tipe)])) {
+            $query->where('tipe', $tipeValues[strtolower($tipe)]);
         }
 
         $jurusan = $request->input('jurusan');
@@ -179,8 +181,37 @@ class PublicController extends Controller
             $query->where('target_jurusan', $like, "%{$jurusan}%");
         }
 
-        $lowongans = $query->latest('created_at')->paginate(9)->withQueryString();
+        // Pilihan lokasi di halaman lowongan => kata kunci yang dicari di kolom lokasi
+        $lokasiKeywords = [
+            'bogor' => ['Bogor', 'Cibinong'],
+            'jakarta' => ['Jakarta'],
+            'depok' => ['Depok', 'Bekasi'],
+            'karawang' => ['Karawang'],
+            'hybrid' => ['Hybrid', 'Remote'],
+        ];
+        $lokasi = $request->input('lokasi');
+        if (isset($lokasiKeywords[$lokasi])) {
+            $like = config('database.default') === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($lokasiKeywords, $lokasi, $like) {
+                foreach ($lokasiKeywords[$lokasi] as $keyword) {
+                    $q->orWhere('lokasi', $like, "%{$keyword}%");
+                }
+            });
+        }
+
+        $urut = $request->input('urut');
+        match ($urut) {
+            'deadline' => $query->orderBy('deadline'),
+            'quota' => $query->orderByDesc('kuota'),
+            default => $query->latest('created_at'),
+        };
+
+        $lowongans = $query->paginate(9)->withQueryString();
         $totalLowongan = Lowongan::where('status', 'Aktif')->count();
+        $tipeCounts = Lowongan::where('status', 'Aktif')
+            ->selectRaw('tipe, count(*) as total')
+            ->groupBy('tipe')
+            ->pluck('total', 'tipe');
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -192,7 +223,7 @@ class PublicController extends Controller
             ]);
         }
 
-        return view('index.pages.lowongan', compact('lowongans', 'totalLowongan', 'searchQuery', 'tipe', 'jurusan'));
+        return view('index.pages.lowongan', compact('lowongans', 'totalLowongan', 'tipeCounts', 'searchQuery', 'tipe', 'jurusan', 'lokasi', 'urut'));
     }
 
     /**
@@ -201,6 +232,7 @@ class PublicController extends Controller
     public function lowonganDetail(Request $request, string $id_lowongan): View|JsonResponse
     {
         $lowongan = Lowongan::with('mitra')
+            ->withCount('lamarans')
             ->where(function ($q) use ($id_lowongan) {
                 $q->where('slug', $id_lowongan);
                 if (is_numeric($id_lowongan)) {
@@ -230,7 +262,9 @@ class PublicController extends Controller
             ]);
         }
 
-        return view('index.pages.lowongan-detail', compact('id_lowongan', 'lowongan', 'relatedLowongan'));
+        $totalLowongan = Lowongan::where('status', 'Aktif')->count();
+
+        return view('index.pages.lowongan-detail', compact('id_lowongan', 'lowongan', 'relatedLowongan', 'totalLowongan'));
     }
 
     /**
@@ -264,10 +298,17 @@ class PublicController extends Controller
             'nama_pic' => ['required', 'string', 'max:150'],
             'jabatan_pic' => ['required', 'string', 'max:150'],
             'jenis_kerjasama' => ['nullable', 'array'],
+            'jenis_kerjasama.*' => ['string', 'max:100'],
+            'estimasi_kebutuhan' => ['nullable', 'string', 'max:50'],
             'pesan_tambahan' => ['nullable', 'string'],
         ]);
 
         $jenisKerjasama = $validated['jenis_kerjasama'] ?? ['PKL / Magang Siswa'];
+
+        // Tabel permohonan tidak punya kolom estimasi kebutuhan, jadi dicatat di awal pesan tambahan
+        if (!empty($validated['estimasi_kebutuhan'])) {
+            $validated['pesan_tambahan'] = trim('Estimasi kebutuhan talenta: ' . $validated['estimasi_kebutuhan'] . "\n\n" . ($validated['pesan_tambahan'] ?? ''));
+        }
 
         $permohonan = PermohonanKerjasama::create([
             'nama_perusahaan' => $validated['nama_perusahaan'],
@@ -291,7 +332,7 @@ class PublicController extends Controller
         }
 
         return redirect()
-            ->route('bkk.kerjasama')
+            ->to(route('bkk.kerjasama') . '#form-kemitraan')
             ->with('success', 'Terima kasih! Permohonan kerja sama industri Anda telah berhasil dikirimkan ke tim BKK SMK Plus Pelita Nusantara. Tim kami akan segera menghubungi PIC yang bersangkutan.');
     }
 }

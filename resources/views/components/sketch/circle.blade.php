@@ -1,0 +1,2 @@
+{{-- Lingkaran coretan yang melingkari satu kata, ujungnya sengaja kebablasan seperti dilingkari spidol --}}
+<span {{ $attributes->class('relative inline-block px-1') }}>{{ $slot }}<span data-sketch="circle" data-duration="900" aria-hidden="true" class="pointer-events-none absolute text-brand-darkred -left-3 -right-3 -top-2 -bottom-2 md:-left-4 md:-right-4 md:-top-2.5 md:-bottom-2.5"></span></span>

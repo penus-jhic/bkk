@@ -1,0 +1,4 @@
+{{-- Bingkai kotak coretan penuh, digambar memutar: atas, kanan, bawah, lalu kiri. Taruh di dalam elemen "relative".
+     Ujung garis kebablasan ±8px, jadi beri jarak antar kotak minimal gap-6. tone = warna goresan. --}}
+@props(['delay' => 0, 'tone' => 'text-brand-darkred'])
+<x-sketch.rule bold :delay="(int) $delay" class="{{ $tone }} -left-2 -right-2 -top-1 h-3" /><x-sketch.rule bold vertical :delay="(int) $delay + 250" class="{{ $tone }} -top-2 -bottom-2 -right-1 w-3 -scale-x-100" /><x-sketch.rule bold :delay="(int) $delay + 500" class="{{ $tone }} -left-2 -right-2 -bottom-1 h-3 rotate-180" /><x-sketch.rule bold vertical :delay="(int) $delay + 750" class="{{ $tone }} -top-2 -bottom-2 -left-1 w-3 -scale-y-100" />
