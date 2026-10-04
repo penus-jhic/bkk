@@ -54,28 +54,6 @@
         'url' => route('bkk.lowongan.detail', $lowongan->slug ?: $lowongan->id),
     ])->all();
 
-    // Cadangan selama database belum berisi lowongan aktif (isi sama dengan LowonganSeeder)
-    if (empty($jobs)) {
-        $fallbackJobs = [
-            ['Junior Web Developer (Laravel & React)', 'PT Solusi Teknologi Nusantara', false, 'Rekayasa Perangkat Lunak (RPL)', 'Bogor (Hybrid)', 'Rp 4.500.000 - Rp 6.000.000', 60],
-            ['Praktik Kerja Lapangan (PKL) — Web Application Support', 'PT Solusi Teknologi Nusantara', true, 'Rekayasa Perangkat Lunak (RPL)', 'Bogor (On-Site)', 'Uang Saku & Uang Makan Harian', 30],
-            ['Field Technician & Fiber Optic Support (PKL)', 'PT Telkom Akses Semarang', true, 'Teknik Komputer & Jaringan (TKJ)', 'Semarang (Field Ops)', 'Uang Saku Bulanan & Transport', 6],
-            ['Junior IT Operations & Helpdesk Support', 'PT BCA Digital', false, 'TKJ & RPL', 'Jakarta Selatan', 'Rp 5.500.000 - Rp 7.000.000', 90],
-        ];
-
-        $jobs = array_map(fn ($job) => [
-            'title' => $job[0],
-            'mitra' => (object) ['nama_perusahaan' => $job[1], 'logo_url' => null],
-            'company' => $job[1],
-            'pkl' => $job[2],
-            'jurusan' => $job[3],
-            'lokasi' => $job[4],
-            'gaji' => $job[5],
-            'deadline' => now()->addDays($job[6]),
-            'url' => route('bkk.lowongan', ['q' => $job[0]]),
-        ], $fallbackJobs);
-    }
-
     // Data ringkas untuk filter Alpine (pencarian, kategori, jurusan) di section lowongan
     $jobFilterData = array_map(fn ($job) => [
         'tipe' => $job['pkl'] ? 'pkl' : 'kerja',
@@ -84,16 +62,6 @@
     ], $jobs);
 
     $news = $latestBerita->all();
-
-    // Cadangan selama belum ada berita terbit (isi sama dengan BeritaSeeder)
-    if (empty($news)) {
-        $placeholderCover = asset('images/news/beritaplaceholder.jpeg');
-        $news = [
-            (object) ['id' => null, 'slug' => 'job-fair-akbar-smk-plus-pelita-nusantara-2025', 'gambar_sampul' => $placeholderCover, 'kategori' => (object) ['nama' => 'Agenda & Event'], 'formatted_date' => 'Agenda 2025', 'judul' => 'Job Fair Akbar SMK Plus Pelita Nusantara 2025: Hadirkan 35 Perusahaan Nasional dan 500+ Lowongan Khusus Lulusan Vokasi'],
-            (object) ['id' => null, 'slug' => 'penyelarasan-kurikulum-vokasi-2025-astra-otoparts-telkom', 'gambar_sampul' => asset('images/fotogedung.jpg'), 'kategori' => (object) ['nama' => 'Kemitraan'], 'formatted_date' => 'Kemitraan IDUKA', 'judul' => 'Penyelarasan Kurikulum Vokasi 2025 bersama PT Astra Otoparts & Telkom Akses'],
-            (object) ['id' => null, 'slug' => 'panduan-praktis-siswa-5-langkah-membuat-cv-digital-standar-ats', 'gambar_sampul' => null, 'kategori' => (object) ['nama' => 'Panduan & Tips Karier'], 'formatted_date' => 'Panduan Karier', 'judul' => 'Panduan Praktis Siswa: 5 Langkah Membuat CV Digital Standar ATS Menggunakan BKK Penus'],
-        ];
-    }
 
     $pillars = [
         ['icon' => 'shield', 'label' => 'Lowongan Mitra IDUKA Terverifikasi'],
@@ -542,71 +510,87 @@
             </div>
         </form>
 
-        <p class="mt-5 text-sm text-brand-ink/60" aria-live="polite">
-            Menampilkan <span class="font-semibold text-brand-ink" x-text="visibleCount">{{ count($jobs) }}</span> dari {{ count($jobs) }} lowongan terbaru
-        </p>
+        @if (count($jobs) > 0)
+            <p class="mt-5 text-sm text-brand-ink/60" aria-live="polite">
+                Menampilkan <span class="font-semibold text-brand-ink" x-text="visibleCount">{{ count($jobs) }}</span> dari {{ count($jobs) }} lowongan terbaru
+            </p>
 
-        <div class="mt-5 grid gap-6 md:grid-cols-2">
-            @foreach ($jobs as $i => $job)
-                @php [$deadlineLabel, $urgent] = $deadlineInfo($job['deadline']); @endphp
-                <article x-show="isVisible({{ $i }})" class="group relative flex h-full flex-col rounded-card bg-white p-5 md:p-6 text-left shadow-softpill ring-1 ring-brand-ink/5 transition-all duration-300 hover:-translate-y-1 hover:ring-brand-darkred/25">
-                    <div class="flex items-start justify-between gap-4">
-                        <x-landing.company-logo :mitra="$job['mitra']" class="w-12 h-12 rounded-xl text-base" />
-                        <div class="flex flex-wrap justify-end gap-2">
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                <x-landing.icon name="shield" class="w-3 h-3" /> Terverifikasi
-                            </span>
-                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $job['pkl'] ? 'bg-brand-darkred/10 text-brand-darkred' : 'bg-brand-ink text-white' }}">
-                                {{ $job['pkl'] ? 'PKL Siswa' : 'Kerja Alumni' }}
-                            </span>
+            <div class="mt-5 grid gap-6 md:grid-cols-2">
+                @foreach ($jobs as $i => $job)
+                    @php [$deadlineLabel, $urgent] = $deadlineInfo($job['deadline']); @endphp
+                    <article x-show="isVisible({{ $i }})" class="group relative flex h-full flex-col rounded-card bg-white p-5 md:p-6 text-left shadow-softpill ring-1 ring-brand-ink/5 transition-all duration-300 hover:-translate-y-1 hover:ring-brand-darkred/25">
+                        <div class="flex items-start justify-between gap-4">
+                            <x-landing.company-logo :mitra="$job['mitra']" class="w-12 h-12 rounded-xl text-base" />
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                                    <x-landing.icon name="shield" class="w-3 h-3" /> Terverifikasi
+                                </span>
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $job['pkl'] ? 'bg-brand-darkred/10 text-brand-darkred' : 'bg-brand-ink text-white' }}">
+                                    {{ $job['pkl'] ? 'PKL Siswa' : 'Kerja Alumni' }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
 
-                    <h3 class="mt-5 text-lg font-semibold leading-snug line-clamp-2 transition-colors group-hover:text-brand-darkred">
-                        <a href="{{ $job['url'] }}" class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darkred rounded">{{ $job['title'] }}</a>
-                    </h3>
-                    <p class="mt-1 text-sm text-brand-ink/60 line-clamp-1">{{ $job['company'] }}</p>
+                        <h3 class="mt-5 text-lg font-semibold leading-snug line-clamp-2 transition-colors group-hover:text-brand-darkred">
+                            <a href="{{ $job['url'] }}" class="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darkred rounded">{{ $job['title'] }}</a>
+                        </h3>
+                        <p class="mt-1 text-sm text-brand-ink/60 line-clamp-1">{{ $job['company'] }}</p>
 
-                    <ul class="mt-5 grid gap-2.5 text-sm text-brand-ink/75 sm:grid-cols-2">
-                        <li class="flex items-start gap-2.5">
-                            <x-landing.icon name="mapPin" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
-                            <span class="line-clamp-1"><span class="sr-only">Lokasi: </span>{{ $job['lokasi'] }}</span>
-                        </li>
-                        <li class="flex items-start gap-2.5">
-                            <x-landing.icon name="school" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
-                            <span class="line-clamp-1"><span class="sr-only">Jurusan: </span>{{ $job['jurusan'] }}</span>
-                        </li>
-                        @if ($job['gaji'])
-                            <li class="flex items-start gap-2.5 sm:col-span-2">
-                                <x-landing.icon name="wallet" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
-                                <span class="line-clamp-1 font-medium text-brand-ink"><span class="sr-only">Gaji: </span>{{ $job['gaji'] }}</span>
+                        <ul class="mt-5 grid gap-2.5 text-sm text-brand-ink/75 sm:grid-cols-2">
+                            <li class="flex items-start gap-2.5">
+                                <x-landing.icon name="mapPin" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                                <span class="line-clamp-1"><span class="sr-only">Lokasi: </span>{{ $job['lokasi'] }}</span>
                             </li>
-                        @endif
-                    </ul>
+                            <li class="flex items-start gap-2.5">
+                                <x-landing.icon name="school" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                                <span class="line-clamp-1"><span class="sr-only">Jurusan: </span>{{ $job['jurusan'] }}</span>
+                            </li>
+                            @if ($job['gaji'])
+                                <li class="flex items-start gap-2.5 sm:col-span-2">
+                                    <x-landing.icon name="wallet" class="w-4 h-4 mt-0.5 shrink-0 text-brand-darkred" />
+                                    <span class="line-clamp-1 font-medium text-brand-ink"><span class="sr-only">Gaji: </span>{{ $job['gaji'] }}</span>
+                                </li>
+                            @endif
+                        </ul>
 
-                    <div class="mt-auto pt-6">
-                        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-brand-ink/15 pt-4">
-                            <span class="flex items-center gap-1.5 text-xs font-semibold {{ $urgent ? 'text-brand-signal' : 'text-brand-ink/50' }}">
-                                <x-landing.icon name="clock" class="w-3.5 h-3.5" />
-                                {{ $deadlineLabel }}
-                            </span>
-                            <a href="{{ $job['url'] }}#btn-lamar" class="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-md shadow-brand-darkred/20 transition-transform hover:-translate-y-0.5">
-                                <x-landing.icon name="bulb" class="w-4 h-4" />
-                                Lamar dengan CV AI
-                                <span class="sr-only">: {{ $job['title'] }}</span>
-                            </a>
+                        <div class="mt-auto pt-6">
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-brand-ink/15 pt-4">
+                                <span class="flex items-center gap-1.5 text-xs font-semibold {{ $urgent ? 'text-brand-signal' : 'text-brand-ink/50' }}">
+                                    <x-landing.icon name="clock" class="w-3.5 h-3.5" />
+                                    {{ $deadlineLabel }}
+                                </span>
+                                <a href="{{ $job['url'] }}#btn-lamar" class="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-md shadow-brand-darkred/20 transition-transform hover:-translate-y-0.5">
+                                    <x-landing.icon name="bulb" class="w-4 h-4" />
+                                    Lamar dengan CV AI
+                                    <span class="sr-only">: {{ $job['title'] }}</span>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                </article>
-            @endforeach
-        </div>
+                    </article>
+                @endforeach
+            </div>
 
-        <div x-show="visibleCount === 0" x-cloak class="mt-6 rounded-card border border-dashed border-brand-ink/20 p-10 text-center">
-            <x-landing.icon name="search" class="mx-auto w-10 h-10 text-brand-ink/30" />
-            <p class="mt-4 text-base font-semibold">Belum ada lowongan terbaru yang cocok</p>
-            <p class="mt-1 text-sm text-brand-ink/60">Coba kata kunci lain, atau cari di seluruh lowongan aktif.</p>
-            <button type="button" @click="reset()" class="mt-5 text-sm font-semibold text-brand-darkred underline-offset-4 hover:underline">Hapus filter</button>
-        </div>
+            <div x-show="visibleCount === 0" x-cloak class="mt-6 rounded-card border border-dashed border-brand-ink/20 p-10 text-center">
+                <x-landing.icon name="search" class="mx-auto w-10 h-10 text-brand-ink/30" />
+                <p class="mt-4 text-base font-semibold">Belum ada lowongan terbaru yang cocok</p>
+                <p class="mt-1 text-sm text-brand-ink/60">Coba kata kunci lain, atau cari di seluruh lowongan aktif.</p>
+                <button type="button" @click="reset()" class="mt-5 text-sm font-semibold text-brand-darkred underline-offset-4 hover:underline">Hapus filter</button>
+            </div>
+        @else
+            <div class="mt-8 flex flex-col items-center gap-3 rounded-card border-2 border-dashed border-brand-ink/15 bg-white px-8 py-12 text-center">
+                <span class="flex w-14 h-14 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred">
+                    <x-landing.icon name="briefcase" class="w-7 h-7" />
+                </span>
+                <h3 class="mt-2 font-display text-xl font-bold uppercase tracking-wide">Belum Ada Lowongan Aktif</h3>
+                <p class="max-w-md text-sm leading-relaxed text-brand-ink/65">
+                    Saat ini belum ada lowongan PKL atau kerja yang dipublikasikan oleh mitra industri. Lowongan baru akan segera diumumkan.
+                </p>
+                <a href="{{ route('bkk.lowongan') }}" class="group mt-3 inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-darkred/20 transition-transform hover:-translate-y-0.5">
+                    Kunjungi Portal Lowongan
+                    <x-sketch.arrow class="w-5 h-2.5 transition-transform group-hover:translate-x-1" />
+                </a>
+            </div>
+        @endif
     </div>
 </section>
 
@@ -663,15 +647,31 @@
             </a>
         </div>
 
-        <div class="mt-10 grid gap-6 md:grid-cols-2">
-            @foreach ($news as $n => $item)
-                @if ($n === 0)
-                    <x-landing.berita-card :item="$item" featured class="md:col-span-2" />
-                @else
-                    <x-landing.berita-card :item="$item" />
-                @endif
-            @endforeach
-        </div>
+        @if (count($news) > 0)
+            <div class="mt-10 grid gap-6 md:grid-cols-2">
+                @foreach ($news as $n => $item)
+                    @if ($n === 0)
+                        <x-landing.berita-card :item="$item" featured class="md:col-span-2" />
+                    @else
+                        <x-landing.berita-card :item="$item" />
+                    @endif
+                @endforeach
+            </div>
+        @else
+            <div class="mt-10 flex flex-col items-center gap-3 rounded-card border-2 border-dashed border-brand-ink/15 bg-white px-8 py-12 text-center">
+                <span class="flex w-14 h-14 items-center justify-center rounded-full bg-brand-darkred/10 text-brand-darkred">
+                    <x-landing.icon name="newspaper" class="w-7 h-7" />
+                </span>
+                <h3 class="mt-2 font-display text-xl font-bold uppercase tracking-wide">Belum Ada Berita Terbaru</h3>
+                <p class="max-w-md text-sm leading-relaxed text-brand-ink/65">
+                    Warta dan agenda bursa kerja khusus akan dipublikasikan secara berkala oleh tim BKK.
+                </p>
+                <a href="{{ route('bkk.berita') }}" class="group mt-3 inline-flex items-center gap-2 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-darkred/20 transition-transform hover:-translate-y-0.5">
+                    Kunjungi Portal Berita
+                    <x-sketch.arrow class="w-5 h-2.5 transition-transform group-hover:translate-x-1" />
+                </a>
+            </div>
+        @endif
     </div>
 </section>
 

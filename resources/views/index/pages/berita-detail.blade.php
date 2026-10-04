@@ -89,7 +89,7 @@
             {{-- Tanpa flex-wrap: judul berita yang menyusut & terpotong, supaya breadcrumb tetap satu baris di HP --}}
             <ol class="flex items-center gap-2 text-sm text-brand-ink/50">
                 <li class="shrink-0">
-                    <a href="{{ url('/bkk') }}" class="flex items-center gap-1.5 transition-colors hover:text-brand-darkred">
+                    <a href="{{ route('bkk.index') }}" class="flex items-center gap-1.5 transition-colors hover:text-brand-darkred">
                         <x-landing.icon name="home" class="w-4 h-4" />
                         Beranda
                     </a>
