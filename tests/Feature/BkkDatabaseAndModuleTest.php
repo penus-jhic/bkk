@@ -178,7 +178,7 @@ class BkkDatabaseAndModuleTest extends TestCase
         ];
 
         $response = $this->post('/bkk/kerja-sama', $payload);
-        $response->assertRedirect(route('bkk.kerjasama'))
+        $response->assertRedirect(route('bkk.kerjasama') . '#form-kemitraan')
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('permohonan_kerjasama', [

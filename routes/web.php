@@ -10,6 +10,7 @@ use App\Http\Controllers\Me\MeController;
 use App\Http\Controllers\Mitra\MitraAuthController;
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\StaticAssetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +30,12 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/bkk');
 
 Route::prefix('bkk')->group(function () {
+    // 0. Static Asset Handlers (Kompatibilitas Reverse Proxy Path-Based)
+    Route::get('/images/{path}', [StaticAssetController::class, 'serveImage'])->where('path', '.*')->name('bkk.static.images');
+    Route::get('/uploads/{path}', [StaticAssetController::class, 'serveUpload'])->where('path', '.*')->name('bkk.static.uploads');
+    Route::get('/storage/{path}', [StaticAssetController::class, 'serveStorage'])->where('path', '.*')->name('bkk.static.storage');
+    Route::get('/build/{path}', [StaticAssetController::class, 'serveBuild'])->where('path', '.*')->name('bkk.static.build');
+
     // 1. Router Group Publik: /bkk/*
     Route::get('/', [PublicController::class, 'index'])->name('bkk.index');
     Route::get('/info', [PublicController::class, 'info'])->name('bkk.info');

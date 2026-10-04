@@ -101,7 +101,7 @@ class PenempatanPklSeeder extends Seeder
                     [
                         'siswa_id' => $siswa->user_id,
                         'judul_bab' => $b['judul'],
-                        'file_draft_url' => ($b['status'] !== 'Belum') ? "/uploads/laporan/bab-{$b['no']}-usr-siswa-001.pdf" : null,
+                        'file_draft_url' => ($b['status'] !== 'Belum') ? "/bkk/uploads/laporan/bab-{$b['no']}-usr-siswa-001.pdf" : null,
                         'status' => $b['status'],
                         'catatan_pembimbing' => $b['catatan'],
                         'terakhir_diperbarui' => now()->toDateString(),

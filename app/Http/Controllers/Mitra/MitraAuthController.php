@@ -152,7 +152,7 @@ class MitraAuthController extends Controller
         }
 
         $file->move($targetDir, $fileName);
-        $publicUrl = '/uploads/mitra_logos/' . $fileName;
+        $publicUrl = '/bkk/uploads/mitra_logos/' . $fileName;
 
         $mitra->update([
             'logo_url' => $publicUrl,
