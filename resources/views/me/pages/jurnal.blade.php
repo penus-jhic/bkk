@@ -15,11 +15,13 @@
 
         <!-- 3 Stats Cards -->
         @php
-            $totalHours = 341;
-            $targetHours = 640;
-            $pctHours = round(($totalHours / $targetHours) * 100);
-            $approvedCount = count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Disetujui')) + 38;
-            $revisionCount = count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Revisi'));
+            $totalHours = $totalHours ?? 0;
+            $targetHours = $targetHours ?? 640;
+            $pctHours = $targetHours > 0 ? min(100, round(($totalHours / $targetHours) * 100)) : 0;
+            $approvedCount = $approvedCount ?? count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Disetujui'));
+            $revisionCount = $revisionCount ?? count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Revisi'));
+            $mitraNama = $mitraNama ?? 'Belum Ada Penempatan';
+            $pembimbingNama = $pembimbingNama ?? 'Belum terdaftar penempatan PKL';
         @endphp
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="p-5 bg-white border border-line rounded-2xl shadow-sm">
@@ -40,8 +42,8 @@
                     <i data-lucide="map-pin" class="w-4 h-4 text-navy"></i>
                     <span>Tempat PKL</span>
                 </div>
-                <div class="font-bold text-base sm:text-lg text-navy mt-2 truncate">PT Telkom Akses</div>
-                <div class="text-xs text-muted mt-1">Witel Semarang · Pembimbing: Bpk. Agus S.</div>
+                <div class="font-bold text-base sm:text-lg text-navy mt-2 truncate">{{ $mitraNama }}</div>
+                <div class="text-xs text-muted mt-1 truncate">{{ $pembimbingNama }}</div>
             </div>
 
             <div class="p-5 bg-white border border-line rounded-2xl shadow-sm">
@@ -119,7 +121,7 @@
 
             <!-- Right: Daftar Riwayat Jurnal (3 cols) -->
             <div class="lg:col-span-3 space-y-3" id="jurnalListContainer">
-                @foreach($jurnalEntries as $entry)
+                @forelse($jurnalEntries as $entry)
                     @php
                         $badgeCls = match($entry['status']) {
                             'Disetujui' => 'bg-emerald-100 text-emerald-800',
@@ -133,13 +135,26 @@
                             <div>
                                 <div class="text-xs text-muted font-medium">{{ $entry['date'] }} · <span class="text-navy font-semibold">{{ $entry['hours'] }} jam</span></div>
                                 <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">{{ $entry['activity'] }}</div>
+                                @if(!empty($entry['catatan']))
+                                    <div class="mt-2 text-xs bg-canvas p-2.5 rounded-xl border border-line text-navy/90">
+                                        <span class="font-semibold text-maroon">Catatan Pembimbing:</span> {{ $entry['catatan'] }}
+                                    </div>
+                                @endif
                             </div>
                             <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap {{ $badgeCls }}">
                                 {{ $entry['status'] }}
                             </span>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <div id="jurnalEmptyCard" class="p-8 bg-white border border-line rounded-2xl text-center space-y-2">
+                        <div class="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
+                            <i data-lucide="notebook" class="w-6 h-6"></i>
+                        </div>
+                        <div class="font-bold text-sm text-navy">Belum Ada Catatan Jurnal</div>
+                        <p class="text-xs text-muted max-w-sm mx-auto">Anda belum mencatat aktivitas PKL. Gunakan formulir di sebelah kiri untuk mengisi log aktivitas harian Anda.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -183,35 +198,85 @@
         }, 1000);
     }
 
-    function submitJurnalEntry() {
+    async function submitJurnalEntry() {
         const textarea = document.getElementById('jurnalActivity');
         const list = document.getElementById('jurnalListContainer');
+        const submitBtn = document.querySelector('button[onclick="submitJurnalEntry()"]');
+
         if (!textarea || !textarea.value.trim() || !list) {
             showToast('Aktivitas tidak boleh kosong.');
             return;
         }
 
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
         const activity = textarea.value.trim();
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayDate = `${year}-${month}-${day}`;
 
-        const card = document.createElement('div');
-        card.className = "p-4 sm:p-5 bg-white border border-line rounded-2xl shadow-sm hover:shadow-md transition-shadow fade-up";
-        card.innerHTML = `
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <div class="text-xs text-muted font-medium">${dateStr} · <span class="text-navy font-semibold">${selectedDuration} jam</span></div>
-                    <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">${activity}</div>
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Menyimpan…`;
+            lucide.createIcons();
+        }
+
+        try {
+            const res = await fetch("{{ route('bkk.me.jurnal.store') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken
+                },
+                body: JSON.stringify({
+                    tanggal: todayDate,
+                    aktivitas: activity,
+                    durasi_jam: selectedDuration
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showToast(data.message || 'Gagal menyimpan aktivitas harian.');
+                return;
+            }
+
+            const emptyCard = document.getElementById('jurnalEmptyCard');
+            if (emptyCard) {
+                emptyCard.remove();
+            }
+
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+            const card = document.createElement('div');
+            card.className = "p-4 sm:p-5 bg-white border border-line rounded-2xl shadow-sm hover:shadow-md transition-shadow fade-up";
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-xs text-muted font-medium">${dateStr} · <span class="text-navy font-semibold">${selectedDuration} jam</span></div>
+                        <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">${activity}</div>
+                    </div>
+                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap bg-amber-100 text-amber-800">
+                        Menunggu
+                    </span>
                 </div>
-                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap bg-amber-100 text-amber-800">
-                    Menunggu
-                </span>
-            </div>
-        `;
+            `;
 
-        list.insertBefore(card, list.firstChild);
-        textarea.value = '';
-        showToast('Jurnal kegiatan harian berhasil dikirimkan ke pembimbing.');
+            list.insertBefore(card, list.firstChild);
+            textarea.value = '';
+            showToast(data.message || 'Jurnal kegiatan harian berhasil dikirimkan ke pembimbing.');
+        } catch (err) {
+            showToast('Terjadi kesalahan jaringan saat menyimpan jurnal.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Kirim Log Aktivitas</span> <i data-lucide="arrow-right" class="w-4 h-4"></i>`;
+                lucide.createIcons();
+            }
+        }
     }
 </script>
 @endpush

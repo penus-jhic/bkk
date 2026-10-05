@@ -41,7 +41,7 @@
                     </div>
                     <div>
                         <div class="text-[11px] text-muted font-medium">Batas Pengumpulan Final</div>
-                        <div class="font-bold text-sm text-maroon">30 April 2025</div>
+                        <div class="font-bold text-sm text-maroon">{{ $deadlineStr ?? '30 April 2025' }}</div>
                     </div>
                 </div>
             </div>
@@ -106,16 +106,41 @@
 
 @push('scripts')
 <script>
-    function uploadBabDraft(id, title) {
+    async function uploadBabDraft(id, title) {
         const btn = document.getElementById('btn-upload-' + id);
         const badge = document.getElementById('badge-' + id);
         if (!btn) return;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
         btn.disabled = true;
         btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Mengunggah…`;
         lucide.createIcons();
 
-        setTimeout(() => {
+        try {
+            const res = await fetch("{{ route('bkk.me.laporan.store') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken
+                },
+                body: JSON.stringify({
+                    nomor_bab: parseInt(id),
+                    judul_bab: title
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showToast(data.message || 'Gagal mengunggah draf bab laporan.');
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> <span>Unggah Draf</span>`;
+                lucide.createIcons();
+                return;
+            }
+
             btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Terkirim`;
             btn.className = "h-8 px-4 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold cursor-not-allowed border border-amber-300";
             if (badge) {
@@ -123,8 +148,13 @@
                 badge.innerText = "Ditinjau";
             }
             lucide.createIcons();
-            showToast(`Berkas draf untuk "${title}" berhasil diunggah dan sedang ditinjau pembimbing.`);
-        }, 1200);
+            showToast(data.message || `Berkas draf untuk "${title}" berhasil diunggah dan sedang ditinjau pembimbing.`);
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> <span>Unggah Draf</span>`;
+            lucide.createIcons();
+            showToast('Terjadi kesalahan jaringan saat mengunggah draf bab.');
+        }
     }
 </script>
 @endpush

@@ -6,8 +6,10 @@
 @php
     $navSection = '';
 
+    $mitraDisplay = (isset($totalMitraVerified) && $totalMitraVerified > 0) ? ($totalMitraVerified . '+') : '0+';
+
     $metrics = [
-        ['value' => '120+', 'label' => 'Mitra DUDI Aktif'],
+        ['value' => $mitraDisplay, 'label' => 'Mitra DUDI Aktif'],
         ['value' => '94%', 'label' => 'Kesiapan Kerja Siswa'],
         ['value' => '<24 Jam', 'label' => 'Respon Cepat Hubin'],
     ];

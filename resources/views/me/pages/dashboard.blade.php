@@ -161,7 +161,7 @@
             </div>
 
             <div class="space-y-3">
-                @foreach(array_slice($applications, 0, 3) as $app)
+                @forelse(array_slice($applications, 0, 3) as $app)
                     @php
                         $statusBadgeClass = match($app['status']) {
                             'Terkirim' => 'border border-navy text-navy bg-white',
@@ -230,7 +230,15 @@
                             </div>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <div class="p-8 bg-white border border-line rounded-2xl text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
+                            <i data-lucide="inbox" class="w-5 h-5"></i>
+                        </div>
+                        <div class="font-bold text-sm text-navy">Belum Ada Lamaran Aktif</div>
+                        <p class="text-xs text-muted max-w-xs mx-auto">Anda belum mengajukan lamaran atau pendaftaran PKL. Silakan jelajahi lowongan yang tersedia untuk mulai mendaftar.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
 
@@ -250,7 +258,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @foreach($vacancies as $v)
+                @forelse($vacancies as $v)
                     <div class="p-5 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow flex flex-col justify-between">
                         <div>
                             <div class="flex items-start gap-3">
@@ -295,7 +303,15 @@
                             </button>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <div class="col-span-full p-8 bg-white border border-line rounded-2xl text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
+                            <i data-lucide="briefcase" class="w-5 h-5"></i>
+                        </div>
+                        <div class="font-bold text-sm text-navy">Belum Ada Lowongan Aktif</div>
+                        <p class="text-xs text-muted max-w-xs mx-auto">Saat ini belum ada lowongan atau posisi PKL aktif yang tersedia.</p>
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -330,14 +346,44 @@
 
 @push('scripts')
 <script>
-    function applyVacancy(id, title) {
+    async function applyVacancy(id, title) {
         const btn = document.getElementById('btn-apply-' + id);
         if (!btn) return;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 inline"></i> Terkirim`;
-        btn.className = "h-8 px-4 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold cursor-not-allowed";
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin inline"></i> Mengirim…`;
         lucide.createIcons();
-        showToast(`Lamaran untuk "${title}" berhasil dikirimkan.`);
+
+        try {
+            const res = await fetch(`/bkk/me/daftar/${id}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken
+                }
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                btn.disabled = false;
+                btn.innerHTML = `Lamar Sekarang`;
+                showToast(data.message || 'Gagal mengajukan lamaran.');
+                return;
+            }
+
+            btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 inline"></i> Terkirim`;
+            btn.className = "h-8 px-4 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold cursor-not-allowed";
+            lucide.createIcons();
+            showToast(data.message || `Lamaran untuk "${title}" berhasil dikirimkan.`);
+        } catch (err) {
+            btn.disabled = false;
+            btn.innerHTML = `Lamar Sekarang`;
+            showToast('Terjadi kesalahan jaringan saat mengajukan lamaran.');
+        }
     }
 
     function openDetailModal(app) {

@@ -4,6 +4,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <meta content="web_standard" name="shell-type"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <title>@yield('title', 'Portal Siswa & Alumni - BKK SMK Plus Pelita Nusantara')</title>
 
     <link href="https://fonts.googleapis.com" rel="preconnect"/>

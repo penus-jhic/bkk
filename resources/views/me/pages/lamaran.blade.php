@@ -65,19 +65,19 @@
     </div>
 
     <!-- Empty State -->
-    <div id="emptyState" class="hidden p-12 bg-white border border-line rounded-3xl text-center shadow-sm">
+    <div id="emptyState" class="{{ empty($applications) ? '' : 'hidden' }} p-12 bg-white border border-line rounded-3xl text-center shadow-sm">
         <div class="w-14 h-14 rounded-full bg-line/40 grid place-items-center mx-auto text-muted mb-3">
             <i data-lucide="inbox" class="w-7 h-7"></i>
         </div>
         <div class="font-bold text-navy text-base">Tidak ada lamaran ditemukan</div>
-        <div class="text-xs text-muted mt-1">Coba sesuaikan kata kunci pencarian atau ganti filter status.</div>
+        <div class="text-xs text-muted mt-1">Anda belum memiliki riwayat lamaran atau belum ada lamaran yang cocok dengan filter saat ini.</div>
         <button onclick="resetFilters()" class="mt-4 h-9 px-5 rounded-full border border-line bg-white text-navy text-xs font-semibold hover:bg-canvas cursor-pointer shadow-sm">
             Reset Filter
         </button>
     </div>
 
     <!-- Table View Container -->
-    <div id="tableViewContainer" class="bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
+    <div id="tableViewContainer" class="{{ empty($applications) ? 'hidden' : '' }} bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead class="bg-[#f8f9fa] border-b border-line text-muted text-[11px] uppercase tracking-wider font-semibold">

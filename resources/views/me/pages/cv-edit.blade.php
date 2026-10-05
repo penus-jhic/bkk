@@ -93,7 +93,7 @@
                             </div>
                             <div>
                                 <label class="block font-medium text-muted mb-1.5">Domisili Kota</label>
-                                <input type="text" id="fCity" value="Semarang" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
+                                <input type="text" id="fCity" value="{{ $profile['domisili'] ?? 'Bogor' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
                             </div>
                             <div>
                                 <label class="block font-medium text-muted mb-1.5">NIS / Nomor Induk</label>
@@ -770,18 +770,47 @@
         }
     }
 
-    function saveCv() {
+    async function saveCv() {
         const btn = document.getElementById('btnSaveCv');
+        const raw = document.getElementById('rawMarkdownTextarea')?.value || buildMarkdownFromForm();
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>Menyimpan…</span>`;
             lucide.createIcons();
-            setTimeout(() => {
+        }
+
+        try {
+            const res = await fetch("{{ route('bkk.me.cv.update') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-CSRF-TOKEN": csrfToken
+                },
+                body: JSON.stringify({
+                    markdown: raw
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showToast(data.message || 'Gagal menyimpan CV ke server.');
+                return;
+            }
+
+            showToast(data.message || 'Perubahan CV Anda berhasil disimpan ke database!');
+        } catch (err) {
+            showToast('Terjadi kesalahan jaringan saat menyimpan CV.');
+        } finally {
+            if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Simpan</span>`;
                 lucide.createIcons();
-                showToast('Perubahan CV Anda berhasil disimpan!');
-            }, 800);
+            }
         }
     }
 </script>

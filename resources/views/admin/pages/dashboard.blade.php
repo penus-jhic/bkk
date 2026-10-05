@@ -394,44 +394,146 @@
                         </span>
                     </div>
 
-                    <div class="flex items-center justify-between py-1.5 border-b border-line/40">
-                        <span class="font-medium text-muted flex items-center gap-2">
-                            <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-muted"></i>
+                    <a href="{{ route('bkk.admin.tracer.index') }}" class="flex items-center justify-between py-1.5 border-b border-line/40 hover:bg-canvas px-1 rounded transition-colors">
+                        <span class="font-medium text-navy flex items-center gap-2">
+                            <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span>Tracer Study Alumni</span>
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f1f3f4] text-muted">
-                            Segera
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Aktif
                         </span>
-                    </div>
+                    </a>
 
-                    <div class="flex items-center justify-between py-1.5 border-b border-line/40">
-                        <span class="font-medium text-muted flex items-center gap-2">
-                            <i data-lucide="building-2" class="w-3.5 h-3.5 text-muted"></i>
+                    <a href="{{ route('bkk.admin.mitra.index') }}" class="flex items-center justify-between py-1.5 border-b border-line/40 hover:bg-canvas px-1 rounded transition-colors">
+                        <span class="font-medium text-navy flex items-center gap-2">
+                            <i data-lucide="building-2" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span>Mitra IDUKA</span>
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f1f3f4] text-muted">
-                            Segera
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Aktif
                         </span>
-                    </div>
+                    </a>
 
-                    <div class="flex items-center justify-between py-1.5 border-b border-line/40">
-                        <span class="font-medium text-muted flex items-center gap-2">
-                            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-muted"></i>
+                    <a href="{{ route('bkk.admin.lowongan.index') }}" class="flex items-center justify-between py-1.5 border-b border-line/40 hover:bg-canvas px-1 rounded transition-colors">
+                        <span class="font-medium text-navy flex items-center gap-2">
+                            <i data-lucide="briefcase" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span>Lowongan Kerja BKK</span>
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f1f3f4] text-muted">
-                            Segera
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Aktif
                         </span>
-                    </div>
+                    </a>
 
-                    <div class="flex items-center justify-between py-1.5">
-                        <span class="font-medium text-muted flex items-center gap-2">
-                            <i data-lucide="activity" class="w-3.5 h-3.5 text-muted"></i>
+                    <a href="{{ route('bkk.admin.pkl.monitoring') }}" class="flex items-center justify-between py-1.5 hover:bg-canvas px-1 rounded transition-colors">
+                        <span class="font-medium text-navy flex items-center gap-2">
+                            <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span>Monitoring PKL Siswa</span>
                         </span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f1f3f4] text-muted">
-                            Segera
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Aktif
                         </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ringkasan Ekosistem BKK (Lowongan, Mitra, PKL, Tracer Study) -->
+    <div class="space-y-4 pt-2">
+        <div>
+            <h2 class="text-lg font-bold text-navy">Aktivitas Terkini Ekosistem BKK</h2>
+            <p class="text-xs text-muted">Pantau data terbaru lowongan aktif, mitra industri, siswa PKL, dan kuesioner tracer study.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <!-- 1. Lowongan Terbaru -->
+            <div class="p-5 bg-white border border-line rounded-2xl shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="briefcase" class="w-4 h-4 text-navy"></i>
+                            <h3 class="text-sm font-bold text-navy">Lowongan Baru</h3>
+                        </div>
+                        <a href="{{ route('bkk.admin.lowongan.index') }}" class="text-[11px] font-semibold text-maroon hover:underline">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2.5">
+                        @forelse($recentLowongans as $low)
+                            <div class="p-2.5 rounded-xl bg-canvas border border-line/60 text-xs">
+                                <div class="font-semibold text-navy truncate">{{ $low->judul }}</div>
+                                <div class="text-[11px] text-muted mt-0.5 truncate">{{ $low->mitra?->nama_perusahaan ?? 'Mitra Industri' }} · <span class="text-navy font-medium">{{ $low->tipe }}</span></div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted text-center py-4">Belum ada data lowongan</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Mitra Terbaru -->
+            <div class="p-5 bg-white border border-line rounded-2xl shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="building-2" class="w-4 h-4 text-navy"></i>
+                            <h3 class="text-sm font-bold text-navy">Mitra Industri</h3>
+                        </div>
+                        <a href="{{ route('bkk.admin.mitra.index') }}" class="text-[11px] font-semibold text-maroon hover:underline">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2.5">
+                        @forelse($recentMitras as $mit)
+                            <div class="p-2.5 rounded-xl bg-canvas border border-line/60 text-xs">
+                                <div class="font-semibold text-navy truncate">{{ $mit->nama_perusahaan }}</div>
+                                <div class="text-[11px] text-muted mt-0.5 truncate">{{ $mit->sektor_industri ?? 'Industri Mitra' }}</div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted text-center py-4">Belum ada data mitra</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Monitoring PKL -->
+            <div class="p-5 bg-white border border-line rounded-2xl shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-navy"></i>
+                            <h3 class="text-sm font-bold text-navy">Monitoring PKL</h3>
+                        </div>
+                        <a href="{{ route('bkk.admin.pkl.monitoring') }}" class="text-[11px] font-semibold text-maroon hover:underline">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2.5">
+                        @forelse($recentPkl as $pkl)
+                            <div class="p-2.5 rounded-xl bg-canvas border border-line/60 text-xs">
+                                <div class="font-semibold text-navy truncate">{{ $pkl->siswa?->user_id ?? 'Siswa PKL' }}</div>
+                                <div class="text-[11px] text-muted mt-0.5 truncate">{{ $pkl->mitra?->nama_perusahaan ?? 'Lokasi PKL' }} · <span class="text-emerald-700 font-medium">{{ $pkl->status }}</span></div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted text-center py-4">Belum ada siswa PKL aktif</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Tracer Study -->
+            <div class="p-5 bg-white border border-line rounded-2xl shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="graduation-cap" class="w-4 h-4 text-navy"></i>
+                            <h3 class="text-sm font-bold text-navy">Tracer Alumni</h3>
+                        </div>
+                        <a href="{{ route('bkk.admin.tracer.index') }}" class="text-[11px] font-semibold text-maroon hover:underline">Semua &rarr;</a>
+                    </div>
+                    <div class="space-y-2.5">
+                        @forelse($recentTracer as $tr)
+                            <div class="p-2.5 rounded-xl bg-canvas border border-line/60 text-xs">
+                                <div class="font-semibold text-navy truncate">{{ $tr->profilSiswa?->nis ?? $tr->alumni_id }}</div>
+                                <div class="text-[11px] text-muted mt-0.5 truncate">Status: <span class="text-navy font-medium">{{ $tr->status_setelah_lulus }}</span></div>
+                            </div>
+                        @empty
+                            <p class="text-xs text-muted text-center py-4">Belum ada respon tracer</p>
+                        @endforelse
                     </div>
                 </div>
             </div>

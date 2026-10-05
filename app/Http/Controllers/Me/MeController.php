@@ -35,18 +35,18 @@ class MeController extends Controller
         $role = $authUser['role'];
 
         $profile = $this->dataService->getProfile($authUser);
-        $applications = $this->getMappedApplications($userId) ?: $this->dataService->getApplications($role, $userId);
-        $vacancies = $this->getMappedVacancies($role) ?: $this->dataService->getVacancies($role);
+        $applications = $this->getMappedApplications($userId);
+        $vacancies = $this->getMappedVacancies($role);
         $cvScore = $this->dataService->getCvScore($role, $userId);
-        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $notifications = $this->getMappedNotifications($userId, $role);
 
         // Sinkronisasi data riil profil dari database jika record siswa/alumni ada
         try {
             if (Schema::hasTable('profil_siswa')) {
                 $dbSiswa = ProfilSiswa::with(['primaryResume', 'penempatanPkl.mitra'])->find($userId);
                 if ($dbSiswa) {
-                    $profile['nis'] = $dbSiswa->nis;
-                    $profile['jurusan'] = $dbSiswa->jurusan;
+                    $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
+                    $profile['jurusan'] = $dbSiswa->jurusan ?: $profile['jurusan'];
                     $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
                     $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
                     $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
@@ -101,8 +101,8 @@ class MeController extends Controller
         $role = $authUser['role'];
 
         $profile = $this->dataService->getProfile($authUser);
-        $applications = $this->getMappedApplications($userId) ?: $this->dataService->getApplications($role, $userId);
-        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $applications = $this->getMappedApplications($userId);
+        $notifications = $this->getMappedNotifications($userId, $role);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -222,19 +222,30 @@ class MeController extends Controller
         $authUser = $this->resolveAuthUser($request);
         $userId = $authUser['id'];
 
-        $markdown = $request->input('markdown');
+        $validated = $request->validate([
+            'markdown' => ['required', 'string'],
+        ]);
+        $markdown = $validated['markdown'];
 
         try {
             if (Schema::hasTable('cv_resumes') && $markdown) {
-                $cv = CvResume::where('siswa_id', $userId)->where('is_primary', true)->first();
-                if ($cv) {
-                    $cv->update([
+                CvResume::updateOrCreate(
+                    [
+                        'siswa_id' => $userId,
+                        'is_primary' => true,
+                    ],
+                    [
+                        'judul_cv' => 'CV ATS - ' . ($authUser['nama_lengkap'] ?? 'Siswa'),
                         'konten_markdown' => $markdown,
                         'terakhir_dianalisis_ai' => now(),
-                    ]);
-                }
+                    ]
+                );
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -257,14 +268,44 @@ class MeController extends Controller
 
         $profile = $this->dataService->getProfile($authUser);
         $isSiswa = ($role === 'SISWA');
-        $jurnalEntries = $this->getMappedJurnalEntries($userId) ?: $this->dataService->getJurnalEntries($userId);
-        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $jurnalEntries = $this->getMappedJurnalEntries($userId);
+        $notifications = $this->getMappedNotifications($userId, $role);
+
+        $penempatan = null;
+        try {
+            if (Schema::hasTable('penempatan_pkl')) {
+                $penempatan = PenempatanPkl::with('mitra')
+                    ->where('siswa_id', $userId)
+                    ->where('status', 'BERJALAN')
+                    ->first();
+            }
+        } catch (\Throwable) {}
+
+        $totalHours = (int) array_sum(array_column(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Disetujui'), 'hours'));
+        if ($totalHours === 0 && $penempatan && $penempatan->total_jam_tercapai > 0) {
+            $totalHours = (int) $penempatan->total_jam_tercapai;
+        }
+        $targetHours = $penempatan?->target_jam ?? 640;
+        $approvedCount = count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Disetujui'));
+        $revisionCount = count(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Revisi'));
+        $mitraNama = $penempatan?->mitra?->nama_perusahaan ?? 'Belum Ada Penempatan';
+        $pembimbingNama = $penempatan
+            ? (($penempatan->unit_kerja_divisi ?: 'Divisi PKL') . ' · Pembimbing: ' . ($penempatan->pembimbing_industri_nama ?: 'Belum ditentukan'))
+            : 'Belum terdaftar penempatan PKL aktif';
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'is_siswa' => $isSiswa,
                 'data' => $isSiswa ? $jurnalEntries : [],
+                'stats' => [
+                    'total_hours' => $totalHours,
+                    'target_hours' => $targetHours,
+                    'approved_count' => $approvedCount,
+                    'revision_count' => $revisionCount,
+                    'mitra_nama' => $mitraNama,
+                    'pembimbing_nama' => $pembimbingNama,
+                ],
             ]);
         }
 
@@ -273,7 +314,14 @@ class MeController extends Controller
             'profile',
             'isSiswa',
             'jurnalEntries',
-            'notifications'
+            'notifications',
+            'penempatan',
+            'totalHours',
+            'targetHours',
+            'approvedCount',
+            'revisionCount',
+            'mitraNama',
+            'pembimbingNama'
         ));
     }
 
@@ -291,27 +339,48 @@ class MeController extends Controller
             'durasi_jam' => ['nullable', 'integer', 'min:1', 'max:12'],
         ]);
 
+        $createdEntry = null;
         try {
             if (Schema::hasTable('penempatan_pkl') && Schema::hasTable('pkl_jurnal_harian')) {
                 $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
 
-                if ($penempatan) {
-                    PklJurnalHarian::create([
-                        'penempatan_pkl_id' => $penempatan->id,
-                        'siswa_id' => $userId,
-                        'tanggal' => $validated['tanggal'],
-                        'aktivitas' => $validated['aktivitas'],
-                        'durasi_jam' => $validated['durasi_jam'] ?? 8,
-                        'status' => 'Menunggu',
-                    ]);
+                if (!$penempatan) {
+                    if ($request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Anda belum terdaftar dalam penempatan PKL aktif.',
+                        ], 422);
+                    }
+                    return redirect()->route('bkk.me.jurnal')->with('error', 'Anda belum terdaftar dalam penempatan PKL aktif.');
                 }
+
+                $createdEntry = PklJurnalHarian::create([
+                    'penempatan_pkl_id' => $penempatan->id,
+                    'siswa_id' => $userId,
+                    'tanggal' => $validated['tanggal'],
+                    'aktivitas' => $validated['aktivitas'],
+                    'durasi_jam' => $validated['durasi_jam'] ?? 8,
+                    'status' => 'Menunggu',
+                ]);
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->route('bkk.me.jurnal')->with('error', 'Gagal mencatat jurnal: ' . $e->getMessage());
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Log aktivitas jurnal PKL harian berhasil disimpan!',
+                'data' => $createdEntry ? [
+                    'id' => $createdEntry->id,
+                    'date' => $createdEntry->tanggal ? $createdEntry->tanggal->format('d M Y') : date('d M Y'),
+                    'hours' => $createdEntry->durasi_jam,
+                    'activity' => $createdEntry->aktivitas,
+                    'status' => $createdEntry->status,
+                ] : null,
             ], 201);
         }
 
@@ -329,14 +398,27 @@ class MeController extends Controller
 
         $profile = $this->dataService->getProfile($authUser);
         $isSiswa = ($role === 'SISWA');
-        $laporanSections = $this->getMappedLaporanSections($userId) ?: $this->dataService->getLaporanSections($userId);
-        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $laporanSections = $this->getMappedLaporanSections($userId);
+        $notifications = $this->getMappedNotifications($userId, $role);
+
+        $penempatan = null;
+        try {
+            if (Schema::hasTable('penempatan_pkl')) {
+                $penempatan = PenempatanPkl::with('mitra')
+                    ->where('siswa_id', $userId)
+                    ->where('status', 'BERJALAN')
+                    ->first();
+            }
+        } catch (\Throwable) {}
+
+        $deadlineStr = $penempatan?->tanggal_selesai ? $penempatan->tanggal_selesai->format('d F Y') : '30 April 2025';
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'is_siswa' => $isSiswa,
                 'data' => $isSiswa ? $laporanSections : [],
+                'deadline' => $deadlineStr,
             ]);
         }
 
@@ -345,7 +427,9 @@ class MeController extends Controller
             'profile',
             'isSiswa',
             'laporanSections',
-            'notifications'
+            'notifications',
+            'penempatan',
+            'deadlineStr'
         ));
     }
 
@@ -362,31 +446,52 @@ class MeController extends Controller
             'judul_bab' => ['required', 'string'],
         ]);
 
+        $laporan = null;
         try {
             if (Schema::hasTable('penempatan_pkl') && Schema::hasTable('pkl_laporan_akhir')) {
                 $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
 
-                if ($penempatan) {
-                    PklLaporanAkhir::updateOrCreate(
-                        [
-                            'penempatan_pkl_id' => $penempatan->id,
-                            'nomor_bab' => $validated['nomor_bab'],
-                        ],
-                        [
-                            'siswa_id' => $userId,
-                            'judul_bab' => $validated['judul_bab'],
-                            'status' => 'Ditinjau',
-                            'terakhir_diperbarui' => now()->toDateString(),
-                        ]
-                    );
+                if (!$penempatan) {
+                    if ($request->wantsJson()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Anda belum memiliki penempatan PKL aktif.',
+                        ], 422);
+                    }
+                    return redirect()->route('bkk.me.laporan')->with('error', 'Anda belum memiliki penempatan PKL aktif.');
                 }
+
+                $laporan = PklLaporanAkhir::updateOrCreate(
+                    [
+                        'penempatan_pkl_id' => $penempatan->id,
+                        'nomor_bab' => $validated['nomor_bab'],
+                    ],
+                    [
+                        'siswa_id' => $userId,
+                        'judul_bab' => $validated['judul_bab'],
+                        'status' => 'Ditinjau',
+                        'terakhir_diperbarui' => now()->toDateString(),
+                    ]
+                );
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->route('bkk.me.laporan')->with('error', 'Gagal memperbarui draf laporan: ' . $e->getMessage());
+        }
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Draf bab laporan PKL berhasil diperbarui untuk ditinjau guru pembimbing.',
+                'data' => $laporan ? [
+                    'id' => $laporan->nomor_bab,
+                    'title' => $laporan->judul_bab,
+                    'status' => $laporan->status,
+                    'note' => $laporan->catatan_pembimbing ?? 'Belum ada catatan pembimbing',
+                    'updated' => $laporan->terakhir_diperbarui ? $laporan->terakhir_diperbarui->format('d M Y') : date('d M Y'),
+                ] : null,
             ]);
         }
 
@@ -590,27 +695,57 @@ class MeController extends Controller
 
     protected function getMappedLaporanSections(string $userId): array
     {
+        $defaultBabs = [
+            1 => 'BAB I — Pendahuluan (Latar Belakang & Tujuan PKL)',
+            2 => 'BAB II — Gambaran Umum Perusahaan & Unit Kerja',
+            3 => 'BAB III — Pelaksanaan Praktik Kerja Lapangan & Kegiatan',
+            4 => 'BAB IV — Hasil, Pembahasan, & Analisis Pekerjaan',
+            5 => 'BAB V — Penutup (Kesimpulan, Saran, & Lampiran)',
+        ];
+
         try {
             if (Schema::hasTable('pkl_laporan_akhir')) {
                 $dbLaporans = PklLaporanAkhir::where('siswa_id', $userId)
                     ->orderBy('nomor_bab')
-                    ->get();
+                    ->get()
+                    ->keyBy('nomor_bab');
 
-                if ($dbLaporans->isNotEmpty()) {
-                    return $dbLaporans->map(function ($l) {
-                        return [
+                $sections = [];
+                for ($i = 1; $i <= 5; $i++) {
+                    if ($dbLaporans->has($i)) {
+                        $l = $dbLaporans->get($i);
+                        $sections[] = [
                             'id' => $l->nomor_bab,
-                            'title' => $l->judul_bab,
+                            'title' => $l->judul_bab ?: $defaultBabs[$i],
                             'status' => $l->status,
                             'note' => $l->catatan_pembimbing ?? 'Belum ada catatan pembimbing',
                             'updated' => $l->terakhir_diperbarui ? $l->terakhir_diperbarui->format('d M Y') : ($l->updated_at ? $l->updated_at->format('d M Y') : 'Baru saja'),
                         ];
-                    })->all();
+                    } else {
+                        $sections[] = [
+                            'id' => $i,
+                            'title' => $defaultBabs[$i],
+                            'status' => 'Belum',
+                            'note' => 'Draf bab belum diunggah',
+                            'updated' => '-',
+                        ];
+                    }
                 }
+                return $sections;
             }
         } catch (\Throwable) {}
 
-        return [];
+        $fallbackSections = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $fallbackSections[] = [
+                'id' => $i,
+                'title' => $defaultBabs[$i],
+                'status' => 'Belum',
+                'note' => 'Draf bab belum diunggah',
+                'updated' => '-',
+            ];
+        }
+        return $fallbackSections;
     }
 
     protected function getMappedNotifications(string $userId, string $role): array
@@ -645,7 +780,7 @@ class MeController extends Controller
      */
     protected function resolveAuthUser(Request $request): array
     {
-        $authUser = $request->auth_user ?? $request->input('auth_user') ?? [];
+        $authUser = $request->attributes->get('auth_user') ?? $request->auth_user ?? $request->input('auth_user') ?? [];
 
         $role = strtoupper($authUser['role'] ?? 'SISWA');
         if (!in_array($role, ['SISWA', 'ALUMNI'])) {

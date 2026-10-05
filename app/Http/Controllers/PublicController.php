@@ -281,7 +281,8 @@ class PublicController extends Controller
     public function kerjasama(): View
     {
         $mitraList = Mitra::verified()->latest()->take(12)->get();
-        return view('index.pages.kerjasama', compact('mitraList'));
+        $totalMitraVerified = Mitra::verified()->count();
+        return view('index.pages.kerjasama', compact('mitraList', 'totalMitraVerified'));
     }
 
     /**

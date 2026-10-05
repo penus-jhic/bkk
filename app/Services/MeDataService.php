@@ -5,7 +5,7 @@ namespace App\Services;
 class MeDataService
 {
     /**
-     * Dapatkan profil dummy yang diadaptasi dengan data auth pengguna (100% Mock / Tanpa Database).
+     * Dapatkan data profil berdasarkan auth pengguna tanpa fallback tiruan.
      */
     public function getProfile(array $authUser = []): array
     {
@@ -13,21 +13,7 @@ class MeDataService
         $isSiswa = ($role === 'SISWA');
         $userId = $authUser['id'] ?? ($isSiswa ? 'usr-siswa-001' : 'usr-alumni-001');
 
-        $defaultProfile = [
-            'name' => $isSiswa ? 'Ahmad Rizky Pratama' : 'Nadia Salsabila',
-            'nis' => $isSiswa ? '0061234567' : '1920.08.112',
-            'jurusan' => $isSiswa ? 'Teknik Komputer & Jaringan' : 'Akuntansi & Keuangan Lembaga',
-            'kelas' => $isSiswa ? 'XII TKJ 2' : 'Alumni 2023',
-            'email' => $isSiswa ? 'siswa_rizky@smkpenus.sch.id' : 'nadia.salsabila@gmail.com',
-            'phone' => $isSiswa ? '0812-3456-7890' : '0857-1122-3344',
-            'completion' => $isSiswa ? 78 : 92,
-            'initials' => $isSiswa ? 'RP' : 'NS',
-            'angkatan' => $isSiswa ? '2023' : '2020',
-            'status' => $isSiswa ? 'PKL di PT Telkom Akses' : 'Mencari kerja full-time',
-        ];
-
-        // Timpa atribut dengan data dari auth_user jika tersedia
-        $nama = $authUser['nama_lengkap'] ?? $authUser['username'] ?? $defaultProfile['name'];
+        $nama = $authUser['nama_lengkap'] ?? $authUser['username'] ?? ($isSiswa ? 'Siswa SMK Penus' : 'Alumni SMK Penus');
         $initials = '';
         $words = array_values(array_filter(explode(' ', trim($nama))));
         if (count($words) >= 2) {
@@ -36,33 +22,36 @@ class MeDataService
             $initials = strtoupper(substr($nama, 0, 2));
         }
 
-        return array_merge($defaultProfile, [
+        return [
             'name' => $nama,
-            'nis' => $authUser['nomor_induk'] ?? $defaultProfile['nis'],
-            'email' => $authUser['email'] ?? $defaultProfile['email'],
-            'phone' => $authUser['no_hp'] ?? $defaultProfile['phone'],
+            'nis' => $authUser['nomor_induk'] ?? '-',
+            'jurusan' => '-',
+            'kelas' => $isSiswa ? '-' : 'Alumni',
+            'email' => $authUser['email'] ?? '-',
+            'phone' => $authUser['no_hp'] ?? '-',
+            'completion' => 60,
             'initials' => $initials,
+            'angkatan' => date('Y'),
+            'status' => $isSiswa ? 'Siswa Aktif' : 'Alumni',
             'role' => $role,
             'user_id' => $userId,
-        ]);
+        ];
     }
 
     /**
-     * Dapatkan daftar riwayat lamaran dummy (100% Mock / Tanpa Database).
+     * Riwayat lamaran kosong secara default (baca langsung dari DB).
      */
     public function getApplications(string $role = 'SISWA', ?string $userId = null): array
     {
-        $role = strtoupper($role);
-        return ($role === 'SISWA') ? $this->getSiswaApplications() : $this->getAlumniApplications();
+        return [];
     }
 
     /**
-     * Rekomendasi lowongan / PKL dummy (100% Mock / Tanpa Database).
+     * Rekomendasi lowongan kosong secara default (baca langsung dari DB).
      */
     public function getVacancies(string $role = 'SISWA'): array
     {
-        $role = strtoupper($role);
-        return ($role === 'SISWA') ? $this->getSiswaVacancies() : $this->getAlumniVacancies();
+        return [];
     }
 
     /**
@@ -175,145 +164,63 @@ class MeDataService
     }
 
     /**
-     * Entri Jurnal PKL Harian dummy (100% Mock / Tanpa Database).
+     * Entri Jurnal PKL Harian kosong secara default (baca langsung dari DB).
      */
     public function getJurnalEntries(?string $userId = null): array
     {
-        return [
-            [
-                'id' => 'j1',
-                'date' => 'Jumat, 14 Mar 2025',
-                'activity' => 'Splicing kabel FO drop core di 3 rumah pelanggan area Tembalang dan uji redaman OPM (-16.4 dB).',
-                'hours' => 8,
-                'status' => 'Disetujui',
-                'note' => 'Pekerjaan rapi dan redaman memenuhi standar Telkom.',
-            ],
-            [
-                'id' => 'j2',
-                'date' => 'Kamis, 13 Mar 2025',
-                'activity' => 'Pengukuran redaman ODP cluster Banyumanik menggunakan OPM dan pelaporan rekap ke teknisi senior.',
-                'hours' => 8,
-                'status' => 'Disetujui',
-                'note' => 'Data input sudah sesuai format laporan.',
-            ],
-            [
-                'id' => 'j3',
-                'date' => 'Rabu, 12 Mar 2025',
-                'activity' => 'Konfigurasi ONT Huawei HG8245W5 dan aktivasi layanan IndiHome pelanggan baru di Perum Graha Estetika.',
-                'hours' => 7,
-                'status' => 'Menunggu',
-                'note' => 'Menunggu validasi guru pembimbing sekolah.',
-            ],
-            [
-                'id' => 'j4',
-                'date' => 'Selasa, 11 Mar 2025',
-                'activity' => 'Briefing K3 ketinggian, penataan toolbag kerja, dan maintenance berkala mesin fusion splicer Sumitomo.',
-                'hours' => 6,
-                'status' => 'Revisi',
-                'note' => 'Tolong lengkapi foto dokumentasi pembersihan elektroda splicer.',
-            ],
-            [
-                'id' => 'j5',
-                'date' => 'Senin, 10 Mar 2025',
-                'activity' => 'Penarikan kabel drop optic 1 core 150 meter dari tiang distribusi ke rumah pelanggan.',
-                'hours' => 8,
-                'status' => 'Disetujui',
-                'note' => 'K3 tiang terpasang dengan baik.',
-            ],
-            [
-                'id' => 'j6',
-                'date' => 'Jumat, 07 Mar 2025',
-                'activity' => 'Troubleshooting gangguan LOS (Loss of Signal) pada Optical Network Terminal pelanggan di Ngesrep.',
-                'hours' => 8,
-                'status' => 'Disetujui',
-                'note' => 'Penyebab konektor patah berhasil diganti fast connector baru.',
-            ],
-        ];
+        return [];
     }
 
     /**
-     * Bagian Laporan Akhir PKL dummy (100% Mock / Tanpa Database).
+     * Bagian Laporan Akhir PKL standar template (Bab 1-5).
      */
     public function getLaporanSections(?string $userId = null): array
     {
         return [
             [
-                'id' => 'l1',
+                'id' => 1,
                 'title' => 'BAB I — Pendahuluan (Latar Belakang & Tujuan PKL)',
-                'status' => 'Disetujui',
-                'note' => 'Struktur rumusan masalah dan tujuan sudah sangat baik.',
-                'updated' => '20 Feb 2025',
-            ],
-            [
-                'id' => 'l2',
-                'title' => 'BAB II — Gambaran Umum PT Telkom Akses Semarang',
-                'status' => 'Disetujui',
-                'note' => 'Bagan struktur organisasi dan visi-misi telah lengkap.',
-                'updated' => '27 Feb 2025',
-            ],
-            [
-                'id' => 'l3',
-                'title' => 'BAB III — Pelaksanaan Praktik Kerja Lapangan & Pembahasan Kasus',
-                'status' => 'Revisi',
-                'note' => 'Tambahkan diagram alur proses splicing kabel FO dan foto dokumentasi lapangan.',
-                'updated' => '08 Mar 2025',
-            ],
-            [
-                'id' => 'l4',
-                'title' => 'BAB IV — Penutup (Kesimpulan & Saran)',
-                'status' => 'Ditinjau',
-                'note' => 'Draf bab penutup sedang diperiksa oleh guru pembimbing.',
-                'updated' => '15 Mar 2025',
-            ],
-            [
-                'id' => 'l5',
-                'title' => 'Lampiran (Logbook, Lembar Pengesahan & Foto Kegiatan)',
                 'status' => 'Belum',
-                'note' => 'Harap meminta tanda tangan basah pembimbing industri sebelum upload.',
+                'note' => 'Belum ada catatan pembimbing',
+                'updated' => '-',
+            ],
+            [
+                'id' => 2,
+                'title' => 'BAB II — Gambaran Umum Perusahaan & Unit Kerja',
+                'status' => 'Belum',
+                'note' => 'Belum ada catatan pembimbing',
+                'updated' => '-',
+            ],
+            [
+                'id' => 3,
+                'title' => 'BAB III — Pelaksanaan Praktik Kerja Lapangan & Kegiatan',
+                'status' => 'Belum',
+                'note' => 'Belum ada catatan pembimbing',
+                'updated' => '-',
+            ],
+            [
+                'id' => 4,
+                'title' => 'BAB IV — Hasil, Pembahasan, & Analisis Pekerjaan',
+                'status' => 'Belum',
+                'note' => 'Belum ada catatan pembimbing',
+                'updated' => '-',
+            ],
+            [
+                'id' => 5,
+                'title' => 'BAB V — Penutup (Kesimpulan, Saran, & Lampiran)',
+                'status' => 'Belum',
+                'note' => 'Belum ada catatan pembimbing',
                 'updated' => '-',
             ],
         ];
     }
 
     /**
-     * Notifikasi sistem dummy (100% Mock / Tanpa Database).
+     * Notifikasi sistem kosong secara default (baca langsung dari DB).
      */
     public function getNotifications(?string $userId = null): array
     {
-        return [
-            [
-                'id' => 'n1',
-                'title' => 'Undangan Interview Terjadwal',
-                'desc' => 'PT Telkom Akses mengundang Anda ke sesi interview tatap muka pada Kamis, 20 Mar 2025 pukul 09:00 WIB.',
-                'time' => '1 jam lalu',
-                'unread' => true,
-                'accent' => true,
-            ],
-            [
-                'id' => 'n2',
-                'title' => 'Lowongan Baru Cocok 96%',
-                'desc' => 'Ada 2 lowongan PKL/Karier baru yang sangat sesuai dengan profil keahlian Anda.',
-                'time' => '3 jam lalu',
-                'unread' => true,
-                'accent' => false,
-            ],
-            [
-                'id' => 'n3',
-                'title' => 'Catatan Revisi Jurnal PKL',
-                'desc' => 'Pembimbing memberikan catatan revisi pada jurnal tanggal 11 Mar 2025. Cek detail catatan.',
-                'time' => 'Kemarin',
-                'unread' => false,
-                'accent' => false,
-            ],
-            [
-                'id' => 'n4',
-                'title' => 'Skor CV Meningkat (+5 Poin)',
-                'desc' => 'Setelah penambahan pengalaman PKL, CV Health Score Anda meningkat menjadi 84/100.',
-                'time' => '2 hari lalu',
-                'unread' => false,
-                'accent' => false,
-            ],
-        ];
+        return [];
     }
 
     /* -------------------------------------------------------------------------- */
@@ -656,71 +563,47 @@ class MeDataService
 
     protected function getSiswaMarkdown(array $profile): string
     {
-        $name = $profile['name'] ?? 'Ahmad Rizky Pratama';
-        $email = $profile['email'] ?? 'siswa_rizky@smkpenus.sch.id';
-        $phone = $profile['phone'] ?? '0812-3456-7890';
+        $name = $profile['name'] ?? 'Siswa SMK Plus Pelita Nusantara';
+        $email = $profile['email'] ?? 'siswa@smkpenus.sch.id';
+        $phone = $profile['phone'] ?? '-';
+        $jurusan = $profile['jurusan'] ?? 'Teknik Komputer & Jaringan';
 
         return "# {$name}\n"
-            . "*Teknisi Jaringan Komputer · Semarang · {$email} · {$phone}*\n\n"
+            . "*Siswa Kejuruan · {$jurusan} · {$email} · {$phone}*\n\n"
             . "## Ringkasan Profil\n"
-            . "Siswa kelas XII Teknik Komputer & Jaringan SMK Plus Pelita Nusantara yang berdedikasi dan memiliki ketertarikan mendalam pada infrastruktur jaringan, routing, dan instalasi Fiber Optic (FTTH). Berpengalaman langsung dalam Praktik Kerja Lapangan (PKL) di PT Telkom Akses Semarang dengan rekam jejak penyelesaian target pekerjaan yang memuaskan dan kepatuhan tinggi terhadap standar K3.\n\n"
+            . "Siswa SMK Plus Pelita Nusantara program keahlian {$jurusan} yang memiliki integritas, kedisiplinan kerja, dan motivasi tinggi untuk mengimplementasikan keahlian vokasi di lingkungan industri profesional.\n\n"
             . "## Pendidikan\n"
-            . "### SMK Plus Pelita Nusantara — Teknik Komputer & Jaringan\n"
-            . "*2022 – 2025 · Rata-rata Nilai Kejuruan: 88.4 / 100*\n"
-            . "- Ketua Kelompok Praktik Jaringan Komputer Kejuruan\n"
-            . "- Peringkat 3 Lomba Kompetensi Siswa (LKS) Bidang IT Network System Administration Tingkat Kota Semarang\n\n"
-            . "## Pengalaman PKL\n"
-            . "### Praktik Kerja Lapangan (PKL) — PT Telkom Akses Semarang\n"
-            . "*Juli 2024 – Desember 2024*\n"
-            . "- Mengimplementasikan instalasi jaringan FTTH (Fiber to the Home) untuk 60+ pelanggan residensial dengan tingkat keberhasilan aktivasi 98%.\n"
-            . "- Melakukan splicing core kabel fiber optic menggunakan fusion splicer dan mengukur redaman sinyal dengan Optical Power Meter (OPM) sesuai standar batas toleransi < -18 dB.\n"
-            . "- Mengonfigurasi perangkat Optical Network Terminal (ONT) dan router wireless untuk aktivasi layanan internet pita lebar.\n"
-            . "- Mendiagnosis dan menyelesaikan 40+ tiket gangguan jaringan pelanggan per minggu bersama teknisi senior dengan SLA 95%.\n\n"
-            . "## Keahlian Teknis\n"
-            . "- **Jaringan**: TCP/IP, Subnetting VLSM, VLAN, Routing Statis & OSPF Dasar, MikroTik RouterOS\n"
-            . "- **Fiber Optic**: Splicing FO, OTDR, Optical Power Meter (OPM), FTTH Distribution Point\n"
-            . "- **Sistem Operasi**: Linux Debian/Ubuntu Server dasar, Windows Client/Server\n"
-            . "- **Hardware & Tools**: Crimping RJ-45, Fusion Splicer, LAN Tester, Maintenance PC\n\n"
-            . "## Portofolio & Sertifikat\n"
-            . "- Sertifikat PKL PT Telkom Akses Semarang dengan Predikat Sangat Memuaskan (A)\n"
-            . "- Sertifikasi Kompetensi Keahlian TKJ dari Lembaga Sertifikasi Profesi (LSP) P1 SMK Penus\n"
-            . "- Pelatihan Konfigurasi MikroTik MTCNA Fundamental (MikroTik Academy Penus)\n";
+            . "### SMK Plus Pelita Nusantara — {$jurusan}\n"
+            . "*2023 – Sekarang*\n"
+            . "- Fokus kompetensi kejuruan dan penerapan standar keselamatan kerja (K3)\n\n"
+            . "## Pengalaman & Praktik Kerja\n"
+            . "### Praktik Kerja Lapangan (PKL)\n"
+            . "- Melaksanakan penugasan kerja industri sesuai kompetensi keahlian dan SOP perusahaan.\n\n"
+            . "## Keahlian Utama\n"
+            . "- Keterampilan Teknis Bidang Kejuruan\n"
+            . "- Komunikasi Efektif & Kerja Sama Tim\n\n"
+            . "## Portofolio & Sertifikasi\n"
+            . "- Sertifikasi Kompetensi Kejuruan Sekolah\n";
     }
 
     protected function getAlumniMarkdown(array $profile): string
     {
-        $name = $profile['name'] ?? 'Nadia Salsabila';
-        $email = $profile['email'] ?? 'nadia.salsabila@gmail.com';
-        $phone = $profile['phone'] ?? '0857-1122-3344';
+        $name = $profile['name'] ?? 'Alumni SMK Plus Pelita Nusantara';
+        $email = $profile['email'] ?? 'alumni@smkpenus.sch.id';
+        $phone = $profile['phone'] ?? '-';
+        $jurusan = $profile['jurusan'] ?? 'Akuntansi & Keuangan Lembaga';
 
         return "# {$name}\n"
-            . "*Staff Akuntansi & Keuangan · Semarang · {$email} · {$phone}*\n\n"
+            . "*Lulusan SMK · {$jurusan} · {$email} · {$phone}*\n\n"
             . "## Ringkasan Profil\n"
-            . "Alumni Akuntansi & Keuangan Lembaga SMK Plus Pelita Nusantara angkatan 2023 dengan 1,5 tahun pengalaman profesional di bidang administrasi kasir, pembukuan keuangan, dan rekonsiliasi kas. Memiliki ketelitian tinggi, pemahaman mendalam tentang siklus akuntansi jasa dan dagang, serta mahir mengoperasikan software Accurate Accounting dan Microsoft Excel tingkat lanjut.\n\n"
+            . "Lulusan SMK Plus Pelita Nusantara program keahlian {$jurusan} yang siap berkontribusi secara produktif dengan dedikasi tinggi, kemampuan adaptasi cepat, dan etos kerja yang kuat.\n\n"
             . "## Pendidikan\n"
-            . "### SMK Plus Pelita Nusantara — Akuntansi & Keuangan Lembaga\n"
-            . "*2020 – 2023 · Nilai Ujian Sekolah: 91.2 / 100*\n"
-            . "- Lulusan Terbaik Program Keahlian Akuntansi & Keuangan Lembaga Angkatan 2023\n"
-            . "- Juara 2 Olimpiade Akuntansi Tingkat SMK se-Jawa Tengah\n\n"
-            . "## Pengalaman Kerja\n"
-            . "### Senior Cashier & Finance Admin — CV Sumber Berkah Makmur\n"
-            . "*Agustus 2023 – Sekarang (Semarang)*\n"
-            . "- Memproses rata-rata 300+ transaksi penjualan harian dengan akurasi 100% tanpa selisih kas selama 12 bulan berturut-turut.\n"
-            . "- Menyusun laporan arus kas harian dan mingguan yang menjadi dasar laporan manajerial pemilik perusahaan.\n"
-            . "- Melakukan rekonsiliasi bank dan bukti transaksi kas masuk/keluar senilai rata-rata Rp 180 juta per bulan.\n"
-            . "- Membimbing dan melatih 6 staf kasir junior dalam pengoperasian POS dan prosedur penutupan shift kas.\n\n"
-            . "### Praktik Kerja Lapangan (PKL) — Kantor Akuntan Publik (KAP) Semarang\n"
-            . "*Januari 2023 – April 2023*\n"
-            . "- Melakukan verifikasi dan pencocokan 500+ dokumen bukti transaksi fisik dengan entri software akuntansi klien.\n"
-            . "- Membantu tim auditor dalam penyusunan kertas kerja pemeriksaan akun kas dan persediaan barang dagang.\n\n"
-            . "## Keahlian Teknis\n"
-            . "- **Software Akuntansi**: Accurate Accounting v5, Zahir Accounting, MYOB\n"
-            . "- **Spreadsheet**: Microsoft Excel (VLOOKUP, HLOOKUP, Pivot Table, IF Bertingkat, Data Validation)\n"
-            . "- **Kompetensi Keuangan**: Jurnal Umum, Buku Besar, Neraca Saldo, Laporan Laba Rugi, Rekonsiliasi Bank\n"
-            . "- **Perpajakan Dasar**: PPh 21, PPh 23, PPN, dan e-Faktur\n\n"
-            . "## Portofolio & Sertifikat\n"
-            . "- Sertifikasi Brevet Pajak Terapan A & B (Kerjasama IAI & Universitas Diponegoro)\n"
-            . "- Sertifikasi Kompetensi Akuntan Yunior dari BNSP (Badan Nasional Sertifikasi Profesi)\n"
-            . "- Sertifikat Microsoft Office Specialist (MOS) — Excel Associate\n";
+            . "### SMK Plus Pelita Nusantara — {$jurusan}\n"
+            . "*Alumni*\n\n"
+            . "## Pengalaman Kerja & Magang\n"
+            . "- Mengikuti penempatan magang industri dan program penyiapan karier BKK.\n\n"
+            . "## Keahlian Teknis & Profesional\n"
+            . "- Kemampuan Teknis Spesialisasi Bidang Keahlian\n"
+            . "- Pengoperasian Perangkat Kerja Standar Industri\n";
     }
 }
