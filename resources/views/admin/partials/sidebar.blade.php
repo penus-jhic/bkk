@@ -88,22 +88,57 @@
             </a>
         </nav>
 
-        <!-- Integrasi Portal & Publik -->
+        <!-- Pintas Dashboard Admin -->
         <nav class="space-y-1 pt-2">
             <div class="px-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-muted/80 flex items-center gap-2">
-                <span>Portal & Integrasi</span>
+                <span>Pintas Dashboard</span>
+                <span class="h-px flex-1 bg-line"></span>
+            </div>
+
+            <!-- 1. CMS Portal Utama -->
+            <a href="/admin"
+               class="group flex items-center justify-between h-10 px-4 rounded-full text-xs font-medium text-navy hover:bg-navy/5 transition-colors">
+                <div class="flex items-center gap-3 truncate">
+                    <i data-lucide="globe" class="w-4 h-4 shrink-0 text-muted group-hover:text-navy"></i>
+                    <span class="truncate">CMS Portal Utama</span>
+                </div>
+                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-muted group-hover:text-navy shrink-0"></i>
+            </a>
+
+            <!-- 2. Admin BKK (Saat Ini Aktif) -->
+            <div class="flex items-center justify-between h-10 px-4 rounded-full text-xs font-semibold bg-navy text-white shadow-xs">
+                <div class="flex items-center gap-3 truncate">
+                    <i data-lucide="briefcase" class="w-4 h-4 shrink-0 text-white"></i>
+                    <span class="truncate">Admin BKK</span>
+                </div>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Aktif</span>
+            </div>
+
+            <!-- 3. Admin PPDB -->
+            <a href="/ppdb/dashboard"
+               class="group flex items-center justify-between h-10 px-4 rounded-full text-xs font-medium text-navy hover:bg-navy/5 transition-colors">
+                <div class="flex items-center gap-3 truncate">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 shrink-0 text-muted group-hover:text-navy"></i>
+                    <span class="truncate">Admin PPDB</span>
+                </div>
+                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-muted group-hover:text-navy shrink-0"></i>
+            </a>
+        </nav>
+
+        <!-- Situs Publik -->
+        <nav class="space-y-1 pt-2">
+            <div class="px-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-muted/80 flex items-center gap-2">
+                <span>Situs Publik</span>
                 <span class="h-px flex-1 bg-line"></span>
             </div>
 
             <a href="{{ url('/bkk') }}" target="_blank"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors text-navy hover:bg-navy/5">
-                <i data-lucide="external-link" class="w-4 h-4 shrink-0 text-muted group-hover:text-navy"></i>
-                <span class="truncate">Web Publik BKK</span>
-            </a>
-            <a href="/ppdb/dashboard" target="_blank"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors text-navy hover:bg-navy/5">
-                <i data-lucide="external-link" class="w-4 h-4 shrink-0 text-muted group-hover:text-navy"></i>
-                <span class="truncate">Dashboard PPDB</span>
+               class="group flex items-center justify-between h-10 px-4 rounded-full text-xs font-medium text-navy hover:bg-navy/5 transition-colors">
+                <div class="flex items-center gap-3 truncate">
+                    <i data-lucide="external-link" class="w-4 h-4 shrink-0 text-muted group-hover:text-navy"></i>
+                    <span class="truncate">Web Publik BKK</span>
+                </div>
+                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-muted group-hover:text-navy shrink-0"></i>
             </a>
         </nav>
     </div>
