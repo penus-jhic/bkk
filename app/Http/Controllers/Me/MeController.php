@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class MeController extends Controller
@@ -245,6 +246,7 @@ class MeController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
+            return back()->withInput()->with('error', 'Gagal menyimpan CV: ' . $e->getMessage());
         }
 
         if ($request->wantsJson()) {
@@ -333,10 +335,20 @@ class MeController extends Controller
         $authUser = $this->resolveAuthUser($request);
         $userId = $authUser['id'];
 
+        if ($authUser['role'] !== 'SISWA') {
+            $msg = 'Jurnal PKL hanya dapat diisi oleh siswa aktif.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 403);
+            }
+            return redirect()->route('bkk.me.jurnal')->with('error', $msg);
+        }
+
         $validated = $request->validate([
-            'tanggal' => ['required', 'date'],
+            'tanggal' => ['required', 'date', 'before_or_equal:today'],
             'aktivitas' => ['required', 'string'],
             'durasi_jam' => ['nullable', 'integer', 'min:1', 'max:12'],
+        ], [
+            'tanggal.before_or_equal' => 'Tanggal jurnal tidak boleh melebihi hari ini.',
         ]);
 
         $createdEntry = null;
@@ -352,6 +364,18 @@ class MeController extends Controller
                         ], 422);
                     }
                     return redirect()->route('bkk.me.jurnal')->with('error', 'Anda belum terdaftar dalam penempatan PKL aktif.');
+                }
+
+                $sudahAda = PklJurnalHarian::where('penempatan_pkl_id', $penempatan->id)
+                    ->whereDate('tanggal', $validated['tanggal'])
+                    ->exists();
+
+                if ($sudahAda) {
+                    $msg = 'Jurnal untuk tanggal tersebut sudah pernah dicatat.';
+                    if ($request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $msg], 422);
+                    }
+                    return redirect()->route('bkk.me.jurnal')->with('error', $msg);
                 }
 
                 $createdEntry = PklJurnalHarian::create([
@@ -411,7 +435,7 @@ class MeController extends Controller
             }
         } catch (\Throwable) {}
 
-        $deadlineStr = $penempatan?->tanggal_selesai ? $penempatan->tanggal_selesai->format('d F Y') : '30 April 2025';
+        $deadlineStr = $penempatan?->tanggal_selesai ? $penempatan->tanggal_selesai->locale('id')->translatedFormat('d F Y') : 'Belum ditentukan';
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -443,7 +467,12 @@ class MeController extends Controller
 
         $validated = $request->validate([
             'nomor_bab' => ['required', 'integer', 'between:1,5'],
-            'judul_bab' => ['required', 'string'],
+            'judul_bab' => ['required', 'string', 'max:255'],
+            'file_draft' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'], // 10 MB
+        ], [
+            'file_draft.required' => 'Pilih berkas draf bab terlebih dahulu.',
+            'file_draft.mimes' => 'Format berkas harus .pdf, .doc, atau .docx.',
+            'file_draft.max' => 'Ukuran berkas maksimal 10 MB.',
         ]);
 
         $laporan = null;
@@ -461,6 +490,22 @@ class MeController extends Controller
                     return redirect()->route('bkk.me.laporan')->with('error', 'Anda belum memiliki penempatan PKL aktif.');
                 }
 
+                $existing = PklLaporanAkhir::where('penempatan_pkl_id', $penempatan->id)
+                    ->where('nomor_bab', $validated['nomor_bab'])
+                    ->first();
+
+                if ($existing && $existing->status === 'Disetujui') {
+                    $msg = 'Bab ini sudah disetujui pembimbing dan tidak dapat diunggah ulang.';
+                    if ($request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $msg], 422);
+                    }
+                    return redirect()->route('bkk.me.laporan')->with('error', $msg);
+                }
+
+                $file = $request->file('file_draft');
+                $fileName = 'bab' . $validated['nomor_bab'] . '_' . $penempatan->id . '_' . Str::random(24) . '.' . ($file->guessExtension() ?: $file->getClientOriginalExtension());
+                $path = $file->storeAs('laporan_pkl', $fileName, 'public');
+
                 $laporan = PklLaporanAkhir::updateOrCreate(
                     [
                         'penempatan_pkl_id' => $penempatan->id,
@@ -469,6 +514,7 @@ class MeController extends Controller
                     [
                         'siswa_id' => $userId,
                         'judul_bab' => $validated['judul_bab'],
+                        'file_draft_url' => '/bkk/storage/' . $path,
                         'status' => 'Ditinjau',
                         'terakhir_diperbarui' => now()->toDateString(),
                     ]
@@ -506,11 +552,33 @@ class MeController extends Controller
         $authUser = $this->resolveAuthUser($request);
         $userId = $authUser['id'];
 
-        $lowongan = Lowongan::where('slug', $id_lowongan)
-            ->orWhere('id', is_numeric($id_lowongan) ? (int)$id_lowongan : 0)
+        $lowongan = Lowongan::where(function ($q) use ($id_lowongan) {
+                $q->where('slug', $id_lowongan);
+                if (is_numeric($id_lowongan)) {
+                    $q->orWhere('id', (int) $id_lowongan);
+                }
+            })
             ->firstOrFail();
 
+        $tolak = null;
+        if ($lowongan->status !== 'Aktif') {
+            $tolak = 'Lowongan ini sudah tidak menerima lamaran.';
+        } elseif ($lowongan->deadline && $lowongan->deadline->lt(today())) {
+            $tolak = 'Batas akhir pendaftaran lowongan ini sudah lewat.';
+        }
+
         $cv = CvResume::where('siswa_id', $userId)->where('is_primary', true)->first();
+        if (!$tolak && !$cv) {
+            $tolak = 'Lengkapi CV Anda terlebih dahulu sebelum melamar.';
+        }
+
+        if ($tolak) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $tolak], 422);
+            }
+            // Form lamaran ada di halaman publik yang tidak menampilkan flash error, jadi arahkan ke portal siswa
+            return redirect()->route($cv ? 'bkk.me.lamaran' : 'bkk.me.cv.edit')->with('error', $tolak);
+        }
 
         $existing = Lamaran::where('siswa_id', $userId)
             ->where('lowongan_id', $lowongan->id)
@@ -521,7 +589,7 @@ class MeController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $msg], 422);
             }
-            return redirect()->route('bkk.me.lamaran')->with('warning', $msg);
+            return redirect()->route('bkk.me.lamaran')->with('error', $msg);
         }
 
         $kodeLamaran = 'LMR-' . date('Y') . '-' . strtoupper(substr(uniqid(), -5));
@@ -530,7 +598,7 @@ class MeController extends Controller
             'kode_lamaran' => $kodeLamaran,
             'lowongan_id' => $lowongan->id,
             'siswa_id' => $userId,
-            'cv_id' => $cv?->id ?? 1,
+            'cv_id' => $cv->id,
             'tanggal_melamar' => now()->toDateString(),
             'skor_match_ai' => 90,
             'status' => 'Terkirim',
@@ -624,7 +692,7 @@ class MeController extends Controller
             if (Schema::hasTable('lowongan')) {
                 $tipeTarget = ($role === 'SISWA') ? 'PKL' : 'Kerja';
                 $dbLowongans = Lowongan::with('mitra')
-                    ->where('status', 'Aktif')
+                    ->terbuka()
                     ->where('tipe', $tipeTarget)
                     ->latest('created_at')
                     ->take(6)
@@ -632,7 +700,7 @@ class MeController extends Controller
 
                 if ($dbLowongans->isEmpty()) {
                     $dbLowongans = Lowongan::with('mitra')
-                        ->where('status', 'Aktif')
+                        ->terbuka()
                         ->latest('created_at')
                         ->take(6)
                         ->get();
@@ -800,6 +868,30 @@ class MeController extends Controller
         }
 
         $authUser['role'] = $role;
+        $this->ensureProfilSiswa($authUser);
+
         return $authUser;
+    }
+
+    /**
+     * Buat record profil_siswa minimal untuk user dari auth service yang belum punya profil,
+     * karena cv_resumes, lamaran, dan penempatan_pkl ber-FK ke profil_siswa.user_id.
+     */
+    protected function ensureProfilSiswa(array $authUser): void
+    {
+        try {
+            if (Schema::hasTable('profil_siswa')) {
+                ProfilSiswa::firstOrCreate(
+                    ['user_id' => (string) $authUser['id']],
+                    [
+                        'nis' => $authUser['nomor_induk'] ?? $authUser['nis'] ?? '-',
+                        'jurusan' => $authUser['jurusan'] ?? 'Belum diisi',
+                        'kelas' => $authUser['kelas'] ?? null,
+                        'angkatan' => (string) ($authUser['angkatan'] ?? date('Y')),
+                        'status_kelulusan' => $authUser['role'] === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
+                    ]
+                );
+            }
+        } catch (\Throwable) {}
     }
 }

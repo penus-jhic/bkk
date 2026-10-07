@@ -103,6 +103,6 @@ class DashboardController extends Controller
             ]);
         }
 
-        return view('bkk.dashboard', compact('authUser'));
+        return view('admin.pages.profile', compact('authUser'));
     }
 }

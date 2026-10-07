@@ -48,6 +48,13 @@ class Lowongan extends Model
         return $query->where('status', 'Aktif');
     }
 
+    // Lowongan yang masih bisa dilamar: Aktif dan belum lewat deadline
+    public function scopeTerbuka(Builder $query): Builder
+    {
+        return $query->where('status', 'Aktif')
+            ->where(fn ($q) => $q->whereNull('deadline')->orWhereDate('deadline', '>=', today()));
+    }
+
     public function scopeTipe(Builder $query, string $tipe): Builder
     {
         return $query->where('tipe', $tipe);

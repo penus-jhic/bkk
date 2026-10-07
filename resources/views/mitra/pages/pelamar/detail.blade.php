@@ -61,8 +61,8 @@
                 <span class="text-[11px] text-muted font-medium uppercase tracking-wider">Status Seleksi Saat Ini</span>
                 @php
                     $badgeColor = match($applicant['status']) {
-                        'Interview' => 'bg-amber-50 text-amber-800 border-amber-300',
-                        'Dipanggil' => 'bg-blue-50 text-blue-800 border-blue-300',
+                        'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-300',
+                        'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-300',
                         'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-300',
                         'Ditolak' => 'bg-red-50 text-red-800 border-red-300',
                         default => 'bg-gray-100 text-gray-800 border-gray-300',
@@ -135,7 +135,7 @@
                     <div class="space-y-2">
                         <label class="text-xs font-semibold text-navy">Pilih Status Seleksi:</label>
                         <div class="space-y-1.5">
-                            @foreach(['Dipanggil', 'Interview', 'Diterima', 'Ditolak'] as $statusOption)
+                            @foreach(['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'] as $statusOption)
                                 <label class="flex items-center gap-3 p-2.5 rounded-xl border border-line hover:bg-canvas cursor-pointer transition-colors text-xs font-medium text-navy {{ $applicant['status'] === $statusOption ? 'bg-navy/5 border-navy font-semibold' : '' }}">
                                     <input
                                         type="radio"

@@ -112,7 +112,7 @@ class AdminMitraController extends Controller
         // Sanitasi Nama Perusahaan
         $validated['nama_perusahaan'] = trim(preg_replace('/\s+/', ' ', $validated['nama_perusahaan']));
         $validated['password'] = Hash::make($validated['password']);
-        $validated['is_verified'] = $request->boolean('is_verified', true);
+        $validated['is_verified'] = $request->boolean('is_verified');
         $validated['status_kemitraan'] = $validated['is_verified'] ? 'Mitra IDUKA Terverifikasi' : 'Menunggu Verifikasi Admin';
 
         $mitra = Mitra::create($validated);
@@ -253,7 +253,7 @@ class AdminMitraController extends Controller
 
         $authUser = $request->auth_user ?? $request->input('auth_user') ?? [];
 
-        return view('admin.pages.dashboard', compact('authUser', 'permohonan'));
+        return view('admin.pages.mitra.permohonan', compact('authUser', 'permohonan'));
     }
 
     /**
@@ -262,8 +262,12 @@ class AdminMitraController extends Controller
     public function permohonanUpdateStatus(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $permohonan = PermohonanKerjasama::findOrFail($id);
-        $newStatus = $request->input('status', 'DISETUJUI');
-        $catatan = $request->input('catatan_admin');
+        $validated = $request->validate([
+            'status' => ['required', 'in:MENUNGGU_REVIEW,DISETUJUI,DITOLAK'],
+            'catatan_admin' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $newStatus = $validated['status'];
+        $catatan = $validated['catatan_admin'] ?? null;
 
         $permohonan->update([
             'status' => $newStatus,

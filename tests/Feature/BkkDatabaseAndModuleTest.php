@@ -16,7 +16,9 @@ use App\Models\TracerKuesioner;
 use App\Models\TracerRespon;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -194,6 +196,7 @@ class BkkDatabaseAndModuleTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
         $this->fakeAuth('SISWA', 'usr-siswa-001');
+        Storage::fake('public');
 
         // Submit log jurnal PKL
         $jurnalRes = $this->withHeader('Authorization', 'Bearer valid_token')
@@ -215,6 +218,7 @@ class BkkDatabaseAndModuleTest extends TestCase
             ->post('/bkk/me/laporan', [
                 'nomor_bab' => 5,
                 'judul_bab' => 'BAB V — Kesimpulan dan Rekomendasi Industri',
+                'file_draft' => UploadedFile::fake()->create('bab5.pdf', 120, 'application/pdf'),
             ]);
         $laporanRes->assertRedirect(route('bkk.me.laporan'))
             ->assertSessionHas('success');

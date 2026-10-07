@@ -31,6 +31,7 @@
                     <li><a class="hover:text-on-surface transition-colors" data-path="berita-&-agenda" href="{{ url('/bkk/berita') }}">Agenda &amp; Berita</a></li>
                     <li><a class="hover:text-on-surface transition-colors" data-path="kerja-sama-mitra" href="{{ url('/bkk/kerja-sama') }}">Registrasi Mitra IDUKA</a></li>
                     <li><a class="hover:text-on-surface transition-colors" data-path="tentang-bkk" href="{{ url('/bkk/tentang') }}">Tentang BKK &amp; Struktur</a></li>
+                    <li><a class="hover:text-on-surface transition-colors" href="{{ route('bkk.admin.index') }}">Dashboard Admin</a></li>
                 </ul>
             </div>
 

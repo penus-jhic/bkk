@@ -41,7 +41,7 @@
                     </div>
                     <div>
                         <div class="text-[11px] text-muted font-medium">Batas Pengumpulan Final</div>
-                        <div class="font-bold text-sm text-maroon">{{ $deadlineStr ?? '30 April 2025' }}</div>
+                        <div class="font-bold text-sm text-maroon">{{ $deadlineStr ?? 'Belum ditentukan' }}</div>
                     </div>
                 </div>
             </div>
@@ -86,9 +86,16 @@
                             </span>
 
                             @if($sec['status'] !== 'Disetujui')
+                                <input
+                                    type="file"
+                                    id="file-{{ $sec['id'] }}"
+                                    accept=".pdf,.doc,.docx"
+                                    class="hidden"
+                                    onchange="uploadBabDraft('{{ $sec['id'] }}', '{{ addslashes($sec['title']) }}', this)"
+                                />
                                 <button
                                     id="btn-upload-{{ $sec['id'] }}"
-                                    onclick="uploadBabDraft('{{ $sec['id'] }}', '{{ $sec['title'] }}')"
+                                    onclick="document.getElementById('file-{{ $sec['id'] }}').click()"
                                     class="h-8 px-4 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer {{ $sec['status'] === 'Revisi' ? 'bg-maroon hover:bg-maroon-dark text-white' : 'border border-line bg-white hover:bg-canvas text-navy' }}"
                                 >
                                     <i data-lucide="{{ $sec['status'] === 'Revisi' ? 'file-up' : 'upload-cloud' }}" class="w-3.5 h-3.5"></i>
@@ -106,10 +113,17 @@
 
 @push('scripts')
 <script>
-    async function uploadBabDraft(id, title) {
+    async function uploadBabDraft(id, title, input) {
         const btn = document.getElementById('btn-upload-' + id);
         const badge = document.getElementById('badge-' + id);
-        if (!btn) return;
+        const file = input?.files?.[0];
+        if (!btn || !file) return;
+
+        const formData = new FormData();
+        formData.append('nomor_bab', parseInt(id));
+        formData.append('judul_bab', title);
+        formData.append('file_draft', file);
+        input.value = '';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -121,14 +135,10 @@
             const res = await fetch("{{ route('bkk.me.laporan.store') }}", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
                     "Accept": "application/json",
                     "X-CSRF-TOKEN": csrfToken
                 },
-                body: JSON.stringify({
-                    nomor_bab: parseInt(id),
-                    judul_bab: title
-                })
+                body: formData
             });
 
             const data = await res.json();

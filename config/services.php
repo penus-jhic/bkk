@@ -37,6 +37,7 @@ return [
 
     'auth_service' => [
         'base_url' => env('AUTH_SERVICE_URL', 'http://localhost:3002'),
+        'login_url' => env('AUTH_LOGIN_URL', '/login'),
     ],
 
 ];

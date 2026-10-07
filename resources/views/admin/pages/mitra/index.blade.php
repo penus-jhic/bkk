@@ -56,11 +56,11 @@
             <div class="text-[10px] text-muted mt-0.5">Menunggu peninjauan admin</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
+        <a href="{{ route('bkk.admin.mitra.permohonan.index') }}" class="block p-4 rounded-2xl bg-white border border-line shadow-xs hover:border-purple-300 transition-colors">
             <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wider">Permohonan Baru</div>
             <div class="text-2xl font-headline font-bold text-purple-700 mt-1">{{ $stats['permohonan_masuk'] ?? 0 }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Pengajuan kerja sama via web</div>
-        </div>
+            <div class="text-[10px] text-muted mt-0.5">Pengajuan kerja sama via web &rarr; Lihat</div>
+        </a>
     </div>
 
     <!-- Filter & Search Toolbar -->

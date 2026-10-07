@@ -87,7 +87,10 @@ class Berita extends Model
      */
     public function getRenderedKontenAttribute(): string
     {
-        return Str::markdown($this->konten ?? '');
+        return Str::markdown($this->konten ?? '', [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
     }
 
     /**

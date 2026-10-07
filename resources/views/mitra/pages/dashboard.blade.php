@@ -213,8 +213,8 @@
                         $aScore = is_object($applicant) ? ($applicant->skor_match_ai ?: 85) : ($applicant['cv_score'] ?? 85);
 
                         $badgeColor = match($aStatus) {
-                            'Interview', 'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
-                            'Dipanggil' => 'bg-blue-50 text-blue-800 border-blue-200',
+                            'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
+                            'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-200',
                             'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
                             'Ditolak' => 'bg-red-50 text-red-800 border-red-200',
                             default => 'bg-gray-100 text-gray-700 border-gray-200',

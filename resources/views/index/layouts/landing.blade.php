@@ -86,6 +86,14 @@
         ],
     ];
 
+    // KHUSUS TESTING PANITIA LOMBA: hapus array ini & blok "Akses Uji Coba" di footer sebelum production
+    $testingLinks = [
+        ['label' => 'Login Admin / Siswa', 'href' => config('services.auth_service.login_url', '/login'), 'note' => 'Akun dari auth service'],
+        ['label' => 'Dashboard Admin', 'href' => route('bkk.admin.index'), 'note' => 'Role ADMIN, KEPALA_SEKOLAH, TU, DEVELOPER'],
+        ['label' => 'Portal Siswa / Alumni', 'href' => route('bkk.me.index'), 'note' => 'Role SISWA, ALUMNI'],
+        ['label' => 'Login Mitra IDUKA', 'href' => route('bkk.mitra.login'), 'note' => 'STN / Password123!'],
+    ];
+
     $mapsQuery = 'SMK+Plus+Pelita+Nusantara+Cibinong+Bogor';
 @endphp
 <!DOCTYPE html>
@@ -457,6 +465,27 @@
                     <p class="mt-3 text-[11px] leading-tight text-brand-ink/60">Ciriung, Cibinong, dekat pusat pemerintahan Kabupaten Bogor.</p>
                 </div>
             </div>
+        </div>
+
+        {{-- KHUSUS TESTING PANITIA LOMBA: hapus blok ini sebelum production --}}
+        <div class="max-w-6xl mx-auto mt-12 rounded-card border border-dashed border-brand-signal/40 bg-brand-signal/5 p-5">
+            <div class="flex flex-wrap items-center gap-2">
+                <h2 class="font-display text-sm sm:text-base font-bold uppercase tracking-wide text-brand-ink">Akses Uji Coba Panitia</h2>
+                <span class="rounded-full bg-brand-signal px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">Testing</span>
+            </div>
+            <p class="mt-1.5 text-[11px] sm:text-xs leading-relaxed text-brand-ink/70">
+                Link di bawah ini hanya untuk keperluan penilaian &amp; uji coba oleh panitia lomba, bukan akses resmi, dan akan dihapus saat production.
+            </p>
+            <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                @foreach ($testingLinks as $link)
+                    <li>
+                        <a href="{{ $link['href'] }}" class="group block h-full rounded-lg border border-brand-ink/10 bg-white px-3.5 py-2.5 transition-colors hover:border-brand-darkred">
+                            <span class="block text-xs sm:text-[13px] font-semibold text-brand-ink group-hover:text-brand-darkred">{{ $link['label'] }}</span>
+                            <span class="mt-0.5 block text-[11px] text-brand-ink/60">{{ $link['note'] }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
         </div>
 
         <div class="max-w-6xl mx-auto mt-12 flex flex-col gap-3 border-t border-brand-ink/10 pt-6 text-[11px] sm:text-xs font-medium text-brand-ink/60 sm:flex-row sm:items-center sm:justify-between">

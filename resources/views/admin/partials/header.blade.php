@@ -107,6 +107,10 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-muted"></i>
                         <span>Dashboard Admin</span>
                     </a>
+                    <a href="{{ route('bkk.admin.profile') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-navy hover:bg-white transition-colors">
+                        <i data-lucide="user-round" class="w-4 h-4 text-muted"></i>
+                        <span>Profil Saya</span>
+                    </a>
                     <a href="{{ route('bkk.me.index') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-navy hover:bg-white transition-colors">
                         <i data-lucide="user-check" class="w-4 h-4 text-muted"></i>
                         <span>Portal Siswa & Alumni</span>

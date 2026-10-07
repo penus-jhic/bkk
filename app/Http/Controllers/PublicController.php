@@ -10,10 +10,21 @@ use App\Models\PermohonanKerjasama;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class PublicController extends Controller
 {
+    /**
+     * Ambil parameter query sebagai string; nilai array (?q[]=x) diabaikan agar tidak memicu error.
+     */
+    protected function queryString(Request $request, string $key): ?string
+    {
+        $value = $request->input($key);
+
+        return is_string($value) ? $value : null;
+    }
+
     /**
      * Endpoint publik utama BKK (Landpage).
      */
@@ -26,7 +37,7 @@ class PublicController extends Controller
             ->get();
 
         $featuredLowongan = Lowongan::with('mitra')
-            ->where('status', 'Aktif')
+            ->terbuka()
             ->latest('created_at')
             ->take(4)
             ->get();
@@ -68,8 +79,8 @@ class PublicController extends Controller
      */
     public function berita(Request $request): View
     {
-        $kategoriSlug = $request->input('kategori');
-        $searchQuery = $request->input('q');
+        $kategoriSlug = $this->queryString($request, 'kategori');
+        $searchQuery = $this->queryString($request, 'q');
 
         $categories = KategoriBerita::withCount(['beritas' => fn ($q) => $q->where('status', 'PUBLISHED')])->get();
         $totalPublished = Berita::published()->count();
@@ -155,9 +166,9 @@ class PublicController extends Controller
      */
     public function lowongan(Request $request): View|JsonResponse
     {
-        $query = Lowongan::with('mitra')->where('status', 'Aktif');
+        $query = Lowongan::with('mitra')->terbuka();
 
-        $searchQuery = $request->input('q');
+        $searchQuery = $this->queryString($request, 'q');
         if (!empty($searchQuery)) {
             $like = config('database.default') === 'pgsql' ? 'ilike' : 'like';
             $query->where(function ($q) use ($searchQuery, $like) {
@@ -168,14 +179,14 @@ class PublicController extends Controller
             });
         }
 
-        $tipe = $request->input('tipe');
+        $tipe = $this->queryString($request, 'tipe');
         // Nilai enum kolom tipe: 'PKL' & 'Kerja'
         $tipeValues = ['pkl' => 'PKL', 'kerja' => 'Kerja'];
         if (!empty($tipe) && isset($tipeValues[strtolower($tipe)])) {
             $query->where('tipe', $tipeValues[strtolower($tipe)]);
         }
 
-        $jurusan = $request->input('jurusan');
+        $jurusan = $this->queryString($request, 'jurusan');
         if (!empty($jurusan) && $jurusan !== 'all') {
             $like = config('database.default') === 'pgsql' ? 'ilike' : 'like';
             $query->where('target_jurusan', $like, "%{$jurusan}%");
@@ -189,7 +200,7 @@ class PublicController extends Controller
             'karawang' => ['Karawang'],
             'hybrid' => ['Hybrid', 'Remote'],
         ];
-        $lokasi = $request->input('lokasi');
+        $lokasi = $this->queryString($request, 'lokasi');
         if (isset($lokasiKeywords[$lokasi])) {
             $like = config('database.default') === 'pgsql' ? 'ilike' : 'like';
             $query->where(function ($q) use ($lokasiKeywords, $lokasi, $like) {
@@ -199,7 +210,7 @@ class PublicController extends Controller
             });
         }
 
-        $urut = $request->input('urut');
+        $urut = $this->queryString($request, 'urut');
         match ($urut) {
             'deadline' => $query->orderBy('deadline'),
             'quota' => $query->orderByDesc('kuota'),
@@ -207,8 +218,8 @@ class PublicController extends Controller
         };
 
         $lowongans = $query->paginate(9)->withQueryString();
-        $totalLowongan = Lowongan::where('status', 'Aktif')->count();
-        $tipeCounts = Lowongan::where('status', 'Aktif')
+        $totalLowongan = Lowongan::terbuka()->count();
+        $tipeCounts = Lowongan::terbuka()
             ->selectRaw('tipe, count(*) as total')
             ->groupBy('tipe')
             ->pluck('total', 'tipe');
@@ -229,10 +240,11 @@ class PublicController extends Controller
     /**
      * Detail Lowongan PKL & Kerja BKK.
      */
-    public function lowonganDetail(Request $request, string $id_lowongan): View|JsonResponse
+    public function lowonganDetail(Request $request, string $id_lowongan): View|JsonResponse|Response
     {
         $lowongan = Lowongan::with('mitra')
             ->withCount('lamarans')
+            ->terbuka()
             ->where(function ($q) use ($id_lowongan) {
                 $q->where('slug', $id_lowongan);
                 if (is_numeric($id_lowongan)) {
@@ -246,7 +258,7 @@ class PublicController extends Controller
         }
 
         $relatedLowongan = Lowongan::with('mitra')
-            ->where('status', 'Aktif')
+            ->terbuka()
             ->when($lowongan, fn ($q) => $q->where('id', '!=', $lowongan->id))
             ->latest('created_at')
             ->take(3)
@@ -254,17 +266,24 @@ class PublicController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'success' => true,
+                'success' => (bool) $lowongan,
                 'data' => [
                     'lowongan' => $lowongan,
                     'related' => $relatedLowongan,
                 ],
-            ]);
+            ], $lowongan ? Response::HTTP_OK : Response::HTTP_NOT_FOUND);
         }
 
-        $totalLowongan = Lowongan::where('status', 'Aktif')->count();
+        $totalLowongan = Lowongan::terbuka()->count();
 
-        return view('index.pages.lowongan-detail', compact('id_lowongan', 'lowongan', 'relatedLowongan', 'totalLowongan'));
+        $data = compact('id_lowongan', 'lowongan', 'relatedLowongan', 'totalLowongan');
+
+        // Lowongan tidak ditemukan / tidak aktif: tetap tampilkan blok "tidak ditemukan" di view, dengan status 404
+        if (!$lowongan) {
+            return response()->view('index.pages.lowongan-detail', $data, Response::HTTP_NOT_FOUND);
+        }
+
+        return view('index.pages.lowongan-detail', $data);
     }
 
     /**

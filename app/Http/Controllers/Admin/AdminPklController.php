@@ -101,8 +101,12 @@ class AdminPklController extends Controller
     public function validateJurnal(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $jurnal = PklJurnalHarian::findOrFail($id);
-        $status = $request->input('status', 'Disetujui');
-        $catatan = $request->input('catatan_revisi');
+        $validated = $request->validate([
+            'status' => ['required', 'in:Menunggu,Disetujui,Revisi'],
+            'catatan_revisi' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $status = $validated['status'];
+        $catatan = $validated['catatan_revisi'] ?? null;
 
         $jurnal->update([
             'status' => $status,
@@ -111,8 +115,8 @@ class AdminPklController extends Controller
             'divalidasi_pada' => now(),
         ]);
 
-        // Jika disetujui, tambahkan akumulasi total jam tercapai pada penempatan PKL
-        if ($status === 'Disetujui' && $jurnal->penempatan) {
+        // Hitung ulang total jam tercapai setiap kali status berubah (termasuk Disetujui -> Revisi)
+        if ($jurnal->penempatan) {
             $penempatan = $jurnal->penempatan;
             $totalDisetujui = PklJurnalHarian::where('penempatan_pkl_id', $penempatan->id)
                 ->where('status', 'Disetujui')
@@ -137,8 +141,12 @@ class AdminPklController extends Controller
     public function validateLaporan(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $laporan = PklLaporanAkhir::findOrFail($id);
-        $status = $request->input('status', 'Disetujui');
-        $catatan = $request->input('catatan_pembimbing');
+        $validated = $request->validate([
+            'status' => ['required', 'in:Belum,Ditinjau,Revisi,Disetujui'],
+            'catatan_pembimbing' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $status = $validated['status'];
+        $catatan = $validated['catatan_pembimbing'] ?? null;
 
         $laporan->update([
             'status' => $status,

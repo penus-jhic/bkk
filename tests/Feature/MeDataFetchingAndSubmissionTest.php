@@ -13,7 +13,9 @@ use App\Models\ProfilSiswa;
 use App\Models\TracerRespon;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MeDataFetchingAndSubmissionTest extends TestCase
@@ -129,10 +131,12 @@ class MeDataFetchingAndSubmissionTest extends TestCase
     public function test_siswa_laporan_ajax_submission_persists_to_database(): void
     {
         $this->fakeAuth('SISWA', 'usr-siswa-001', 'Ahmad Rizky Pratama');
+        Storage::fake('public');
 
         $payload = [
             'nomor_bab' => 3,
             'judul_bab' => 'BAB III — Pelaksanaan Praktik Kerja Lapangan di Industri IT',
+            'file_draft' => UploadedFile::fake()->create('bab3.pdf', 120, 'application/pdf'),
         ];
 
         $response = $this->withHeader('Authorization', 'Bearer valid_token')

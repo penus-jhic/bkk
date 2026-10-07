@@ -43,7 +43,7 @@ class MitraController extends Controller
             'total_lowongan' => $mitra->lowongans()->count(),
             'lowongan_aktif' => $mitra->lowongans()->where('status', 'Aktif')->count(),
             'total_pelamar' => Lamaran::whereIn('lowongan_id', $lowonganIds)->count(),
-            'pelamar_interview' => Lamaran::whereIn('lowongan_id', $lowonganIds)->whereIn('status', ['Dipanggil', 'Interview', 'Dipanggil Interview'])->count(),
+            'pelamar_interview' => Lamaran::whereIn('lowongan_id', $lowonganIds)->where('status', 'Dipanggil Interview')->count(),
             'pelamar_diterima' => Lamaran::whereIn('lowongan_id', $lowonganIds)->where('status', 'Diterima')->count(),
             'siswa_aktif_pkl' => PenempatanPkl::where('mitra_id', $mitra->id)->where('status', 'BERJALAN')->count(),
         ];
@@ -419,7 +419,7 @@ class MitraController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'status' => ['required', 'in:Dipanggil,Interview,Dipanggil Interview,Diterima,Ditolak,Sedang Ditinjau'],
+            'status' => ['required', 'in:Sedang Ditinjau,Dipanggil Interview,Diterima,Ditolak'],
             'catatan_seleksi' => ['nullable', 'string', 'max:1000'],
         ]);
 

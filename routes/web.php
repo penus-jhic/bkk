@@ -45,7 +45,7 @@ Route::prefix('bkk')->group(function () {
     Route::get('/lowongan/{id_lowongan}', [PublicController::class, 'lowonganDetail'])->name('bkk.lowongan.detail');
     Route::get('/tentang', [PublicController::class, 'tentang'])->name('bkk.tentang');
     Route::get('/kerja-sama', [PublicController::class, 'kerjasama'])->name('bkk.kerjasama');
-    Route::post('/kerja-sama', [PublicController::class, 'storeKerjasama'])->name('bkk.kerjasama.store');
+    Route::post('/kerja-sama', [PublicController::class, 'storeKerjasama'])->middleware('throttle:5,1')->name('bkk.kerjasama.store');
 
     // 2. Router Group Terproteksi Admin Sekolah: /bkk/admin/*
     Route::middleware('verify.auth:ADMIN,KEPALA_SEKOLAH,TU,DEVELOPER')->prefix('admin')->group(function () {
@@ -72,12 +72,12 @@ Route::prefix('bkk')->group(function () {
         Route::get('/mitra', [AdminMitraController::class, 'index'])->name('bkk.admin.mitra.index');
         Route::get('/mitra/new', [AdminMitraController::class, 'create'])->name('bkk.admin.mitra.create');
         Route::post('/mitra', [AdminMitraController::class, 'store'])->name('bkk.admin.mitra.store');
+        Route::get('/mitra/permohonan', [AdminMitraController::class, 'permohonanIndex'])->name('bkk.admin.mitra.permohonan.index');
+        Route::post('/mitra/permohonan/{id}', [AdminMitraController::class, 'permohonanUpdateStatus'])->name('bkk.admin.mitra.permohonan.updateStatus');
         Route::get('/mitra/{id}', [AdminMitraController::class, 'edit'])->name('bkk.admin.mitra.edit');
         Route::put('/mitra/{id}', [AdminMitraController::class, 'update'])->name('bkk.admin.mitra.update');
         Route::delete('/mitra/{id}', [AdminMitraController::class, 'destroy'])->name('bkk.admin.mitra.destroy');
         Route::post('/mitra/{id}/verify', [AdminMitraController::class, 'toggleVerify'])->name('bkk.admin.mitra.verify');
-        Route::get('/mitra/permohonan', [AdminMitraController::class, 'permohonanIndex'])->name('bkk.admin.mitra.permohonan.index');
-        Route::post('/mitra/permohonan/{id}', [AdminMitraController::class, 'permohonanUpdateStatus'])->name('bkk.admin.mitra.permohonan.updateStatus');
 
         // Modul Monitoring PKL & Review Laporan
         Route::get('/pkl/monitoring', [AdminPklController::class, 'monitoring'])->name('bkk.admin.pkl.monitoring');
@@ -106,7 +106,7 @@ Route::prefix('bkk')->group(function () {
 
     // 4. Autentikasi Publik Mitra: /bkk/dashboard/login
     Route::get('/dashboard/login', [MitraAuthController::class, 'showLogin'])->name('bkk.mitra.login');
-    Route::post('/dashboard/login', [MitraAuthController::class, 'login'])->name('bkk.mitra.login.post');
+    Route::post('/dashboard/login', [MitraAuthController::class, 'login'])->middleware('throttle:5,1')->name('bkk.mitra.login.post');
 
     // 5. Router Group Khusus Mitra (IDUKA): /bkk/dashboard/* (Terproteksi Middleware mitra.auth)
     Route::middleware('mitra.auth')->prefix('dashboard')->name('bkk.mitra.')->group(function () {

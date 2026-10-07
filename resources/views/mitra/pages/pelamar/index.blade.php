@@ -55,8 +55,7 @@
                 <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-navy rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
                     <option value="Semua" {{ ($statusFilter ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Semua Status Seleksi</option>
                     <option value="Sedang Ditinjau" {{ ($statusFilter ?? '') === 'Sedang Ditinjau' ? 'selected' : '' }}>Sedang Ditinjau</option>
-                    <option value="Dipanggil" {{ ($statusFilter ?? '') === 'Dipanggil' ? 'selected' : '' }}>Dipanggil</option>
-                    <option value="Interview" {{ ($statusFilter ?? '') === 'Interview' ? 'selected' : '' }}>Tahap Interview</option>
+                    <option value="Dipanggil Interview" {{ ($statusFilter ?? '') === 'Dipanggil Interview' ? 'selected' : '' }}>Dipanggil Interview</option>
                     <option value="Diterima" {{ ($statusFilter ?? '') === 'Diterima' ? 'selected' : '' }}>Diterima</option>
                     <option value="Ditolak" {{ ($statusFilter ?? '') === 'Ditolak' ? 'selected' : '' }}>Ditolak</option>
                 </select>
@@ -92,8 +91,8 @@
                     @forelse($applicants as $item)
                         @php
                             $badgeColor = match($item['status']) {
-                                'Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                'Dipanggil' => 'bg-blue-50 text-blue-800 border-blue-200',
+                                'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-200',
                                 'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
                                 'Ditolak' => 'bg-red-50 text-red-800 border-red-200',
                                 default => 'bg-gray-100 text-gray-700 border-gray-200',

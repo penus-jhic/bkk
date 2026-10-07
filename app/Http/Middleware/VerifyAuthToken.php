@@ -22,10 +22,7 @@ class VerifyAuthToken
         $token = $this->extractToken($request);
 
         if (empty($token)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token otentikasi tidak ditemukan',
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->unauthenticated($request, 'Token otentikasi tidak ditemukan');
         }
 
         // 2. Forward access_token ke Auth Microservice dengan format JSON Payload
@@ -43,35 +40,23 @@ class VerifyAuthToken
                 ]);
         } catch (\Throwable $e) {
             Log::error('Auth service connection failed: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Layanan otentikasi sedang tidak tersedia. Silakan coba beberapa saat lagi.',
-            ], Response::HTTP_SERVICE_UNAVAILABLE);
+            return $this->errorResponse($request, 'Layanan otentikasi sedang tidak tersedia. Silakan coba beberapa saat lagi.', Response::HTTP_SERVICE_UNAVAILABLE);
         }
 
         if (!$response->successful() || !$response->json('success')) {
             $errorMessage = $response->json('message') ?? 'Token otentikasi tidak valid atau telah kedaluwarsa';
-            return response()->json([
-                'success' => false,
-                'message' => $errorMessage,
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->unauthenticated($request, $errorMessage);
         }
 
         $userData = $response->json('data');
 
         if (!$userData) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pengguna tidak ditemukan dalam respon otentikasi',
-            ], Response::HTTP_UNAUTHORIZED);
+            return $this->unauthenticated($request, 'Data pengguna tidak ditemukan dalam respon otentikasi');
         }
 
         // 3. Validasi status keaktifan akun
         if (isset($userData['status_aktif']) && $userData['status_aktif'] === false) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun pengguna sedang dinonaktifkan',
-            ], Response::HTTP_FORBIDDEN);
+            return $this->errorResponse($request, 'Akun pengguna sedang dinonaktifkan', Response::HTTP_FORBIDDEN);
         }
 
         // 4. Validasi Role (RBAC) jika parameter role disertakan pada route middleware
@@ -80,10 +65,7 @@ class VerifyAuthToken
             $allowedRoles = array_map('strtoupper', $roles);
 
             if (!in_array($userRole, $allowedRoles, true)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Akses ditolak: role ' . ($userData['role'] ?? 'UNKNOWN') . ' tidak memiliki izin untuk mengakses resource ini',
-                ], Response::HTTP_FORBIDDEN);
+                return $this->errorResponse($request, 'Akses ditolak: role ' . ($userData['role'] ?? 'UNKNOWN') . ' tidak memiliki izin untuk mengakses resource ini', Response::HTTP_FORBIDDEN);
             }
         }
 
@@ -97,6 +79,36 @@ class VerifyAuthToken
         $request->setUserResolver(fn () => (object) $userData);
 
         return $next($request);
+    }
+
+    /**
+     * Request API dapat respon JSON 401, request halaman (browser) diarahkan ke halaman login.
+     */
+    protected function unauthenticated(Request $request, string $message): Response
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        return redirect()->away(config('services.auth_service.login_url', '/login'));
+    }
+
+    /**
+     * Request API dapat respon JSON, request halaman (browser) ditampilkan halaman error Laravel.
+     */
+    protected function errorResponse(Request $request, string $message, int $status): Response
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+            ], $status);
+        }
+
+        abort($status, $message);
     }
 
     /**

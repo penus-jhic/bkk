@@ -148,7 +148,10 @@ class AdminLowonganController extends Controller
     public function updateStatus(Request $request, string $id): RedirectResponse|JsonResponse
     {
         $lowongan = Lowongan::findOrFail($id);
-        $newStatus = $request->input('status', 'Aktif');
+        $validated = $request->validate([
+            'status' => ['required', 'in:Aktif,Ditutup,Draft'],
+        ]);
+        $newStatus = $validated['status'];
 
         $lowongan->update(['status' => $newStatus]);
 
