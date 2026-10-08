@@ -125,4 +125,12 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+    /*
+    | Tautan "Pintas Dashboard" ke panel admin lain. Di server semuanya satu domain (path relatif);
+    | saat development tiap aplikasi jalan di port berbeda, jadi isi URL lengkap di .env.
+    */
+    'cms_admin_url' => env('CMS_ADMIN_URL', '/admin'),
+    'ppdb_admin_url' => env('PPDB_ADMIN_URL', '/ppdb/dashboard'),
+
 ];

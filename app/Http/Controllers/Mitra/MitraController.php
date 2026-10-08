@@ -56,17 +56,27 @@ class MitraController extends Controller
             ->get();
 
         // 5 Pelamar terbaru yang masuk ke lowongan mitra ini
-        $recentApplicants = Lamaran::with(['profilSiswa', 'lowongan'])
+        $recentApplicants = Lamaran::with(['siswa', 'lowongan'])
             ->whereIn('lowongan_id', $lowonganIds)
             ->latest('created_at')
             ->limit(5)
             ->get();
 
+        // Posisi seluruh lamaran di tahap seleksi, urut sesuai alur rekrutmen
+        $statusCounts = Lamaran::whereIn('lowongan_id', $lowonganIds)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+        $lamaranFunnel = collect(['Terkirim', 'Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])
+            ->map(fn ($status) => ['status' => $status, 'total' => (int) ($statusCounts[$status] ?? 0)])
+            ->all();
+
         return view('mitra.pages.dashboard', compact(
             'mitra',
             'metrics',
             'vacancies',
-            'recentApplicants'
+            'recentApplicants',
+            'lamaranFunnel'
         ));
     }
 

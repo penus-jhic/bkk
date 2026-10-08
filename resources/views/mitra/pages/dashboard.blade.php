@@ -2,288 +2,318 @@
 
 @php
     $mNama = $mitra->nama_perusahaan ?? 'Mitra Industri';
-    $mNpwp = $mitra->npwp ?? '-';
-    $mPic = $mitra->pic_name ?? 'HR Lead';
-    $mSingkatan = $mitra->singkatan ?: substr($mNama, 0, 3);
+
+    $hour = (int) now()->format('H');
+    $greet = match (true) {
+        $hour < 11 => 'Selamat pagi',
+        $hour < 15 => 'Selamat siang',
+        $hour < 18 => 'Selamat sore',
+        default => 'Selamat malam',
+    };
+
+    $m = fn (string $key) => (int) ($metrics[$key] ?? 0);
+    $funnel = collect($lamaranFunnel)->pluck('total', 'status');
+
+    // Antrean seleksi yang perlu ditangani mitra
+    $todo = array_values(array_filter([
+        ['count' => (int) ($funnel['Terkirim'] ?? 0), 'label' => 'lamaran baru belum ditinjau', 'href' => route('bkk.mitra.lowongan.index')],
+        ['count' => (int) ($funnel['Sedang Ditinjau'] ?? 0), 'label' => 'lamaran sedang ditinjau', 'href' => route('bkk.mitra.lowongan.index')],
+        ['count' => $m('pelamar_interview'), 'label' => 'kandidat menunggu hasil interview', 'href' => route('bkk.mitra.lowongan.index')],
+    ], fn ($item) => $item['count'] > 0));
+
+    $funnelMax = max(1, $funnel->max());
+    $funnelTone = [
+        'Terkirim' => 'bg-brand-ink/25',
+        'Sedang Ditinjau' => 'bg-brand-rose',
+        'Dipanggil Interview' => 'bg-brand-warmred',
+        'Diterima' => 'bg-brand-darkred',
+        'Ditolak' => 'bg-brand-ink/10',
+    ];
+    $statusBadge = [
+        'Terkirim' => 'bg-brand-softmist text-brand-ink',
+        'Sedang Ditinjau' => 'bg-amber-50 text-amber-800 border border-amber-200',
+        'Dipanggil Interview' => 'bg-blue-50 text-blue-800 border border-blue-200',
+        'Diterima' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+        'Ditolak' => 'bg-brand-darkred/5 text-brand-darkred border border-brand-darkred/20',
+    ];
+    $lowonganStatusBadge = [
+        'Aktif' => 'bg-emerald-50 text-emerald-800',
+        'Ditutup' => 'bg-brand-softmist text-brand-ink/70',
+        'Draft' => 'bg-amber-50 text-amber-800',
+    ];
+
+    $acceptRate = $m('total_pelamar') > 0 ? (int) round($m('pelamar_diterima') / $m('total_pelamar') * 100) : 0;
+
+    $kpis = [
+        [
+            'label' => 'Lowongan Aktif',
+            'value' => $m('lowongan_aktif'),
+            'icon' => 'briefcase',
+            'note' => 'dari ' . $m('total_lowongan') . ' lowongan yang pernah dipasang',
+            'href' => route('bkk.mitra.lowongan.index', ['status' => 'Aktif']),
+        ],
+        [
+            'label' => 'Total Pelamar',
+            'value' => $m('total_pelamar'),
+            'icon' => 'file-user',
+            'note' => ($funnel['Terkirim'] ?? 0) . ' lamaran baru belum ditinjau',
+            'href' => route('bkk.mitra.lowongan.index'),
+        ],
+        [
+            'label' => 'Tahap Interview',
+            'value' => $m('pelamar_interview'),
+            'icon' => 'calendar-check',
+            'note' => 'kandidat dipanggil wawancara',
+            'href' => route('bkk.mitra.lowongan.index'),
+        ],
+        [
+            'label' => 'Kandidat Diterima',
+            'value' => $m('pelamar_diterima'),
+            'icon' => 'award',
+            'note' => $m('siswa_aktif_pkl') . ' siswa sedang PKL di perusahaan Anda',
+            'href' => route('bkk.mitra.lowongan.index'),
+        ],
+    ];
+
+    $card = 'bg-white rounded-card border border-brand-ink/10 shadow-card';
 @endphp
 
 @section('title', 'Dashboard Mitra IDUKA - ' . $mNama)
 
 @section('content')
-<div class="space-y-6">
-    <!-- Top Welcome Banner with IDUKA Verified Badge -->
-    <div class="google-card p-6 bg-gradient-to-r from-navy via-navy-light to-navy text-white relative overflow-hidden">
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/90 text-xs font-medium mb-3 backdrop-blur-sm border border-white/15">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>Portal Resmi Rekrutmen Mitra IDUKA</span>
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-headline font-bold text-white tracking-tight">
-                    Selamat Datang, {{ $mNama }}
+<div class="space-y-8 fade-up">
+
+    {{-- 1. HERO --}}
+    <section class="{{ $card }} relative p-6 sm:p-8 overflow-hidden">
+        <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-brand-darkred/[0.04] pointer-events-none"></div>
+        <div class="relative grid lg:grid-cols-[1fr_340px] gap-8 items-center">
+            <div class="min-w-0">
+                <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-darkred">Portal Resmi Rekrutmen Mitra IDUKA · BKK SMK Plus Pelita Nusantara</p>
+                <h1 class="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-bold uppercase tracking-wide text-brand-ink leading-[1.1]">
+                    {{ $greet }},
+                    <span class="block mt-1"><x-sketch.underline size="md">{{ $mNama }}</x-sketch.underline></span>
                 </h1>
-                <p class="text-white/80 text-sm mt-1 max-w-2xl leading-relaxed">
-                    Kelola rekrutmen lulusan, lowongan Praktik Kerja Lapangan (PKL), dan tinjau berkas CV siswa & alumni SMK Plus Pelita Nusantara secara terpusat.
+                <p class="mt-6 text-sm sm:text-[15px] text-brand-ink/70 leading-relaxed max-w-2xl">
+                    Saat ini ada <b class="text-brand-ink">{{ $m('lowongan_aktif') }} lowongan aktif</b> milik perusahaan Anda,
+                    <b class="text-brand-ink">{{ $m('total_pelamar') }} lamaran</b> dari siswa & alumni yang tercatat, dan
+                    <b class="text-brand-ink">{{ $m('siswa_aktif_pkl') }} siswa</b> sedang menjalani PKL bersama Anda.
                 </p>
-                <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-white/70">
-                    <span class="inline-flex items-center gap-1.5"><i data-lucide="file-badge" class="w-3.5 h-3.5 text-emerald-400"></i> NPWP: {{ $mNpwp }}</span>
-                    <span class="hidden sm:inline">•</span>
-                    <span class="inline-flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5 text-white/90"></i> PIC: {{ $mPic }}</span>
-                    <span class="hidden sm:inline">•</span>
-                    <span class="inline-flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> {{ $mitra->status_kemitraan ?? 'Mitra Terverifikasi' }}</span>
+                <div class="mt-6 flex flex-wrap gap-2.5">
+                    <a href="{{ route('bkk.mitra.lowongan.create') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-gradient-to-r from-brand-signal to-brand-darkred text-white text-sm font-semibold shadow-[0_4px_14px_0_rgba(122,16,24,0.25)] hover:-translate-y-px transition-transform">
+                        Pasang Lowongan
+                        <x-sketch.arrow class="w-6 h-3" />
+                    </a>
+                    <a href="{{ route('bkk.mitra.lowongan.index') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full border border-brand-ink/15 bg-white text-brand-ink text-sm font-semibold hover:bg-brand-softmist transition-colors">
+                        <i data-lucide="briefcase" class="w-4 h-4"></i>
+                        Daftar Lowongan
+                    </a>
+                </div>
+                <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-brand-ink/60">
+                    <span class="inline-flex items-center gap-1.5"><i data-lucide="file-badge" class="w-3.5 h-3.5 text-brand-darkred"></i>NPWP {{ $mitra->npwp ?? '-' }}</span>
+                    <span class="inline-flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5 text-brand-darkred"></i>PIC {{ $mitra->pic_name ?? '-' }}</span>
+                    <span class="inline-flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 {{ $mitra->is_verified ? 'text-emerald-600' : 'text-amber-600' }}"></i>{{ $mitra->is_verified ? ($mitra->status_kemitraan ?? 'Mitra Terverifikasi') : 'Menunggu verifikasi BKK' }}</span>
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0">
-                <a href="{{ route('bkk.mitra.lowongan.create') }}" class="px-5 py-2.5 rounded-full bg-maroon hover:bg-maroon-dark text-white font-semibold text-sm shadow-md transition-all flex items-center gap-2">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                    <span>Pasang Lowongan</span>
-                </a>
-                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition-all flex items-center gap-2">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                    <span>Daftar Lowongan</span>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Metric Cards (Google Style) -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Metric 1: Lowongan Aktif -->
-        <div class="google-card p-5">
-            <div class="flex items-center justify-between text-muted mb-2">
-                <span class="text-xs font-semibold uppercase tracking-wider">Lowongan Aktif</span>
-                <span class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                </span>
-            </div>
-            <div class="text-3xl font-headline font-bold text-navy">{{ $metrics['lowongan_aktif'] ?? 0 }}</div>
-            <div class="text-[11px] text-muted mt-1 flex items-center gap-1">
-                <span class="text-emerald-600 font-semibold">Aktif</span> dari {{ $metrics['total_lowongan'] ?? 0 }} total lowongan
-            </div>
-        </div>
-
-        <!-- Metric 2: Total Pelamar Masuk -->
-        <div class="google-card p-5">
-            <div class="flex items-center justify-between text-muted mb-2">
-                <span class="text-xs font-semibold uppercase tracking-wider">Total Pelamar</span>
-                <span class="w-8 h-8 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <i data-lucide="users" class="w-4 h-4"></i>
-                </span>
-            </div>
-            <div class="text-3xl font-headline font-bold text-navy">{{ $metrics['total_pelamar'] ?? 0 }}</div>
-            <div class="text-[11px] text-muted mt-1 flex items-center gap-1">
-                <span class="text-purple-600 font-semibold">Siswa & Alumni</span> melamar
-            </div>
-        </div>
-
-        <!-- Metric 3: Tahap Wawancara / Dipanggil -->
-        <div class="google-card p-5">
-            <div class="flex items-center justify-between text-muted mb-2">
-                <span class="text-xs font-semibold uppercase tracking-wider">Tahap Interview</span>
-                <span class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <i data-lucide="calendar-check" class="w-4 h-4"></i>
-                </span>
-            </div>
-            <div class="text-3xl font-headline font-bold text-navy">{{ $metrics['pelamar_interview'] ?? 0 }}</div>
-            <div class="text-[11px] text-muted mt-1 flex items-center gap-1">
-                <span class="text-amber-600 font-semibold">Jadwal seleksi</span> aktif
-            </div>
-        </div>
-
-        <!-- Metric 4: Kandidat Diterima -->
-        <div class="google-card p-5">
-            <div class="flex items-center justify-between text-muted mb-2">
-                <span class="text-xs font-semibold uppercase tracking-wider">Kandidat Diterima</span>
-                <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <i data-lucide="award" class="w-4 h-4"></i>
-                </span>
-            </div>
-            <div class="text-3xl font-headline font-bold text-navy">{{ $metrics['pelamar_diterima'] ?? 0 }}</div>
-            <div class="text-[11px] text-muted mt-1 flex items-center gap-1">
-                <span class="text-emerald-600 font-semibold">{{ $metrics['siswa_aktif_pkl'] ?? 0 }} Siswa PKL</span> penempatan aktif
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Grid: Active Vacancies & Recent Applicants -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left: Lowongan Unggulan Mitra (2 Cols) -->
-        <div class="lg:col-span-2 space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-headline font-bold text-navy">Lowongan Ditawarkan</h2>
-                    <p class="text-xs text-muted">Daftar posisi magang PKL dan lowongan karir aktif di perusahaan Anda</p>
-                </div>
-                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="text-xs font-semibold text-maroon hover:underline flex items-center gap-1">
-                    Lihat Semua Lowongan <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </a>
-            </div>
-
-            <div class="space-y-3">
-                @forelse($vacancies as $job)
-                    @php
-                        $jId = $job->id ?? $job['id'];
-                        $jTitle = $job->judul ?? $job['title'] ?? 'Lowongan';
-                        $jTipe = $job->tipe ?? $job['tipe'] ?? 'Kerja';
-                        $jTipeBadge = $job->tipe_badge ?? ($job['tipe_badge'] ?? ($jTipe === 'PKL' ? 'Magang / PKL Siswa' : 'Full-Time Lulusan'));
-                        $jStatus = $job->status ?? $job['status'] ?? 'Aktif';
-                        $jLokasi = $job->lokasi ?? $job['lokasi'] ?? 'Bogor';
-                        $jJurusan = $job->target_jurusan ?? ($job['jurusan'] ?? 'Semua Jurusan');
-                        $jDeadline = $job->deadline ? ($job->deadline instanceof \Carbon\Carbon ? $job->deadline->format('Y-m-d') : $job['deadline']) : date('Y-m-d');
-                        $jPelamarCount = $job->lamaran_count ?? ($job['pelamar_count'] ?? 0);
-                    @endphp
-                    <div class="google-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="space-y-1.5 flex-1 min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold {{ $jTipe === 'PKL' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200' }}">
-                                    {{ $jTipeBadge }}
-                                </span>
-                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium {{ $jStatus === 'Aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
-                                    Status: {{ $jStatus }}
-                                </span>
-                                <span class="text-xs text-muted flex items-center gap-1">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> {{ $jLokasi }}
-                                </span>
-                            </div>
-
-                            <h3 class="font-headline font-bold text-navy text-base hover:text-maroon transition-colors truncate">
-                                <a href="{{ route('bkk.mitra.pelamar.index', $jId) }}">
-                                    {{ $jTitle }}
-                                </a>
-                            </h3>
-
-                            <div class="text-xs text-muted flex flex-wrap items-center gap-x-4 gap-y-1">
-                                <span>Jurusan: <strong class="text-navy font-semibold">{{ $jJurusan }}</strong></span>
-                                <span>Batas: <strong class="text-navy font-semibold">{{ \Carbon\Carbon::parse($jDeadline)->translatedFormat('d M Y') }}</strong></span>
-                            </div>
-                        </div>
-
-                        <div class="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 border-line">
-                            <div class="text-right">
-                                <span class="text-sm font-bold text-navy">{{ $jPelamarCount }}</span>
-                                <span class="text-xs text-muted">Pelamar</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <a href="{{ route('bkk.mitra.pelamar.index', $jId) }}" class="px-3 py-1.5 rounded-full bg-navy text-white hover:bg-navy-light text-xs font-medium transition-colors">
-                                    Review CV
-                                </a>
-                                <a href="{{ route('bkk.mitra.lowongan.edit', $jId) }}" class="p-1.5 rounded-full hover:bg-canvas text-muted hover:text-navy transition-colors" title="Edit Lowongan">
-                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="google-card p-10 text-center">
-                        <div class="w-12 h-12 rounded-2xl bg-navy/5 text-navy flex items-center justify-center mx-auto mb-3">
-                            <i data-lucide="briefcase" class="w-6 h-6 text-muted"></i>
-                        </div>
-                        <h4 class="text-sm font-bold text-navy">Belum Ada Lowongan Aktif</h4>
-                        <p class="text-xs text-muted mt-1 max-w-sm mx-auto">
-                            Mulai pasang lowongan magang PKL atau kerja untuk siswa dan alumni SMK Plus Pelita Nusantara.
-                        </p>
-                        <a href="{{ route('bkk.mitra.lowongan.create') }}" class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-all">
-                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                            <span>Buat Lowongan Pertama</span>
-                        </a>
-                    </div>
-                @endforelse
-            </div>
-        </div>
-
-        <!-- Right: Recent Applicants Pipeline (1 Col) -->
-        <div class="space-y-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-headline font-bold text-navy">Pelamar Terbaru</h2>
-                    <p class="text-xs text-muted">Aktivitas lamaran masuk</p>
-                </div>
-            </div>
-
-            <div class="google-card p-4 space-y-3">
-                @forelse($recentApplicants as $applicant)
-                    @php
-                        $aStatus = is_object($applicant) ? $applicant->status : ($applicant['status'] ?? 'Terkirim');
-                        $aNama = is_object($applicant) ? ($applicant->profilSiswa?->nama_lengkap ?? 'Pelamar BKK') : ($applicant['nama'] ?? 'Pelamar');
-                        $aPendidikan = is_object($applicant) ? ($applicant->profilSiswa ? ($applicant->profilSiswa->status_kelulusan === 'ALUMNI' ? 'Alumni' : 'Siswa Aktif ' . ($applicant->profilSiswa->kelas ?? '')) : 'Siswa/Alumni') : ($applicant['status_pendidikan'] ?? 'Siswa Aktif');
-                        $aLowonganTitle = is_object($applicant) ? ($applicant->lowongan?->judul ?? 'Lowongan') : ($applicant['lowongan_title'] ?? 'Lowongan');
-                        $aLowonganId = is_object($applicant) ? $applicant->lowongan_id : ($applicant['lowongan_id'] ?? 0);
-                        $aId = is_object($applicant) ? ($applicant->kode_lamaran ?: $applicant->id) : ($applicant['id'] ?? 0);
-                        $aScore = is_object($applicant) ? ($applicant->skor_match_ai ?: 85) : ($applicant['cv_score'] ?? 85);
-
-                        $badgeColor = match($aStatus) {
-                            'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
-                            'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-200',
-                            'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                            'Ditolak' => 'bg-red-50 text-red-800 border-red-200',
-                            default => 'bg-gray-100 text-gray-700 border-gray-200',
-                        };
-                    @endphp
-                    <div class="p-3 rounded-xl bg-canvas hover:bg-[#f1f3f4] transition-all border border-line/60">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0">
-                                <div class="font-headline font-bold text-sm text-navy truncate">
-                                    {{ $aNama }}
-                                </div>
-                                <div class="text-[11px] text-muted truncate">
-                                    {{ $aPendidikan }}
-                                </div>
-                            </div>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border {{ $badgeColor }}">
-                                {{ $aStatus }}
-                            </span>
-                        </div>
-
-                        <div class="mt-2 text-[11px] text-navy/80 truncate">
-                            Posisi: <span class="font-medium text-navy">{{ $aLowonganTitle }}</span>
-                        </div>
-
-                        <div class="mt-3 pt-2 border-t border-line flex items-center justify-between text-xs">
-                            <span class="text-emerald-700 font-semibold text-[11px] flex items-center gap-1">
-                                <i data-lucide="sparkles" class="w-3 h-3"></i> Skor: {{ $aScore }}%
-                            </span>
-                            <a href="{{ route('bkk.mitra.pelamar.show', [$aLowonganId, $aId]) }}" class="text-xs font-semibold text-maroon hover:underline">
-                                Lihat Berkas
+            {{-- Antrean seleksi --}}
+            <div class="relative rounded-card bg-brand-paper p-5">
+                <x-sketch.corner class="-left-2 -top-2 w-20 h-8" />
+                <x-sketch.corner :delay="350" class="-right-2 -bottom-2 rotate-180 w-20 h-8" />
+                <h2 class="font-display text-lg uppercase tracking-wide text-brand-ink">Perlu Tindakan</h2>
+                <ul class="mt-3 space-y-1.5">
+                    @forelse($todo as $item)
+                        <li>
+                            <a href="{{ $item['href'] }}" class="group flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-white transition-colors">
+                                <span class="min-w-8 h-8 px-2 rounded-full bg-brand-darkred text-white font-display text-sm grid place-items-center">{{ $item['count'] }}</span>
+                                <span class="text-sm text-brand-ink flex-1">{{ $item['label'] }}</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-muted group-hover:text-brand-darkred group-hover:translate-x-0.5 transition-transform"></i>
                             </a>
-                        </div>
-                    </div>
-                @empty
-                    <div class="p-6 text-center text-muted">
-                        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-muted/50"></i>
-                        <p class="text-xs">Belum ada berkas pelamar yang masuk saat ini.</p>
-                    </div>
-                @endforelse
-
-                @if(count($recentApplicants) > 0)
-                    <div class="pt-2 text-center">
-                        <a href="{{ route('bkk.mitra.lowongan.index') }}" class="text-xs font-semibold text-navy hover:text-maroon transition-colors block py-1.5 rounded-lg hover:bg-canvas">
-                            Buka Seluruh Pelamar per Lowongan →
-                        </a>
-                    </div>
-                @endif
+                        </li>
+                    @empty
+                        <li class="flex items-center gap-2 text-sm text-brand-ink/70 py-2">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                            Tidak ada lamaran yang menunggu, semua sudah ditangani.
+                        </li>
+                    @endforelse
+                </ul>
             </div>
+        </div>
+    </section>
 
-            <!-- Help & Coordination Box -->
-            <div class="google-card p-5 bg-gradient-to-br from-white to-canvas border border-line">
-                <div class="flex items-start gap-3">
-                    <span class="w-9 h-9 rounded-xl bg-maroon/10 text-maroon flex items-center justify-center shrink-0">
-                        <i data-lucide="life-buoy" class="w-5 h-5"></i>
+    {{-- 2. KPI --}}
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" aria-label="Ringkasan angka rekrutmen">
+        @foreach($kpis as $kpi)
+            <a href="{{ $kpi['href'] }}" class="{{ $card }} group p-5 hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-ink/60">{{ $kpi['label'] }}</span>
+                    <span class="w-9 h-9 rounded-full bg-brand-darkred/[0.07] text-brand-darkred grid place-items-center group-hover:bg-brand-darkred group-hover:text-white transition-colors">
+                        <i data-lucide="{{ $kpi['icon'] }}" class="w-4 h-4"></i>
                     </span>
-                    <div>
-                        <h4 class="font-headline font-bold text-navy text-sm">Butuh Penyelarasan Kualifikasi?</h4>
-                        <p class="text-xs text-muted mt-1 leading-relaxed">
-                            Hubungi Koordinator BKK & Hubungan Industri SMK Plus Pelita Nusantara untuk verifikasi sertifikasi atau jadwal walk-in interview massal di kampus sekolah.
-                        </p>
-                        <div class="mt-3 flex items-center gap-2 text-xs">
-                            <a href="mailto:kemitraan@smkpenus.sch.id" class="text-maroon font-semibold hover:underline flex items-center gap-1">
-                                <i data-lucide="mail" class="w-3.5 h-3.5"></i> kemitraan@smkpenus.sch.id
-                            </a>
+                </div>
+                <div class="mt-3 font-display text-5xl font-bold text-brand-ink leading-none">{{ number_format($kpi['value']) }}</div>
+                <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">{{ $kpi['note'] }}</div>
+            </a>
+        @endforeach
+    </section>
+
+    {{-- 3. CORONG LAMARAN + PROFIL KEMITRAAN --}}
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div class="{{ $card }} xl:col-span-7 p-6">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="font-display text-xl uppercase tracking-wide text-brand-ink"><x-sketch.underline size="sm">Corong Lamaran</x-sketch.underline></h2>
+                    <p class="text-xs text-brand-ink/60 mt-3">Posisi seluruh lamaran ke lowongan Anda di tiap tahap seleksi.</p>
+                </div>
+                <span class="text-right shrink-0">
+                    <span class="block font-display text-2xl text-brand-ink leading-none">{{ $acceptRate }}%</span>
+                    <span class="block text-[10px] uppercase tracking-wider text-brand-ink/50 mt-1">diterima</span>
+                </span>
+            </div>
+            <div class="mt-6 space-y-3.5">
+                @foreach($lamaranFunnel as $row)
+                    <div class="grid grid-cols-[140px_1fr_32px] items-center gap-3 text-sm">
+                        <span class="text-brand-ink/80 truncate">{{ $row['status'] }}</span>
+                        <div class="h-3 rounded-full bg-brand-paper overflow-hidden">
+                            <div class="h-full rounded-full {{ $funnelTone[$row['status']] }}" style="width: {{ $row['total'] > 0 ? max(4, $row['total'] / $funnelMax * 100) : 0 }}%"></div>
                         </div>
+                        <span class="font-display text-base text-brand-ink text-right">{{ $row['total'] }}</span>
                     </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="{{ $card }} xl:col-span-5 p-6 flex flex-col">
+            <div class="flex items-start justify-between gap-4">
+                <h2 class="font-display text-xl uppercase tracking-wide text-brand-ink"><x-sketch.underline size="sm">Profil Kemitraan</x-sketch.underline></h2>
+                <a href="{{ route('bkk.mitra.pengaturan') }}" class="text-xs font-semibold text-brand-darkred hover:underline shrink-0">Ubah profil</a>
+            </div>
+            <div class="mt-5 flex items-center gap-3">
+                @if($mitra->logo_url)
+                    <img src="{{ $mitra->logo_url }}" alt="" class="w-12 h-12 rounded-xl object-cover border border-brand-ink/10 bg-white shrink-0">
+                @else
+                    <span class="w-12 h-12 rounded-xl bg-brand-softmist text-brand-ink font-display text-sm grid place-items-center shrink-0">{{ mb_strtoupper(mb_substr($mitra->singkatan ?: $mNama, 0, 2)) }}</span>
+                @endif
+                <span class="min-w-0">
+                    <span class="block text-sm font-semibold text-brand-ink truncate">{{ $mNama }}</span>
+                    <span class="block text-xs text-brand-ink/60 truncate">{{ $mitra->sektor_industri ?? 'Industri' }} · {{ $mitra->kota ?? '-' }}</span>
+                </span>
+            </div>
+            <dl class="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-brand-ink/10 ring-1 ring-brand-ink/10 text-xs">
+                <div class="bg-white p-3">
+                    <dt class="text-brand-ink/50">Masa MoU</dt>
+                    <dd class="mt-0.5 font-semibold text-brand-ink">
+                        @if($mitra->tanggal_mou_mulai || $mitra->tanggal_mou_selesai)
+                            {{ $mitra->tanggal_mou_mulai?->translatedFormat('M Y') ?? '…' }} – {{ $mitra->tanggal_mou_selesai?->translatedFormat('M Y') ?? '…' }}
+                        @else
+                            Belum tercatat
+                        @endif
+                    </dd>
+                </div>
+                <div class="bg-white p-3">
+                    <dt class="text-brand-ink/50">Penanggung Jawab</dt>
+                    <dd class="mt-0.5 font-semibold text-brand-ink truncate">{{ $mitra->pic_name ?? '-' }}</dd>
+                </div>
+                <div class="bg-white p-3">
+                    <dt class="text-brand-ink/50">Email PIC</dt>
+                    <dd class="mt-0.5 font-semibold text-brand-ink truncate">{{ $mitra->pic_email ?? '-' }}</dd>
+                </div>
+                <div class="bg-white p-3">
+                    <dt class="text-brand-ink/50">Siswa PKL Aktif</dt>
+                    <dd class="mt-0.5 font-semibold text-brand-ink">{{ $m('siswa_aktif_pkl') }} siswa</dd>
+                </div>
+            </dl>
+            <div class="relative mt-auto pt-5">
+                <div class="relative rounded-xl bg-brand-darkred/5 py-3 pr-3 pl-8 text-xs leading-relaxed text-brand-ink/70">
+                    <x-sketch.rule bold vertical class="text-brand-darkred top-1 bottom-1 left-1.5 w-3" />
+                    Butuh penyelarasan kualifikasi atau jadwal walk-in interview di sekolah? Hubungi Hubin & BKK di
+                    <a href="mailto:kemitraan@smkpenus.sch.id" class="font-semibold text-brand-darkred hover:underline">kemitraan@smkpenus.sch.id</a>.
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    {{-- 4. LOWONGAN DITAWARKAN + PELAMAR TERBARU --}}
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div class="{{ $card }} xl:col-span-7 p-6">
+            <div class="flex items-end justify-between gap-4">
+                <div>
+                    <h2 class="font-display text-xl uppercase tracking-wide text-brand-ink"><x-sketch.underline size="sm">Lowongan Ditawarkan</x-sketch.underline></h2>
+                    <p class="text-xs text-brand-ink/60 mt-3">Posisi PKL & kerja terbaru yang Anda pasang.</p>
+                </div>
+                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="group inline-flex items-center gap-1.5 text-xs font-semibold text-brand-darkred shrink-0">
+                    Semua <x-sketch.arrow class="w-5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
+                </a>
+            </div>
+            <ul class="mt-5 space-y-2.5">
+                @forelse($vacancies as $job)
+                    <li class="flex items-center gap-3 p-3 rounded-xl border border-brand-ink/10 hover:border-brand-darkred/30 hover:bg-brand-paper/50 transition-colors">
+                        <span class="w-11 h-11 rounded-xl grid place-items-center font-display text-xs uppercase shrink-0 {{ $job->tipe === 'PKL' ? 'bg-brand-darkred text-white' : 'bg-brand-ink text-white' }}">{{ $job->tipe }}</span>
+                        <span class="min-w-0 flex-1">
+                            <a href="{{ route('bkk.mitra.pelamar.index', $job->id) }}" class="block text-sm font-semibold text-brand-ink hover:text-brand-darkred truncate">{{ $job->judul }}</a>
+                            <span class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-brand-ink/60">
+                                <span class="rounded-full px-2 py-px text-[10px] font-semibold {{ $lowonganStatusBadge[$job->status] ?? 'bg-brand-softmist text-brand-ink' }}">{{ $job->status }}</span>
+                                <span class="truncate">{{ $job->target_jurusan ?: 'Semua jurusan' }}</span>
+                                <span>· {{ $job->deadline ? 'tutup ' . $job->deadline->translatedFormat('d M Y') : 'tanpa batas' }}</span>
+                            </span>
+                        </span>
+                        <span class="text-right shrink-0 hidden sm:block">
+                            <span class="block font-display text-lg text-brand-ink leading-none">{{ $job->lamaran_count ?? 0 }}</span>
+                            <span class="block text-[10px] uppercase tracking-wider text-brand-ink/50">pelamar</span>
+                        </span>
+                        <span class="flex items-center gap-1 shrink-0">
+                            <a href="{{ route('bkk.mitra.pelamar.index', $job->id) }}" class="h-8 px-3 rounded-full bg-brand-ink text-white text-xs font-semibold hover:bg-brand-darkred inline-flex items-center transition-colors">Review CV</a>
+                            <a href="{{ route('bkk.mitra.lowongan.edit', $job->id) }}" class="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-brand-ink hover:bg-brand-softmist transition-colors" title="Edit lowongan" aria-label="Edit lowongan {{ $job->judul }}">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </a>
+                        </span>
+                    </li>
+                @empty
+                    <li class="text-center py-10">
+                        <span class="w-12 h-12 rounded-full bg-brand-paper text-brand-darkred grid place-items-center mx-auto"><i data-lucide="briefcase" class="w-5 h-5"></i></span>
+                        <p class="mt-3 font-display uppercase tracking-wide text-brand-ink">Belum Ada Lowongan</p>
+                        <p class="text-xs text-brand-ink/60 mt-1 max-w-sm mx-auto">Pasang lowongan PKL atau kerja untuk siswa dan alumni SMK Plus Pelita Nusantara.</p>
+                        <a href="{{ route('bkk.mitra.lowongan.create') }}" class="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-brand-ink text-white text-xs font-semibold hover:bg-brand-darkred transition-colors">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>Buat Lowongan Pertama
+                        </a>
+                    </li>
+                @endforelse
+            </ul>
+        </div>
+
+        <div class="{{ $card }} xl:col-span-5 p-6">
+            <div class="flex items-end justify-between gap-4">
+                <h2 class="font-display text-xl uppercase tracking-wide text-brand-ink"><x-sketch.underline size="sm">Pelamar Terbaru</x-sketch.underline></h2>
+                <span class="text-xs text-brand-ink/60">{{ $m('total_pelamar') }} total</span>
+            </div>
+            <ul class="mt-4 divide-y divide-brand-ink/5">
+                @forelse($recentApplicants as $applicant)
+                    <li>
+                        <a href="{{ route('bkk.mitra.pelamar.show', [$applicant->lowongan_id, $applicant->kode_lamaran ?: $applicant->id]) }}" class="group flex items-start gap-3 py-3 -mx-2 px-2 rounded-xl hover:bg-brand-paper/60 transition-colors">
+                            <span class="w-10 h-10 rounded-full bg-brand-softmist text-brand-ink font-display text-xs grid place-items-center shrink-0">{{ mb_strtoupper(mb_substr($applicant->jurusan, 0, 3)) }}</span>
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-sm font-semibold text-brand-ink group-hover:text-brand-darkred truncate">NIS {{ $applicant->siswa?->nis ?? '-' }}</span>
+                                <span class="block text-xs text-brand-ink/60 truncate">{{ $applicant->status_pendidikan }} · {{ $applicant->jurusan }}</span>
+                                <span class="block text-xs text-brand-ink/80 truncate mt-0.5">{{ $applicant->lowongan_title }}</span>
+                            </span>
+                            <span class="text-right shrink-0">
+                                <span class="inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap {{ $statusBadge[$applicant->status] ?? 'bg-brand-softmist text-brand-ink' }}">{{ $applicant->status }}</span>
+                                <span class="block text-[11px] text-brand-ink/50 mt-1 whitespace-nowrap">
+                                    @if($applicant->skor_match_ai)
+                                        Skor {{ $applicant->skor_match_ai }}% ·
+                                    @endif
+                                    {{ $applicant->tanggal_melamar?->translatedFormat('d M') ?? '-' }}
+                                </span>
+                            </span>
+                        </a>
+                    </li>
+                @empty
+                    <li class="py-10 text-center">
+                        <i data-lucide="inbox" class="w-8 h-8 mx-auto text-brand-ink/30"></i>
+                        <p class="mt-2 text-sm text-brand-ink/50">Belum ada lamaran yang masuk.</p>
+                    </li>
+                @endforelse
+            </ul>
+        </div>
+    </section>
 </div>
 @endsection

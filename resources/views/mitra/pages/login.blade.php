@@ -1,273 +1,249 @@
+@php
+    $inputClass = 'w-full rounded-xl border-2 bg-white py-3 text-sm text-brand-ink placeholder:text-brand-ink/40 transition focus:border-brand-darkred focus:outline-none focus:ring-4 focus:ring-brand-darkred/10';
+    $fieldClass = fn (string $field) => $inputClass . ' ' . ($errors->has($field) ? 'border-brand-signal' : 'border-brand-ink/10 hover:border-brand-ink/20');
+
+    $benefits = [
+        ['icon' => 'megaphone', 'title' => 'Pasang lowongan PKL & kerja', 'desc' => 'Langsung tampil di katalog lowongan BKK untuk siswa dan alumni.'],
+        ['icon' => 'file-search', 'title' => 'Tinjau CV pelamar', 'desc' => 'Baca berkas, ubah status seleksi, dan panggil interview dari satu tempat.'],
+        ['icon' => 'activity', 'title' => 'Pantau siswa PKL', 'desc' => 'Lihat penempatan siswa yang sedang praktik kerja di perusahaan Anda.'],
+    ];
+    $mitraCount = isset($registeredMitras) ? $registeredMitras->count() : 0;
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    @include('mitra.partials.head')
     <title>Masuk Portal Mitra IDUKA - BKK SMK Plus Pelita Nusantara</title>
-
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
-
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        navy: {
-                            DEFAULT: "#1b283b",
-                            dark: "#101a29",
-                            light: "#25374e",
-                        },
-                        maroon: {
-                            DEFAULT: "#741918",
-                            dark: "#5e1413",
-                            light: "#8a201f",
-                        },
-                        line: "#dcdcdc",
-                        canvas: "#f8f9fa",
-                        muted: "#5f6368",
-                    },
-                    fontFamily: {
-                        sans: ["Inter", "Roboto", "system-ui", "sans-serif"],
-                        headline: ["Hanken Grotesk", "Inter", "sans-serif"],
-                    }
-                }
-            }
-        };
-    </script>
-
-    <style>
-        body {
-            background-color: #f8f9fa;
-            color: #1b283b;
-            font-family: 'Inter', system-ui, sans-serif;
-        }
-    </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-maroon selection:text-white">
+<body class="bg-brand-paper text-brand-ink font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Top Simple Bar -->
-    <header class="w-full py-4 px-6 md:px-12 flex items-center justify-between border-b border-line bg-white/80 backdrop-blur-md sticky top-0 z-30">
-        <a href="{{ url('/bkk') }}" class="flex items-center gap-3 group">
-            <div class="w-9 h-9 rounded-xl bg-navy text-white flex items-center justify-center font-bold text-sm shadow-sm group-hover:bg-maroon transition-colors">
-                BKK
-            </div>
-            <div>
-                <div class="font-headline font-bold text-navy text-sm">SMK PLUS PELITA NUSANTARA</div>
-                <div class="text-[11px] text-muted">Portal Kemitraan Industri & IDUKA</div>
-            </div>
+    <!-- Bar atas -->
+    <header class="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur border-b border-brand-ink/10 flex items-center gap-2 px-4 sm:px-6">
+        <a href="{{ route('bkk.index') }}" class="flex items-center gap-2.5 group shrink-0" title="Beranda BKK">
+            <img src="{{ asset('images/logosmkpenus.png') }}" alt="Logo SMK Plus Pelita Nusantara" class="w-9 h-9 object-contain group-hover:scale-105 transition-transform" />
+            <span class="flex flex-col">
+                <span class="font-display text-[15px] font-bold uppercase tracking-wide text-brand-ink leading-tight group-hover:text-brand-darkred transition-colors">BKK Pelita Nusantara</span>
+                <span class="text-[10px] uppercase font-semibold tracking-wider text-brand-darkred mt-0.5">Portal Mitra IDUKA</span>
+            </span>
         </a>
-        <a href="{{ url('/bkk') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-navy transition-colors px-3 py-1.5 rounded-full hover:bg-canvas">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>Kembali ke Beranda</span>
+        <a href="{{ route('bkk.index') }}" class="ml-auto inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold text-brand-ink bg-white border border-brand-ink/15 hover:bg-brand-softmist transition-colors">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5 text-brand-darkred"></i>
+            <span class="hidden sm:inline">Kembali ke Beranda</span>
+            <span class="sm:hidden">Beranda</span>
         </a>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-10">
-        <div class="w-full max-w-md">
+    <main class="relative flex-1 overflow-hidden bg-white">
+        <!-- Latar: kisi tipis & cahaya merah seperti hero landing page -->
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+            <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-[length:44px_44px] [mask-image:radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
+            <div class="absolute -top-40 -right-32 w-[35rem] h-[35rem] rounded-full bg-brand-signal/10 blur-[120px]"></div>
+        </div>
 
-            <!-- Card Utama -->
-            <div class="bg-white rounded-3xl border border-line p-6 sm:p-8 shadow-sm">
-                <!-- Header Icon & Title -->
-                <div class="text-center mb-6">
-                    <div class="w-14 h-14 rounded-2xl bg-navy/5 text-navy border border-navy/10 flex items-center justify-center mx-auto mb-3 shadow-inner">
-                        <i data-lucide="building-2" class="w-7 h-7 text-maroon"></i>
-                    </div>
-                    <h1 class="text-xl sm:text-2xl font-headline font-bold text-navy">Masuk Portal IDUKA</h1>
-                    <p class="text-xs sm:text-sm text-muted mt-1">
-                        Akses dashboard rekrutmen, publikasi lowongan, & review berkas siswa/alumni BKK.
+        <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-20 grid gap-14 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:items-center">
+
+            <!-- Kiri: pengantar portal -->
+            <section class="fade-up">
+                <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
+                    <x-sketch.sparks>Portal Hubungan Industri</x-sketch.sparks>
+                </p>
+                <h2 class="mt-6 font-display text-4xl sm:text-5xl font-bold uppercase tracking-wide leading-[1.05]">
+                    Rekrut Talenta Vokasi
+                    <span class="block mt-2 text-brand-darkred"><x-sketch.underline size="lg" tone="text-brand-signal" :delay="400">Siap Kerja</x-sketch.underline></span>
+                </h2>
+                <p class="mt-10 max-w-xl text-base leading-relaxed text-brand-ink/70">
+                    Dashboard khusus perusahaan mitra (IDUKA) SMK Plus Pelita Nusantara untuk mengelola lowongan, meninjau berkas siswa & alumni, dan memantau program PKL.
+                </p>
+
+                <ul class="mt-9 max-w-xl">
+                    @foreach($benefits as $i => $benefit)
+                        <li class="relative flex items-start gap-4 py-4">
+                            <x-sketch.rule :delay="$i * 120" class="text-brand-darkred/25 left-0 right-0 -top-1.5 h-3" />
+                            <span class="flex w-10 h-10 shrink-0 items-center justify-center rounded-full bg-brand-darkred/[0.07] text-brand-darkred">
+                                <i data-lucide="{{ $benefit['icon'] }}" class="w-[18px] h-[18px]"></i>
+                            </span>
+                            <span>
+                                <span class="block font-display text-base uppercase tracking-wide">{{ $benefit['title'] }}</span>
+                                <span class="block text-sm text-brand-ink/60 mt-0.5">{{ $benefit['desc'] }}</span>
+                            </span>
+                        </li>
+                    @endforeach
+                </ul>
+
+                @if($mitraCount > 0)
+                    <p class="mt-6 inline-flex items-center gap-3 rounded-card bg-white px-4 py-3 shadow-softpill ring-1 ring-brand-ink/5 text-sm">
+                        <span class="flex w-9 h-9 shrink-0 items-center justify-center rounded-full bg-brand-darkred text-white"><i data-lucide="badge-check" class="w-5 h-5"></i></span>
+                        <span><b class="font-display text-xl text-brand-darkred">{{ $mitraCount }}</b> <span class="text-brand-ink/70">mitra industri terverifikasi sudah bergabung</span></span>
                     </p>
-                </div>
-
-                <!-- Alert Messages -->
-                @if(session('success'))
-                    <div class="mb-5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5">
-                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5"></i>
-                        <span>{{ session('success') }}</span>
-                    </div>
                 @endif
+            </section>
 
-                @if(session('error'))
-                    <div class="mb-5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 shrink-0 mt-0.5"></i>
-                        <span>{{ session('error') }}</span>
+            <!-- Kanan: formulir masuk -->
+            <section class="fade-up">
+                <div class="relative bg-white p-6 sm:p-9 shadow-card">
+                    <x-sketch.box />
+
+                    <div class="flex items-start gap-4">
+                        <span class="flex w-12 h-12 shrink-0 items-center justify-center rounded-full bg-brand-darkred text-white">
+                            <i data-lucide="building-2" class="w-6 h-6"></i>
+                        </span>
+                        <div>
+                            <h1 class="font-display text-2xl md:text-3xl font-bold uppercase tracking-wide leading-tight">Masuk Portal IDUKA</h1>
+                            <p class="mt-1 text-sm text-brand-ink/60">Gunakan nama perusahaan & kata sandi dari BKK.</p>
+                        </div>
                     </div>
-                @endif
 
-                @if($errors->any())
-                    <div class="mb-5 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1">
-                        @foreach($errors->all() as $err)
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600 shrink-0"></i>
-                                <span>{{ $err }}</span>
+                    @if(session('success'))
+                        <div role="status" class="relative mt-7 rounded-xl bg-emerald-50 py-3 pr-4 pl-9 text-sm text-emerald-900">
+                            <x-sketch.rule bold vertical class="text-emerald-600 top-1 bottom-1 left-2 w-3" />
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div role="alert" class="relative mt-7 rounded-xl bg-brand-darkred/5 py-3 pr-4 pl-9 text-sm text-brand-darkred">
+                            <x-sketch.rule bold vertical class="text-brand-darkred top-1 bottom-1 left-2 w-3" />
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div role="alert" class="mt-7 rounded-xl border-2 border-brand-signal/30 bg-brand-signal/5 p-4 text-sm">
+                            <p class="font-semibold text-brand-darkred">Belum bisa masuk. Periksa kembali isian berikut:</p>
+                            <ul class="mt-2 list-disc space-y-1 pl-5 text-brand-ink/75">
+                                @foreach($errors->all() as $err)
+                                    <li>{{ $err }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form action="{{ route('bkk.mitra.login.post') }}" method="POST" class="mt-7 flex flex-col gap-5">
+                        @csrf
+
+                        <div>
+                            <label for="nama_perusahaan" class="text-sm font-semibold">Nama Perusahaan <span class="text-brand-darkred">*</span></label>
+                            <div class="relative mt-1.5">
+                                <i data-lucide="briefcase" class="w-4 h-4 text-brand-ink/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                                <input
+                                    type="text"
+                                    id="nama_perusahaan"
+                                    name="nama_perusahaan"
+                                    value="{{ old('nama_perusahaan') }}"
+                                    required
+                                    autocomplete="organization"
+                                    placeholder="PT Solusi Teknologi Nusantara"
+                                    class="{{ $fieldClass('nama_perusahaan') }} pl-11 pr-4"
+                                />
                             </div>
-                        @endforeach
-                    </div>
-                @endif
-
-                <!-- Login Form -->
-                <form action="{{ route('bkk.mitra.login.post') }}" method="POST" class="space-y-4">
-                    @csrf
-
-                    <!-- Input Nama Perusahaan (Sanitize) -->
-                    <div>
-                        <label for="nama_perusahaan" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1.5">
-                            Nama Perusahaan <span class="text-maroon">*</span>
-                        </label>
-                        <div class="relative flex items-center">
-                            <span class="absolute left-3.5 text-muted pointer-events-none">
-                                <i data-lucide="briefcase" class="w-4 h-4"></i>
-                            </span>
-                            <input
-                                type="text"
-                                id="nama_perusahaan"
-                                name="nama_perusahaan"
-                                value="{{ old('nama_perusahaan') }}"
-                                required
-                                autocomplete="organization"
-                                placeholder="Contoh: PT Solusi Teknologi Nusantara"
-                                class="w-full bg-canvas text-navy placeholder:text-[#9aa0a6] text-sm rounded-2xl pl-10 pr-4 py-2.5 border border-line hover:border-[#b0b0b0] focus:bg-white focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/10 transition-all"
-                            />
+                            <p class="text-xs text-brand-ink/50 mt-1.5">Tidak membedakan huruf besar/kecil, spasi berlebih dibersihkan otomatis.</p>
                         </div>
-                        <p class="text-[11px] text-muted mt-1">
-                            Sistem akan otomatis membersihkan spasi berlebih dan tidak sensitif huruf besar/kecil.
-                        </p>
-                    </div>
 
-                    <!-- Input Password -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label for="password" class="block text-xs font-semibold text-navy uppercase tracking-wider">
-                                Kata Sandi <span class="text-maroon">*</span>
-                            </label>
-                            <span class="text-[11px] text-muted">Hubungi Hubin jika lupa</span>
-                        </div>
-                        <div class="relative flex items-center">
-                            <span class="absolute left-3.5 text-muted pointer-events-none">
-                                <i data-lucide="lock" class="w-4 h-4"></i>
-                            </span>
-                            <input
-                                type="password"
-                                id="password"
-                                name="password"
-                                required
-                                autocomplete="current-password"
-                                placeholder="Masukkan kata sandi akun"
-                                class="w-full bg-canvas text-navy placeholder:text-[#9aa0a6] text-sm rounded-2xl pl-10 pr-10 py-2.5 border border-line hover:border-[#b0b0b0] focus:bg-white focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/10 transition-all"
-                            />
-                            <button
-                                type="button"
-                                id="togglePasswordBtn"
-                                class="absolute right-3.5 text-muted hover:text-navy focus:outline-none"
-                                aria-label="Tampilkan kata sandi"
-                            >
-                                <i data-lucide="eye" id="togglePasswordIcon" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Remember Me Checkbox -->
-                    <div class="flex items-center justify-between pt-1">
-                        <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                name="remember"
-                                value="1"
-                                class="w-4 h-4 rounded border-line text-navy focus:ring-navy/30 cursor-pointer"
-                                {{ old('remember') ? 'checked' : '' }}
-                            />
-                            <span class="text-xs text-navy font-medium">Ingat Sesi di Perangkat Ini</span>
-                        </label>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button
-                        type="submit"
-                        class="w-full mt-2 py-3 px-4 rounded-2xl bg-navy hover:bg-maroon text-white font-semibold text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 group cursor-pointer"
-                    >
-                        <span>Masuk ke Dashboard Mitra</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-                    </button>
-                </form>
-
-                <!-- Quick Login Demo Chips (Bantuan Pengujian) -->
-                @if(isset($registeredMitras) && $registeredMitras->isNotEmpty())
-                    <div class="mt-6 pt-5 border-t border-line">
-                        <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted mb-2.5">
-                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-maroon"></i>
-                            <span>Uji Coba Cepat (Akun Mitra Terdaftar)</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5">
-                            @foreach($registeredMitras as $demo)
+                        <div>
+                            <div class="flex items-center justify-between gap-3">
+                                <label for="password" class="text-sm font-semibold">Kata Sandi <span class="text-brand-darkred">*</span></label>
+                                <span class="text-xs text-brand-ink/50">Lupa? Hubungi Hubin BKK</span>
+                            </div>
+                            <div class="relative mt-1.5">
+                                <i data-lucide="lock" class="w-4 h-4 text-brand-ink/40 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    required
+                                    autocomplete="current-password"
+                                    placeholder="Masukkan kata sandi akun"
+                                    class="{{ $fieldClass('password') }} pl-11 pr-12"
+                                />
                                 <button
                                     type="button"
-                                    onclick="fillLoginForm('{{ addslashes($demo->nama_perusahaan) }}')"
-                                    class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-canvas border border-line hover:border-navy text-navy hover:bg-white transition-all text-left flex items-center gap-1.5 cursor-pointer"
-                                    title="Klik untuk mengisi otomatis"
+                                    id="togglePasswordBtn"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full grid place-items-center text-brand-ink/50 hover:text-brand-darkred hover:bg-brand-paper transition-colors cursor-pointer"
+                                    aria-label="Tampilkan kata sandi"
+                                    aria-pressed="false"
                                 >
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    <span>{{ $demo->singkatan ?: $demo->nama_perusahaan }}</span>
+                                    <i data-lucide="eye" class="w-4 h-4" data-eye="show"></i>
+                                    <i data-lucide="eye-off" class="w-4 h-4 hidden" data-eye="hide"></i>
                                 </button>
-                            @endforeach
+                            </div>
                         </div>
-                        <p class="text-[10px] text-muted mt-2">
-                            *Password default seeder pengujian: <code class="bg-[#e8eaed] px-1.5 py-0.5 rounded text-navy font-mono font-bold">Password123!</code>
-                        </p>
-                    </div>
-                @endif
-            </div>
 
-            <!-- Footer Partner Link -->
-            <div class="text-center mt-6">
-                <p class="text-xs text-muted">
+                        <label class="flex items-center gap-2.5 cursor-pointer select-none text-sm text-brand-ink/80">
+                            <input type="checkbox" name="remember" value="1" class="w-4 h-4 shrink-0 accent-brand-darkred cursor-pointer" @checked(old('remember')) />
+                            Ingat sesi di perangkat ini
+                        </label>
+
+                        <button type="submit" class="group mt-1 inline-flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5 cursor-pointer">
+                            Masuk ke Dashboard Mitra
+                            <x-sketch.arrow :delay="500" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+                        </button>
+                    </form>
+
+                    @if(isset($registeredMitras) && $registeredMitras->isNotEmpty())
+                        <div class="mt-7 rounded-xl border-2 border-dashed border-brand-ink/10 bg-brand-paper/60 p-4">
+                            <p class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-ink/60">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-darkred"></i>
+                                Uji coba cepat · akun mitra terdaftar
+                            </p>
+                            <div class="mt-2.5 flex flex-wrap gap-1.5">
+                                @foreach($registeredMitras as $demo)
+                                    <button
+                                        type="button"
+                                        data-company="{{ $demo->nama_perusahaan }}"
+                                        class="js-fill-login text-xs font-medium px-3 py-1 rounded-full bg-white border border-brand-ink/10 hover:border-brand-darkred hover:text-brand-darkred text-brand-ink transition-colors flex items-center gap-1.5 cursor-pointer"
+                                        title="Isi otomatis: {{ $demo->nama_perusahaan }}"
+                                    >
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        {{ $demo->singkatan ?: $demo->nama_perusahaan }}
+                                    </button>
+                                @endforeach
+                            </div>
+                            <p class="text-[11px] text-brand-ink/50 mt-2.5">
+                                Kata sandi bawaan seeder: <code class="bg-white border border-brand-ink/10 px-1.5 py-0.5 rounded font-mono font-bold text-brand-ink">Password123!</code>
+                            </p>
+                        </div>
+                    @endif
+                </div>
+
+                <p class="mt-10 text-center text-sm text-brand-ink/60">
                     Perusahaan Anda belum terdaftar sebagai mitra BKK?
+                    <a href="{{ route('bkk.kerjasama') }}" class="group mt-1 flex items-center justify-center gap-2 font-semibold text-brand-darkred">
+                        Ajukan Permohonan Kemitraan
+                        <x-sketch.arrow class="w-5 h-2.5 transition-transform group-hover:translate-x-1" />
+                    </a>
                 </p>
-                <a href="{{ url('/bkk/kerja-sama') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-maroon hover:underline mt-1">
-                    <span>Ajukan Permohonan Kemitraan / MoU IDUKA</span>
-                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
-                </a>
-            </div>
-
+            </section>
         </div>
     </main>
 
-    <!-- Footer Copyright -->
-    <footer class="w-full py-4 text-center text-xs text-muted border-t border-line bg-white/50">
-        &copy; {{ date('Y') }} BKK SMK Plus Pelita Nusantara. Hak Cipta Dilindungi.
+    <footer class="border-t border-brand-ink/10 bg-brand-paper py-4 px-4 text-center text-xs text-brand-ink/50">
+        &copy; {{ date('Y') }} BKK SMK Plus Pelita Nusantara · Bogor, Jawa Barat
     </footer>
 
     <script>
         lucide.createIcons();
 
-        // Toggle Password Visibility
+        // Tampilkan / sembunyikan kata sandi
         const toggleBtn = document.getElementById('togglePasswordBtn');
         const passwordInput = document.getElementById('password');
-        const toggleIcon = document.getElementById('togglePasswordIcon');
+        toggleBtn?.addEventListener('click', () => {
+            const show = passwordInput.type === 'password';
+            passwordInput.type = show ? 'text' : 'password';
+            toggleBtn.setAttribute('aria-pressed', String(show));
+            toggleBtn.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            toggleBtn.querySelector('[data-eye="show"]')?.classList.toggle('hidden', show);
+            toggleBtn.querySelector('[data-eye="hide"]')?.classList.toggle('hidden', !show);
+        });
 
-        if (toggleBtn && passwordInput) {
-            toggleBtn.addEventListener('click', () => {
-                const isPassword = passwordInput.getAttribute('type') === 'password';
-                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-                toggleIcon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
-                lucide.createIcons();
+        // Isi formulir dari chip akun uji coba
+        document.querySelectorAll('.js-fill-login').forEach((chip) => {
+            chip.addEventListener('click', () => {
+                document.getElementById('nama_perusahaan').value = chip.dataset.company;
+                passwordInput.value = 'Password123!';
+                passwordInput.focus();
             });
-        }
-
-        // Fill Login Form helper
-        function fillLoginForm(companyName) {
-            const nameInput = document.getElementById('nama_perusahaan');
-            const pwdInput = document.getElementById('password');
-            if (nameInput) nameInput.value = companyName;
-            if (pwdInput) pwdInput.value = 'Password123!';
-            nameInput?.focus();
-        }
+        });
     </script>
+    @include('partials.sketch-engine')
 </body>
 </html>

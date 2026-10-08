@@ -38,6 +38,11 @@ return [
     'auth_service' => [
         'base_url' => env('AUTH_SERVICE_URL', 'http://localhost:3002'),
         'login_url' => env('AUTH_LOGIN_URL', '/login'),
+
+        // Login uji coba lokal tanpa auth service (App\Support\DevAuth). Hanya berlaku saat APP_ENV=local
+        // dan request dari localhost; JANGAN diaktifkan di server.
+        'dev_bypass' => (bool) env('AUTH_DEV_BYPASS', false),
+        'dev_role' => env('AUTH_DEV_ROLE', 'ADMIN'),
     ],
 
 ];

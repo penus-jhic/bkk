@@ -31,7 +31,7 @@
     <div class="bg-white rounded-2xl border border-line shadow-xs p-6 max-w-2xl">
         <div class="flex items-center gap-4 pb-5 border-b border-line">
             <div class="w-16 h-16 rounded-full grid place-items-center text-white text-xl font-bold shadow-md bg-maroon shrink-0">
-                {{ strtoupper(substr($name, 0, 2)) }}
+                {{ collect(preg_split('/\s+/', trim($name)))->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('') }}
             </div>
             <div class="min-w-0">
                 <div class="font-headline font-bold text-navy text-lg truncate">{{ $name }}</div>

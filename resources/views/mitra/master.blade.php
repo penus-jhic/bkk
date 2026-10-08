@@ -1,106 +1,36 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <meta content="web_standard" name="shell-type"/>
+    @include('mitra.partials.head')
     <title>@yield('title', 'Dashboard Mitra IDUKA - BKK SMK Plus Pelita Nusantara')</title>
 
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
-
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        navy: {
-                            DEFAULT: "#1b283b",
-                            dark: "#101a29",
-                            light: "#25374e",
-                        },
-                        maroon: {
-                            DEFAULT: "#741918",
-                            dark: "#5e1413",
-                            light: "#8a201f",
-                        },
-                        line: "#dcdcdc",
-                        canvas: "#f8f9fa",
-                        muted: "#5f6368",
-                    },
-                    fontFamily: {
-                        sans: ["Inter", "Roboto", "system-ui", "sans-serif"],
-                        headline: ["Hanken Grotesk", "Inter", "sans-serif"],
-                    },
-                    borderRadius: {
-                        'xl': '0.75rem',
-                        '2xl': '1rem',
-                        '3xl': '1.5rem',
-                    }
-                }
-            }
-        };
-    </script>
-
     <style>
-        html, body {
-            background-color: #f8f9fa;
-            color: #1b283b;
-            font-family: 'Inter', system-ui, sans-serif;
-            margin: 0;
-            padding: 0;
+        /* Judul halaman & section mitra memakai tipografi display landing page (Oswald kapital) */
+        #main-scroll h1,
+        #main-scroll h2 {
+            font-family: 'Oswald', ui-sans-serif, system-ui, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            font-weight: 600;
         }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f8f9fa; }
-        ::-webkit-scrollbar-thumb { background: #dcdcdc; border-radius: 999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: none; }
-        }
-        .fade-up {
-            animation: fadeUp .3s ease-out both;
-        }
-
-        /* Google Material Design subtle card styles */
-        .google-card {
-            background-color: #ffffff;
-            border: 1px solid #dcdcdc;
-            border-radius: 1rem;
-            transition: box-shadow 0.2s ease, border-color 0.2s ease;
-        }
-        .google-card:hover {
-            box-shadow: 0 4px 12px rgba(27, 40, 59, 0.05);
-            border-color: #c5c5c5;
-        }
+        #main-scroll h1 { font-weight: 700; }
 
         /* Markdown rendering inside CV */
-        .md-cv h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .25rem; color: #1b283b; }
-        .md-cv h2 { font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #741918; border-bottom: 1px solid #dcdcdc; padding-bottom: .25rem; margin: 1.25rem 0 .5rem; }
-        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #1b283b; }
-        .md-cv p { font-size: .84rem; line-height: 1.6; color: #3c4043; margin: .25rem 0; }
+        .md-cv h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .25rem; color: #241012; }
+        .md-cv h2 { font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #7A1018; border-bottom: 1px solid #DDDDDD; padding-bottom: .25rem; margin: 1.25rem 0 .5rem; }
+        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #241012; }
+        .md-cv p { font-size: .84rem; line-height: 1.6; color: rgb(36 16 18 / 0.8); margin: .25rem 0; }
         .md-cv ul { list-style: disc; padding-left: 1.2rem; margin: .25rem 0; }
-        .md-cv li { font-size: .84rem; line-height: 1.55; color: #3c4043; margin-bottom: 0.2rem; }
-        .md-cv strong { color: #1b283b; }
-        .md-cv em { color: #5f6368; }
-        .md-cv a { color: #741918; text-decoration: underline; }
-        .md-cv hr { border-color: #dcdcdc; margin: .75rem 0; }
+        .md-cv li { font-size: .84rem; line-height: 1.55; color: rgb(36 16 18 / 0.8); margin-bottom: 0.2rem; }
+        .md-cv strong { color: #241012; }
+        .md-cv em { color: #6f5e60; }
+        .md-cv a { color: #7A1018; text-decoration: underline; }
+        .md-cv hr { border-color: #DDDDDD; margin: .75rem 0; }
     </style>
     @stack('styles')
 </head>
-<body class="bg-canvas text-navy font-sans antialiased min-h-screen flex flex-col">
-    <!-- Top Bar Navigation (Google Style) -->
+<body class="bg-brand-paper text-brand-ink font-sans antialiased min-h-screen flex flex-col">
+    <!-- Top Bar Navigation -->
     @include('mitra.partials.header')
 
     <!-- Main Container with Sidebar + Main Content -->
@@ -178,6 +108,7 @@
             lucide.createIcons();
         });
     </script>
+    @include('partials.sketch-engine')
     @stack('scripts')
 </body>
 </html>

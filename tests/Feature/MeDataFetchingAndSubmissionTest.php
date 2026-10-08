@@ -208,19 +208,19 @@ class MeDataFetchingAndSubmissionTest extends TestCase
 
         $response->assertStatus(200);
 
-        // Memastikan status Kesiapan Modul BKK dilabeli Aktif dan tidak ada label 'Segera'
-        $response->assertSee('Tracer Study Alumni');
+        // Memastikan seluruh section ekosistem BKK dirender dan tidak ada label 'Segera'
+        $response->assertSee('Lowongan Aktif');
+        $response->assertSee('Corong Lamaran');
+        $response->assertSee('Keterserapan Alumni');
+        $response->assertSee('Lamaran Terbaru');
+        $response->assertSee('Lowongan Terbaru');
+        $response->assertSee('PKL Berjalan');
         $response->assertSee('Mitra IDUKA');
-        $response->assertSee('Lowongan Kerja BKK');
-        $response->assertSee('Monitoring PKL Siswa');
         $response->assertDontSee('Segera');
 
-        // Memastikan section aktivitas ekosistem BKK dirender
-        $response->assertSee('Aktivitas Terkini Ekosistem BKK');
-        $response->assertSee('Lowongan Baru');
-        $response->assertSee('Mitra Industri');
-        $response->assertSee('Monitoring PKL');
-        $response->assertSee('Tracer Alumni');
+        // Data terbaru dari database ikut tampil
+        $response->assertSee(\App\Models\Lowongan::latest('created_at')->value('judul'));
+        $response->assertSee(\App\Models\Mitra::latest('created_at')->value('nama_perusahaan'));
     }
 
     /**

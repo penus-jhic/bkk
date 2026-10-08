@@ -56,12 +56,20 @@ class DashboardDataFetchingTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Pusat Kendali Admin');
-        $response->assertSee('Publikasi Berita Terkini');
+        $response->assertSee('Perlu Tindakan');
+        $response->assertSee('Lowongan Aktif');
+        $response->assertSee('Total Pelamar');
+        $response->assertSee('Siswa PKL Berjalan');
         $response->assertSee('Mitra IDUKA');
-        $response->assertSee('Lowongan Kerja BKK');
-        $response->assertSee('Monitoring PKL Siswa');
-        $response->assertSee('Tracer Study Alumni');
-        $response->assertSee('Profil Administrator');
+        $response->assertSee('Corong Lamaran');
+        $response->assertSee('Keterserapan Alumni');
+        $response->assertSee('Publikasi Berita BKK');
+
+        // Status tracer & identitas siswa PKL tampil dari kolom yang benar (bukan user_id mentah)
+        $pkl = \App\Models\PenempatanPkl::with('siswa')->where('status', 'BERJALAN')->first();
+        if ($pkl?->siswa) {
+            $response->assertSee('NIS ' . $pkl->siswa->nis);
+        }
 
         // Test JSON endpoint
         $jsonResponse = $this->withHeader('Authorization', 'Bearer valid_token')
@@ -85,7 +93,13 @@ class DashboardDataFetchingTest extends TestCase
                     'total_siswa_pkl',
                     'total_pelamar',
                     'total_tracer_respon',
+                    'total_permohonan_pending',
+                    'total_jurnal_menunggu',
+                    'tracer_terserap',
                 ],
+                'lamaran_funnel',
+                'tracer_breakdown',
+                'recent_lamarans',
                 'kategori',
                 'recent_lowongans',
                 'recent_mitras',
@@ -160,5 +174,29 @@ class DashboardDataFetchingTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Riwayat Lamaran');
         $response->assertSee('Detail Seleksi');
+    }
+
+    public function test_admin_logout_clears_access_token_cookie(): void
+    {
+        $response = $this->post('/bkk/logout');
+
+        $response->assertRedirect(route('bkk.index'));
+        $response->assertCookieExpired('access_token');
+    }
+
+    public function test_admin_header_shows_live_pending_work_counts(): void
+    {
+        $this->fakeAuth('ADMIN', 'usr-admin-001');
+
+        $pending = \App\Models\PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count();
+
+        $response = $this->withHeader('Authorization', 'Bearer valid_token')->get('/bkk/admin/mitra');
+
+        $response->assertStatus(200);
+        if ($pending > 0) {
+            $response->assertSee('Permohonan kerja sama baru');
+        } else {
+            $response->assertSee('Tidak ada antrean yang menunggu tindakan.');
+        }
     }
 }

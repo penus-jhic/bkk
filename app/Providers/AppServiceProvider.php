@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\View\Composers\AdminAlertsComposer;
+use App\View\Composers\MitraAlertsComposer;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +14,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(AdminAlertsComposer::class);
+        $this->app->singleton(MitraAlertsComposer::class);
     }
 
     /**
@@ -19,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer(['admin.partials.header', 'admin.partials.sidebar'], AdminAlertsComposer::class);
+        View::composer(['mitra.partials.header', 'mitra.partials.sidebar'], MitraAlertsComposer::class);
     }
 }

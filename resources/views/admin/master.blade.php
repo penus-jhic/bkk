@@ -6,71 +6,92 @@
     <meta content="web_standard" name="shell-type"/>
     <title>@yield('title', 'Admin BKK - SMK Plus Pelita Nusantara')</title>
 
+    <meta name="csrf-token" content="{{ csrf_token() }}"/>
+    <link rel="icon" href="{{ asset('images/logosmkpenus.png') }}">
+
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lucide Icons (versi dikunci supaya nama ikon tidak berubah diam-diam) -->
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
 
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
     <script id="tailwind-config">
+        // Palet & tipografi mengikuti landing page BKK (gaya coretan). Token lama (navy, maroon, line, canvas, muted)
+        // tetap ada tapi diarahkan ke warna brand, jadi semua halaman admin ikut berganti tampilan.
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
+                        brand: {
+                            darkred: "#7A1018",
+                            deepred: "#5C0B12",
+                            mist: "#DDDDDD",
+                            softmist: "#E8E8E8",
+                            ink: "#241012",
+                            signal: "#B72A32",
+                            warmred: "#D04A43",
+                            rose: "#A66B6E",
+                            paper: "#F5F4F2",
+                        },
                         navy: {
-                            DEFAULT: "#1b283b",
-                            dark: "#101a29",
-                            light: "#25374e",
+                            DEFAULT: "#241012",
+                            dark: "#140809",
+                            light: "#3a1d20",
                         },
                         maroon: {
-                            DEFAULT: "#741918",
-                            dark: "#5e1413",
-                            light: "#8a201f",
+                            DEFAULT: "#7A1018",
+                            dark: "#5C0B12",
+                            light: "#B72A32",
                         },
-                        line: "#dcdcdc",
-                        canvas: "#f8f9fa",
-                        muted: "#5f6368",
+                        line: "#DDDDDD",
+                        canvas: "#F5F4F2",
+                        muted: "#6f5e60",
 
                         // Material Theme compatibility for existing modules
-                        "primary": "#741918",
-                        "primary-container": "#8a201f",
-                        "primary-fixed": "#ffdad6",
+                        "primary": "#7A1018",
+                        "primary-container": "#B72A32",
+                        "primary-fixed": "#FCE8E8",
                         "on-primary": "#ffffff",
                         "secondary": "#875300",
                         "secondary-container": "#ffa525",
-                        "surface": "#f8f9fa",
-                        "surface-container": "#f0edeb",
-                        "surface-container-low": "#f8f9fa",
+                        "surface": "#F5F4F2",
+                        "surface-container": "#efedea",
+                        "surface-container-low": "#F5F4F2",
                         "surface-container-lowest": "#ffffff",
                         "surface-container-high": "#ebe8e5",
                         "surface-container-highest": "#e5e2e0",
-                        "surface-variant": "#dcdcdc",
-                        "on-surface": "#1b283b",
-                        "on-surface-variant": "#5f6368",
-                        "outline": "#dcdcdc",
+                        "surface-variant": "#DDDDDD",
+                        "on-surface": "#241012",
+                        "on-surface-variant": "#6f5e60",
+                        "outline": "#DDDDDD",
                         "outline-variant": "#e9bcb7",
                     },
                     fontFamily: {
-                        sans: ["Inter", "Roboto", "system-ui", "sans-serif"],
-                        "title-md": ["Inter"],
-                        "headline-sm": ["Hanken Grotesk"],
-                        "body-default": ["Inter"],
-                        "headline-lg": ["Hanken Grotesk"],
-                        "headline-md": ["Hanken Grotesk"],
-                        "headline-xl": ["Hanken Grotesk"],
-                        "metric-stat": ["Hanken Grotesk"],
+                        sans: ['"Plus Jakarta Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+                        display: ["Oswald", "ui-sans-serif", "system-ui", "sans-serif"],
+                        "title-md": ['"Plus Jakarta Sans"'],
+                        "headline-sm": ["Oswald"],
+                        "body-default": ['"Plus Jakarta Sans"'],
+                        "headline-lg": ["Oswald"],
+                        "headline-md": ["Oswald"],
+                        "headline-xl": ["Oswald"],
+                        "metric-stat": ["Oswald"],
+                    },
+                    boxShadow: {
+                        softpill: "0 8px 30px -8px rgb(36 16 18 / 0.18)",
+                        card: "0 4px 20px -4px rgb(36 16 18 / 0.08)",
                     },
                     borderRadius: {
                         DEFAULT: "0.75rem",
                         'xl': '0.75rem',
                         '2xl': '1rem',
                         '3xl': '1.5rem',
+                        card: '1rem',
                         full: "9999px"
                     }
                 }
@@ -80,38 +101,41 @@
 
     <style>
         html, body {
-            background-color: #f8f9fa;
-            color: #1b283b;
-            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #F5F4F2;
+            color: #241012;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             margin: 0;
             padding: 0;
+            -webkit-font-smoothing: antialiased;
         }
+
+        ::selection { background-color: #7A1018; color: #fff; }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f8f9fa; }
-        ::-webkit-scrollbar-thumb { background: #dcdcdc; border-radius: 999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+        ::-webkit-scrollbar-track { background: #F5F4F2; }
+        ::-webkit-scrollbar-thumb { background: #DDDDDD; border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #A66B6E; }
 
         @keyframes shimmer {
             0% { background-position: -400px 0; }
             100% { background-position: 400px 0; }
         }
         .shimmer {
-            background: linear-gradient(90deg, #f1f3f4 0%, #e8eaed 40%, #f1f3f4 80%);
+            background: linear-gradient(90deg, #f1efed 0%, #e8e5e2 40%, #f1efed 80%);
             background-size: 800px 100%;
             animation: shimmer 1.2s infinite linear;
         }
 
         .gemini-text {
-            background: linear-gradient(90deg, #741918, #1b283b 60%, #741918);
+            background: linear-gradient(90deg, #7A1018, #241012 60%, #7A1018);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
 
         .gemini-border {
-            background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #741918, #1b283b, #dcdcdc) border-box;
+            background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #7A1018, #241012, #DDDDDD) border-box;
             border: 1px solid transparent;
         }
 
@@ -121,6 +145,20 @@
         }
         .fade-up {
             animation: fadeUp .3s ease-out both;
+        }
+
+        /* Judul halaman & section admin memakai tipografi display landing page (Oswald kapital) */
+        #main-scroll h1,
+        #main-scroll h2 {
+            font-family: 'Oswald', ui-sans-serif, system-ui, sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            font-weight: 600;
+        }
+        #main-scroll h1 { font-weight: 700; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .fade-up { animation: none; }
         }
     </style>
     @stack('styles')
@@ -205,6 +243,8 @@
             }
         });
     </script>
+    @include('partials.dev-auth-banner')
+    @include('partials.sketch-engine')
     @stack('scripts')
 </body>
 </html>

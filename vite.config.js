@@ -11,6 +11,8 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Port tetap supaya BKK, PPDB, dan frontend landing page (5173) bisa jalan bersamaan
+        port: 5174,
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

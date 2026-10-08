@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\DevAuth;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +18,45 @@ class VerifyAuthToken
      * @param  string  ...$roles
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
+    {
+        // 1-2. Ambil data user: login uji coba lokal (lihat App\Support\DevAuth) atau verifikasi token ke Auth Microservice
+        $userData = DevAuth::user($request) ?? $this->fetchUserFromAuthService($request);
+
+        if ($userData instanceof Response) {
+            return $userData;
+        }
+
+        // 3. Validasi status keaktifan akun
+        if (isset($userData['status_aktif']) && $userData['status_aktif'] === false) {
+            return $this->errorResponse($request, 'Akun pengguna sedang dinonaktifkan', Response::HTTP_FORBIDDEN);
+        }
+
+        // 4. Validasi Role (RBAC) jika parameter role disertakan pada route middleware
+        if (!empty($roles)) {
+            $userRole = strtoupper((string) ($userData['role'] ?? ''));
+            $allowedRoles = array_map('strtoupper', $roles);
+
+            if (!in_array($userRole, $allowedRoles, true)) {
+                return $this->errorResponse($request, 'Akses ditolak: role ' . ($userData['role'] ?? 'UNKNOWN') . ' tidak memiliki izin untuk mengakses resource ini', Response::HTTP_FORBIDDEN);
+            }
+        }
+
+        // 5. Merge metadata user ke dalam Request agar dapat diakses via $request->auth_user atau $request->input('auth_user')
+        $request->merge([
+            'auth_user' => $userData,
+        ]);
+
+        // Simpan juga ke request attributes & user resolver bawaan Laravel
+        $request->attributes->set('auth_user', $userData);
+        $request->setUserResolver(fn () => (object) $userData);
+
+        return $next($request);
+    }
+
+    /**
+     * Verifikasi access_token ke Auth Microservice. Mengembalikan data user, atau Response error.
+     */
+    protected function fetchUserFromAuthService(Request $request): array|Response
     {
         // 1. Ekstraksi access_token dari Request Cookie atau Authorization Bearer
         $token = $this->extractToken($request);
@@ -54,31 +94,7 @@ class VerifyAuthToken
             return $this->unauthenticated($request, 'Data pengguna tidak ditemukan dalam respon otentikasi');
         }
 
-        // 3. Validasi status keaktifan akun
-        if (isset($userData['status_aktif']) && $userData['status_aktif'] === false) {
-            return $this->errorResponse($request, 'Akun pengguna sedang dinonaktifkan', Response::HTTP_FORBIDDEN);
-        }
-
-        // 4. Validasi Role (RBAC) jika parameter role disertakan pada route middleware
-        if (!empty($roles)) {
-            $userRole = strtoupper((string) ($userData['role'] ?? ''));
-            $allowedRoles = array_map('strtoupper', $roles);
-
-            if (!in_array($userRole, $allowedRoles, true)) {
-                return $this->errorResponse($request, 'Akses ditolak: role ' . ($userData['role'] ?? 'UNKNOWN') . ' tidak memiliki izin untuk mengakses resource ini', Response::HTTP_FORBIDDEN);
-            }
-        }
-
-        // 5. Merge metadata user ke dalam Request agar dapat diakses via $request->auth_user atau $request->input('auth_user')
-        $request->merge([
-            'auth_user' => $userData,
-        ]);
-
-        // Simpan juga ke request attributes & user resolver bawaan Laravel
-        $request->attributes->set('auth_user', $userData);
-        $request->setUserResolver(fn () => (object) $userData);
-
-        return $next($request);
+        return $userData;
     }
 
     /**

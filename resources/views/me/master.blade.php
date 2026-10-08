@@ -170,6 +170,7 @@
             lucide.createIcons();
         });
     </script>
+    @include('partials.dev-auth-banner')
     @stack('scripts')
 </body>
 </html>

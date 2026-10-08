@@ -10,7 +10,9 @@ use App\Http\Controllers\Me\MeController;
 use App\Http\Controllers\Mitra\MitraAuthController;
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\DevAuthController;
 use App\Http\Controllers\StaticAssetController;
+use App\Support\DevAuth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +38,12 @@ Route::prefix('bkk')->group(function () {
     Route::get('/storage/{path}', [StaticAssetController::class, 'serveStorage'])->where('path', '.*')->name('bkk.static.storage');
     Route::get('/build/{path}', [StaticAssetController::class, 'serveBuild'])->where('path', '.*')->name('bkk.static.build');
 
+    // Login uji coba lokal tanpa auth service: hanya terdaftar saat APP_ENV=local & AUTH_DEV_BYPASS=true
+    if (DevAuth::configured()) {
+        Route::get('/dev/masuk', [DevAuthController::class, 'index'])->name('bkk.dev.login');
+        Route::get('/dev/masuk/{role}', [DevAuthController::class, 'switch'])->name('bkk.dev.login.as');
+    }
+
     // 1. Router Group Publik: /bkk/*
     Route::get('/', [PublicController::class, 'index'])->name('bkk.index');
     Route::get('/info', [PublicController::class, 'info'])->name('bkk.info');
@@ -46,6 +54,9 @@ Route::prefix('bkk')->group(function () {
     Route::get('/tentang', [PublicController::class, 'tentang'])->name('bkk.tentang');
     Route::get('/kerja-sama', [PublicController::class, 'kerjasama'])->name('bkk.kerjasama');
     Route::post('/kerja-sama', [PublicController::class, 'storeKerjasama'])->middleware('throttle:5,1')->name('bkk.kerjasama.store');
+
+    // Keluar sesi admin / siswa: hapus cookie access_token dari auth service lalu kembali ke beranda BKK
+    Route::match(['GET', 'POST'], '/logout', fn () => redirect()->route('bkk.index')->withoutCookie('access_token')->withoutCookie(DevAuth::COOKIE))->name('bkk.logout');
 
     // 2. Router Group Terproteksi Admin Sekolah: /bkk/admin/*
     Route::middleware('verify.auth:ADMIN,KEPALA_SEKOLAH,TU,DEVELOPER')->prefix('admin')->group(function () {
