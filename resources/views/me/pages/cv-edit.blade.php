@@ -1,227 +1,177 @@
 @extends('me.master')
 
-@section('title', 'Editor CV - BKK SMK Plus Pelita Nusantara')
+@section('title', 'Editor CV ATS - BKK SMK Plus Pelita Nusantara')
 
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+    .editor-textarea {
+        tab-size: 2;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+</style>
 @endpush
 
 @php
     $role = strtoupper($authUser['role'] ?? 'SISWA');
     $isSiswa = ($role === 'SISWA');
+    $isMainCv = (bool) ($activeCv?->is_main ?? true);
+    $shortChecksum = substr($checksum ?? '', 0, 12);
 @endphp
 
 @section('content')
-<div class="fade-up space-y-5">
+<div id="cvEditorWrapper" class="fade-up space-y-5 transition-all duration-150">
     <!-- Top Action Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line">
-        <div class="flex items-center gap-2">
-            <a href="{{ route('bkk.me.cv') }}" class="w-10 h-10 rounded-full grid place-items-center hover:bg-navy/5 cursor-pointer text-muted transition-colors" title="Kembali ke Pratinjau CV">
+    <div id="cvTopActionBar" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line shrink-0">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('bkk.me.cv') }}" class="w-10 h-10 rounded-full grid place-items-center hover:bg-navy/5 cursor-pointer text-navy transition-colors shrink-0" title="Kembali ke Pratinjau CV">
                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-navy tracking-tight">Editor CV ATS</h1>
-                <p class="text-xs sm:text-sm text-muted">Isi form per bagian, sinkronkan ke Markdown, dan sempurnakan dengan AI.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h1 class="text-2xl font-bold text-navy tracking-tight">Editor CV ATS</h1>
+                    @if($isMainCv)
+                        <span id="activeMainBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                            <span>CV Utama (Aktif)</span>
+                        </span>
+                    @else
+                        <span id="activeMainBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Versi Arsip #{{ $activeCv->id }}</span>
+                        </span>
+                    @endif
+                    <span id="activeChecksumBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono bg-navy/5 text-navy border border-line" title="Checksum SHA-256 Aktif">
+                        <i data-lucide="shield-check" class="w-3 h-3 text-emerald-600"></i>
+                        <span id="checksumText">sha256: {{ $shortChecksum }}…</span>
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-muted mt-0.5">Tulis kode Markdown langsung, pratinjau real-time standar ATS, dan simpan versi dokumen.</p>
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <button onclick="toggleMobileAi(true)" class="xl:hidden h-9 px-4 rounded-full bg-maroon/10 hover:bg-maroon hover:text-white text-maroon text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer">
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <!-- CV Version Switcher Dropdown -->
+            @if(isset($cvVersions) && $cvVersions->count() > 1)
+                <div class="flex items-center gap-1.5">
+                    <select id="cvVersionSwitcher" onchange="switchCvVersion(this.value)" class="h-9 px-3 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold shadow-sm focus:outline-none focus:border-navy cursor-pointer" title="Ganti Versi CV">
+                        @foreach($cvVersions as $v)
+                            @php
+                                $targetUrl = $v->is_main ? route('bkk.me.cv.edit') : route('bkk.me.cv.editVersion', $v->id);
+                                $isSelected = ($activeCv?->id === $v->id);
+                            @endphp
+                            <option value="{{ $targetUrl }}" {{ $isSelected ? 'selected' : '' }}>
+                                Versi #{{ $v->id }} {{ $v->is_main ? '⭐ (CV Utama)' : '— ' . ($v->created_at ? $v->created_at->format('d M H:i') : '') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
+            <button type="button" onclick="openVersionModal()" class="h-9 px-3.5 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer" title="Lihat Riwayat Versi">
+                <i data-lucide="history" class="w-3.5 h-3.5 text-muted"></i>
+                <span class="hidden sm:inline">Riwayat</span>
+                <span id="versionCountBadge" class="w-4 h-4 rounded-full bg-navy/10 text-navy text-[10px] grid place-items-center font-bold">{{ count($cvVersions ?? []) }}</span>
+            </button>
+
+            <!-- Toggle Fullscreen Button -->
+            <button type="button" id="btnToggleFullscreen" onclick="toggleFullscreen()" class="h-9 px-3.5 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer" title="Mode Layar Penuh (Fokus)">
+                <i data-lucide="maximize-2" id="fullscreenIcon" class="w-3.5 h-3.5 text-navy"></i>
+                <span id="fullscreenText" class="hidden sm:inline">Layar Penuh</span>
+            </button>
+
+            <!-- Tanya AI Button -->
+            <button type="button" onclick="toggleMobileAi(true)" class="h-9 px-3.5 rounded-full bg-maroon/10 hover:bg-maroon hover:text-white text-maroon text-xs font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer" title="Konsultasi Penus AI">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                 <span>Tanya AI</span>
             </button>
+
             <a href="{{ route('bkk.me.cv') }}" class="h-9 px-4 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold inline-flex items-center shadow-sm transition-colors cursor-pointer">
                 Pratinjau
             </a>
+
             <button id="btnSaveCv" onclick="saveCv()" class="h-9 px-5 rounded-full bg-maroon hover:bg-maroon-dark text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i>
-                <span>Simpan</span>
+                <i data-lucide="save" id="btnSaveIcon" class="w-3.5 h-3.5"></i>
+                <span id="btnSaveText">Simpan CV</span>
             </button>
         </div>
     </div>
 
-    <!-- Main Grid: Form & Markdown on Left, AI Assistant on Right -->
-    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-        <div class="space-y-6 min-w-0">
-            <!-- 1. Form Section with Tab Bar Control -->
-            <div class="bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
-                <!-- Section Tab Bar (Top Bar Form Controller) -->
-                <div class="flex overflow-x-auto border-b border-line px-2 bg-canvas/40" id="sectionTabBar">
-                    @php
-                        $secList = [
-                            ['id' => 'pribadi', 'label' => 'Informasi Pribadi', 'icon' => 'user'],
-                            ['id' => 'pendidikan', 'label' => 'Pendidikan', 'icon' => 'graduation-cap'],
-                            ['id' => 'pengalaman', 'label' => 'Pengalaman PKL/Kerja', 'icon' => 'briefcase'],
-                            ['id' => 'keahlian', 'label' => 'Keahlian Teknis', 'icon' => 'wrench'],
-                            ['id' => 'portofolio', 'label' => 'Portofolio & Sertifikat', 'icon' => 'award'],
-                        ];
-                    @endphp
-                    @foreach($secList as $sec)
-                        <button
-                            type="button"
-                            onclick="setSectionTab('{{ $sec['id'] }}')"
-                            id="tab-btn-{{ $sec['id'] }}"
-                            class="sec-tab-btn relative flex items-center gap-2 px-4 h-12 text-xs sm:text-sm font-semibold whitespace-nowrap cursor-pointer transition-colors {{ $loop->first ? 'text-navy font-bold active' : 'text-muted hover:text-navy' }}"
-                        >
-                            <i data-lucide="{{ $sec['icon'] }}" class="w-4 h-4"></i>
-                            <span>{{ $sec['label'] }}</span>
-                            <span id="tab-indicator-{{ $sec['id'] }}" class="absolute bottom-0 left-3 right-3 h-[3px] rounded-t-full bg-navy {{ $loop->first ? '' : 'hidden' }}"></span>
-                        </button>
-                    @endforeach
-                </div>
-
-                <!-- Form Content: Hanya 1 Section yang Tampil Sesuai Tab Aktif -->
-                <div class="p-5 sm:p-6">
-                    <!-- Section: Informasi Pribadi -->
-                    <div id="sec-pribadi" class="sec-content space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Nama Lengkap</label>
-                                <input type="text" id="fName" value="{{ $profile['name'] }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Headline / Posisi Tujuan</label>
-                                <input type="text" id="fHeadline" value="{{ $isSiswa ? 'Teknisi Jaringan Komputer' : 'Staff Akuntansi' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Email</label>
-                                <input type="email" id="fEmail" value="{{ $profile['email'] }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">No. WhatsApp / Telepon</label>
-                                <input type="text" id="fPhone" value="{{ $profile['phone'] }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Domisili Kota</label>
-                                <input type="text" id="fCity" value="{{ $profile['domisili'] ?? 'Bogor' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">NIS / Nomor Induk</label>
-                                <input type="text" value="{{ $profile['nis'] }}" disabled class="w-full h-11 px-3.5 rounded-xl border border-line bg-canvas text-muted font-medium text-sm cursor-not-allowed" />
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block font-medium text-muted mb-1.5">Ringkasan Profil</label>
-                                <textarea id="fSummary" rows="4" oninput="autoSync()" class="w-full p-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs sm:text-sm text-navy leading-relaxed transition resize-y">{{ $isSiswa ? 'Siswa kelas XII Teknik Komputer & Jaringan yang antusias di bidang infrastruktur jaringan. Berpengalaman PKL di PT Telkom Akses menangani instalasi FTTH dan troubleshooting jaringan pelanggan.' : 'Alumni Akuntansi & Keuangan Lembaga SMK Penus angkatan 2023 dengan 1,5 tahun pengalaman sebagai kasir senior dan admin keuangan. Teliti, terbiasa dengan software Accurate dan Excel tingkat lanjut.' }}</textarea>
-                                <button type="button" onclick="runAiSummary()" class="mt-2 text-xs text-maroon font-semibold inline-flex items-center gap-1 hover:underline cursor-pointer">
-                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                                    <span>Generate dengan AI</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Pendidikan -->
-                    <div id="sec-pendidikan" class="sec-content space-y-4 hidden">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Nama Sekolah</label>
-                                <input type="text" id="fSchool" value="SMK Penus" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Kompetensi Keahlian</label>
-                                <input type="text" id="fMajor" value="{{ $isSiswa ? 'Teknik Komputer & Jaringan' : 'Akuntansi & Keuangan Lembaga' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Periode Belajar</label>
-                                <input type="text" id="fPeriod" value="{{ $isSiswa ? '2022 – 2025' : '2020 – 2023' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                            <div>
-                                <label class="block font-medium text-muted mb-1.5">Nilai / Prestasi</label>
-                                <input type="text" id="fGrade" value="{{ $isSiswa ? 'Rata-rata nilai 88,4' : 'Lulusan terbaik jurusan' }}" oninput="autoSync()" class="w-full h-11 px-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-navy font-medium text-sm transition" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section: Pengalaman PKL/Kerja -->
-                    <div id="sec-pengalaman" class="sec-content space-y-4 hidden">
-                        <div id="experienceList" class="space-y-4">
-                            <!-- Injected dynamically by JS -->
-                        </div>
-                        <div class="flex flex-wrap gap-2 pt-2">
-                            <button type="button" onclick="addExperience()" class="h-9 px-4 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
-                                <i data-lucide="plus" class="w-4 h-4"></i>
-                                <span>Tambah Pengalaman</span>
-                            </button>
-                            <button type="button" onclick="runAiImprove()" class="h-9 px-4 rounded-full bg-maroon/10 hover:bg-maroon hover:text-white text-maroon text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer transition-colors">
-                                <i data-lucide="wand-2" class="w-4 h-4"></i>
-                                <span>Improvisasi dengan AI</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Section: Keahlian Teknis -->
-                    <div id="sec-keahlian" class="sec-content space-y-3 hidden">
-                        <div id="skillsList" class="space-y-3">
-                            <!-- Injected dynamically by JS -->
-                        </div>
-                        <button type="button" onclick="addSkill()" class="h-9 px-4 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>Tambah Keahlian</span>
-                        </button>
-                    </div>
-
-                    <!-- Section: Portofolio & Sertifikat -->
-                    <div id="sec-portofolio" class="sec-content space-y-3 hidden">
-                        <div>
-                            <label class="block font-medium text-muted text-xs mb-1.5">Portofolio, prestasi & sertifikat (1 item per baris, format Markdown didukung)</label>
-                            <textarea id="fPortfolio" rows="5" oninput="autoSync()" class="w-full p-3.5 rounded-xl border border-line bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs sm:text-sm text-navy leading-relaxed transition resize-y">{{ $isSiswa ? "**Juara 2 LKS TKJ** Tingkat Kota Semarang 2024\nProyek: Desain topologi jaringan sekolah (VLAN & Hotspot)" : "**Sertifikat Kompetensi BNSP** — Teknisi Akuntansi Junior\nJuara 1 LKS Akuntansi Tingkat Provinsi 2022" }}</textarea>
-                        </div>
-                        <div class="rounded-2xl border border-dashed border-line p-5 text-center text-xs text-muted bg-[#f8f9fa]">
-                            <i data-lucide="award" class="w-6 h-6 mx-auto text-line mb-1"></i>
-                            <span>Seret & lepas dokumen sertifikat kompetensi (PDF/JPG) untuk verifikasi BKK</span>
-                        </div>
-                    </div>
-
-                    <!-- Sinkronasi Markdown Action Footer -->
-                    <div class="mt-6 pt-5 border-t border-line flex flex-wrap items-center justify-between gap-3">
-                        <span class="text-xs text-muted leading-relaxed">
-                            Perubahan form akan menimpa isi kode Markdown saat disinkronkan.
-                        </span>
-                        <button type="button" onclick="syncFormToMarkdown(true)" class="h-9 px-5 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-colors cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                            <span>Sinkronkan ke Markdown</span>
-                        </button>
-                    </div>
+    <!-- Notice Banner for Archive / Non-Main Version -->
+    @if(!$isMainCv && $activeCv)
+        <div id="archiveNoticeBanner" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 shadow-sm shrink-0">
+            <div class="flex items-start gap-2.5">
+                <i data-lucide="info" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0"></i>
+                <div>
+                    <span class="font-bold">Mode Sunting Versi Arsip (#{{ $activeCv->id }}):</span>
+                    <span>Versi ini dibuat pada {{ $activeCv->created_at ? $activeCv->created_at->format('d M Y, H:i') : '-' }}. Menyimpan dokumen ini akan menerbitkan versi baru dan otomatis menjadikannya sebagai CV Utama yang aktif.</span>
                 </div>
             </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <form action="{{ route('bkk.me.cv.setMain', $activeCv->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="h-8 px-3.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-semibold transition cursor-pointer inline-flex items-center gap-1.5">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        <span>Jadikan CV Utama</span>
+                    </button>
+                </form>
+                <a href="{{ route('bkk.me.cv.edit') }}" class="h-8 px-3 rounded-full border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 font-semibold transition cursor-pointer inline-flex items-center">
+                    Buka CV Utama
+                </a>
+            </div>
+        </div>
+    @endif
 
-            <!-- 2. Markdown Editor with Live Preview -->
-            <div class="bg-white border border-line rounded-3xl p-5 sm:p-6 shadow-sm space-y-3">
-                <div class="flex items-center justify-between pb-3 border-b border-line">
-                    <div>
-                        <h3 class="font-bold text-sm text-navy">Markdown Editor</h3>
-                        <p class="text-xs text-muted">Kiri: kode Markdown · Kanan: pratinjau langsung</p>
+    <!-- Main Grid: Left Editor & Preview Workspace, Right Docked AI Assistant -->
+    <div id="editorWorkspaceGrid" class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+        <!-- Editor & Preview Columns -->
+        <div id="editorColumnsWrapper" class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start min-w-0">
+            <!-- Left: Raw Markdown Code Editor Card -->
+            <div id="editorCard" class="bg-white border border-line rounded-3xl p-4 sm:p-5 shadow-sm space-y-2">
+                <div class="flex items-center justify-between pb-2 border-b border-line shrink-0">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="code" class="w-4 h-4 text-navy"></i>
+                        <span class="font-bold text-xs uppercase tracking-wider text-navy">Kode Sumber Markdown</span>
                     </div>
-                    <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-navy/10 text-navy">
-                        Live Sync
+                    <div class="flex items-center gap-2 text-[11px] text-muted">
+                        <span id="charCount">0 karakter</span>
+                        <span>•</span>
+                        <span id="lineCount">0 baris</span>
+                    </div>
+                </div>
+
+                <textarea
+                    id="rawMarkdownTextarea"
+                    rows="26"
+                    oninput="onRawMarkdownInput()"
+                    onkeydown="handleEditorKeydown(event)"
+                    placeholder="Mulai menulis CV Markdown Anda di sini..."
+                    class="editor-textarea w-full p-4 rounded-2xl border border-line bg-canvas/30 focus:bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs text-navy leading-relaxed resize-y transition"
+                >{{ $cvMarkdown }}</textarea>
+            </div>
+
+            <!-- Right: Live ATS Preview Paper Card -->
+            <div id="previewCard" class="bg-white border border-line rounded-3xl p-4 sm:p-5 shadow-sm space-y-2">
+                <div class="flex items-center justify-between pb-2 border-b border-line shrink-0">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4 text-emerald-600"></i>
+                        <span class="font-bold text-xs uppercase tracking-wider text-navy">Pratinjau Langsung ATS</span>
+                    </div>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                        Sinkron Otomatis
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <!-- Left: Raw Markdown Editor -->
-                    <div class="flex flex-col space-y-1.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-muted">Kode Sumber Markdown</span>
-                        <textarea
-                            id="rawMarkdownTextarea"
-                            rows="16"
-                            oninput="onMarkdownInput()"
-                            class="w-full p-4 rounded-2xl border border-line bg-canvas/40 focus:bg-white focus:border-navy outline-none text-xs font-mono text-navy leading-relaxed resize-y transition"
-                        >{{ $cvMarkdown }}</textarea>
-                    </div>
-
-                    <!-- Right: Live Rendering Preview -->
-                    <div class="flex flex-col space-y-1.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-muted">Pratinjau Langsung</span>
-                        <div id="liveMarkdownPreview" class="md-cv p-5 bg-white border border-line rounded-2xl min-h-[250px] max-h-[400px] overflow-y-auto">
-                            <!-- Rendered by Marked.js -->
-                        </div>
+                <div id="previewScrollContainer" class="rounded-2xl border border-line bg-[#f8f9fa] p-3 sm:p-4 max-h-[640px] overflow-y-auto">
+                    <div id="livePreviewContainer" class="bg-white rounded-xl p-5 sm:p-8 shadow-xs border border-line/60 md-cv text-navy min-h-[500px]">
+                        <!-- Injected by marked.js -->
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Column: Docked AI Assistant (360px on Desktop) -->
-        <div id="desktopAiPanel" class="hidden xl:flex flex-col sticky top-20 max-h-[calc(100vh-6rem)] bg-white rounded-3xl border gemini-border shadow-md overflow-hidden">
+        <!-- Right Column: Docked AI Assistant (Visible on Desktop Normal Mode) -->
+        <div id="desktopAiPanel" class="hidden xl:flex flex-col sticky top-20 max-h-[calc(100vh-6rem)] bg-white rounded-3xl border gemini-border shadow-md overflow-hidden shrink-0">
             <!-- AI Header -->
             <div class="p-5 border-b border-line flex items-center gap-3 bg-canvas/30 shrink-0">
                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-maroon to-navy grid place-items-center text-white shadow-sm">
@@ -250,347 +200,290 @@
                             <i data-lucide="sparkles" class="w-4 h-4 text-maroon"></i>
                             <span>Generate Summary</span>
                         </div>
-                        <p class="text-[11px] text-muted mt-1 leading-relaxed">Buat ringkasan profil berdasarkan jurusan dan pengalaman kejuruan.</p>
+                        <p class="text-[11px] text-muted mt-1 leading-relaxed">Tulis ringkasan profil profesional singkat yang memikat rekruter HRD.</p>
                     </button>
                 </div>
 
-                <!-- AI Loading Shimmer Indicator -->
-                <div id="aiLoadingIndicator" class="hidden rounded-2xl border border-line p-4 space-y-2.5">
-                    <div class="text-xs text-muted flex items-center gap-2">
-                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-maroon animate-spin"></i>
-                        <span>AI sedang memproses rekomendasi…</span>
+                <!-- Loading AI State -->
+                <div id="aiLoadingIndicator" class="hidden rounded-2xl p-4 bg-canvas border border-line text-center space-y-2">
+                    <div class="inline-flex items-center gap-2 text-navy font-semibold text-xs">
+                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-maroon"></i>
+                        <span>AI sedang menganalisis konten CV...</span>
                     </div>
-                    <div class="h-2.5 rounded-full shimmer w-full"></div>
-                    <div class="h-2.5 rounded-full shimmer w-4/5"></div>
-                    <div class="h-2.5 rounded-full shimmer w-2/3"></div>
+                    <p class="text-[11px] text-muted">Menyesuaikan dengan standar ATS & kompetensi vokasi SMK...</p>
                 </div>
 
                 <!-- AI Result Box -->
-                <div id="aiResultBox" class="hidden rounded-2xl gemini-border p-4 fade-up space-y-3 bg-canvas/30">
-                    <div class="flex items-center justify-between">
-                        <span id="aiResultKindPill" class="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-maroon/10 text-maroon">Hasil AI</span>
-                        <button type="button" onclick="reRunAi()" class="text-[11px] text-muted hover:text-navy flex items-center gap-1 cursor-pointer">
-                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Ulangi
+                <div id="aiResultBox" class="hidden rounded-2xl border border-maroon/20 bg-maroon/[0.02] p-4 space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-line">
+                        <span id="aiResultKindPill" class="rounded-full px-2 py-0.5 text-[10px] font-bold bg-maroon text-white">Hasil AI</span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="applyAiResult()" class="h-6 px-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold transition cursor-pointer">
+                                Terapkan
+                            </button>
+                            <button onclick="discardAiResult()" class="h-6 px-2 rounded-full hover:bg-navy/5 text-muted text-[11px] transition cursor-pointer">
+                                Batalkan
+                            </button>
+                        </div>
+                    </div>
+                    <div id="aiResultContent" class="text-xs text-navy leading-relaxed space-y-2"></div>
+                </div>
+
+                <!-- Interactive Chat Box with AI -->
+                <div class="space-y-2 pt-2 border-t border-line">
+                    <div class="font-bold text-navy text-[11px] uppercase tracking-wider">Konsultasi Interaktif:</div>
+                    <div id="aiChatHistory" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <div class="flex gap-2 items-start">
+                            <div class="w-6 h-6 rounded-full bg-navy grid place-items-center text-white shrink-0 mt-0.5">
+                                <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <div class="text-xs rounded-2xl px-3 py-2 bg-[#f1f3f4] text-navy rounded-bl-sm leading-relaxed">
+                                Halo! Saya asisten CV BKK Penus. Anda bisa meminta saya memperbaiki kalimat kerja, menambahkan action verb, atau menyesuaikan kata kunci ATS.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Quick Chips -->
+                    <div class="flex flex-wrap gap-1.5 pt-1">
+                        <button onclick="sendChatPrompt('Perbaiki kalimat pengalaman agar lebih formal')" class="px-2 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] text-navy transition cursor-pointer">
+                            Perbaiki formalitas
+                        </button>
+                        <button onclick="sendChatPrompt('Bagaimana membuat ringkasan lebih singkat?')" class="px-2 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] text-navy transition cursor-pointer">
+                            Ringkas profil
+                        </button>
+                        <button onclick="sendChatPrompt('Berikan kata kunci ATS terbaik untuk kejuruan saya')" class="px-2 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] text-navy transition cursor-pointer">
+                            Kata kunci ATS
                         </button>
                     </div>
 
-                    <div id="aiResultContent" class="text-xs leading-relaxed text-navy">
-                        <!-- Injected dynamic result -->
-                    </div>
-
-                    <div class="flex gap-2 pt-1">
-                        <button type="button" onclick="applyAiResult()" class="h-8 px-4 rounded-full bg-maroon hover:bg-maroon-dark text-white text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-sm">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                            <span>Terapkan</span>
+                    <div class="flex items-center gap-1.5 pt-1">
+                        <input
+                            type="text"
+                            id="aiChatInput"
+                            placeholder="Ketik pertanyaan untuk AI..."
+                            onkeydown="if(event.key==='Enter') sendChatPrompt()"
+                            class="flex-1 h-8 px-3 rounded-xl border border-line bg-canvas/30 focus:bg-white focus:border-navy text-xs outline-none text-navy"
+                        />
+                        <button onclick="sendChatPrompt()" class="h-8 px-3 rounded-xl bg-navy hover:bg-navy-light text-white text-xs font-semibold grid place-items-center cursor-pointer">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button type="button" onclick="discardAiResult()" class="h-8 px-3 rounded-full text-xs font-semibold text-muted hover:bg-canvas cursor-pointer">
-                            Buang
-                        </button>
                     </div>
-                </div>
-
-                <!-- Chat History -->
-                <div id="aiChatHistory" class="space-y-2.5 pt-2">
-                    <!-- Chat bubbles injected here -->
-                </div>
-            </div>
-
-            <!-- AI Chat Footer -->
-            <div class="p-3.5 border-t border-line space-y-2 bg-canvas/30 shrink-0">
-                <div class="flex gap-1.5 overflow-x-auto pb-1 text-[11px]">
-                    <button type="button" onclick="sendChatPrompt('Buat lebih singkat')" class="whitespace-nowrap rounded-full border border-line px-2.5 py-1 bg-white hover:bg-canvas cursor-pointer text-navy font-medium">Buat lebih singkat</button>
-                    <button type="button" onclick="sendChatPrompt('Nada lebih formal')" class="whitespace-nowrap rounded-full border border-line px-2.5 py-1 bg-white hover:bg-canvas cursor-pointer text-navy font-medium">Nada lebih formal</button>
-                    <button type="button" onclick="sendChatPrompt('Kata kunci ATS')" class="whitespace-nowrap rounded-full border border-line px-2.5 py-1 bg-white hover:bg-canvas cursor-pointer text-navy font-medium">Kata kunci ATS</button>
-                </div>
-                <div class="flex items-center gap-2 rounded-full bg-white border border-line pl-3.5 pr-1 h-10 focus-within:ring-1 focus-within:ring-navy">
-                    <input type="text" id="aiChatInput" onkeydown="if(event.key==='Enter') sendChatPrompt()" placeholder="Tanya AI tentang CV Anda…" class="flex-1 bg-transparent outline-none text-xs text-navy" />
-                    <button type="button" onclick="sendChatPrompt()" class="w-8 h-8 rounded-full bg-maroon text-white grid place-items-center hover:bg-maroon-dark cursor-pointer transition-colors shadow-sm">
-                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Mobile AI Drawer Overlay -->
-<div id="mobileAiBackdrop" class="fixed inset-0 bg-black/40 z-50 hidden xl:hidden" onclick="toggleMobileAi(false)"></div>
-<div id="mobileAiDrawer" class="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 xl:hidden flex flex-col">
-    <!-- Header -->
+<!-- Modal Riwayat Versi CV -->
+<div id="versionModalBackdrop" class="fixed inset-0 z-50 bg-navy/60 backdrop-blur-xs hidden grid place-items-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 space-y-4 shadow-2xl border border-line">
+        <div class="flex items-center justify-between pb-3 border-b border-line">
+            <div class="flex items-center gap-2">
+                <i data-lucide="history" class="w-5 h-5 text-navy"></i>
+                <h3 class="font-bold text-base text-navy">Riwayat Versi CV Tersimpan</h3>
+            </div>
+            <button onclick="openVersionModal(false)" class="w-8 h-8 rounded-full grid place-items-center hover:bg-navy/5 text-muted cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <p class="text-xs text-muted">
+            Setiap kali Anda menekan "Simpan CV", sistem membuat salinan versi baru dengan checksum SHA-256 tersendiri. Anda dapat beralih ke editor versi tersebut atau memuat isinya ke editor saat ini.
+        </p>
+
+        <div class="max-h-72 overflow-y-auto divide-y divide-line/60 rounded-2xl border border-line/60">
+            @forelse($cvVersions ?? [] as $idx => $v)
+                <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 hover:bg-canvas/40 transition {{ $activeCv?->id === $v->id ? 'bg-navy/[0.03]' : '' }}">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs text-navy">Versi #{{ $v->id }}</span>
+                            @if($v->is_main)
+                                <span class="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Utama</span>
+                            @endif
+                            @if($activeCv?->id === $v->id)
+                                <span class="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-navy/10 text-navy">Sedang Dibuka</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5 text-[11px] text-muted">
+                            <span class="font-mono">{{ substr($v->checksum, 0, 12) }}…</span>
+                            <span>•</span>
+                            <span>{{ $v->created_at ? $v->created_at->format('d M Y H:i') : '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        @if($activeCv?->id !== $v->id)
+                            <a href="{{ $v->is_main ? route('bkk.me.cv.edit') : route('bkk.me.cv.editVersion', $v->id) }}" class="h-7 px-3 rounded-full border border-line bg-white hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition cursor-pointer inline-flex items-center">
+                                Buka
+                            </a>
+                        @endif
+                        <button type="button" onclick="loadVersionContent(@js($v->raw_markdown))" class="h-7 px-3 rounded-full bg-navy/5 hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition cursor-pointer">
+                            Muat Teks
+                        </button>
+                    </div>
+                </div>
+            @empty
+                <div class="p-5 text-center text-xs text-muted">Belum ada riwayat versi sebelumnya.</div>
+            @endforelse
+        </div>
+
+        <div class="flex justify-end pt-2">
+            <button onclick="openVersionModal(false)" class="h-9 px-5 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold cursor-pointer">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Drawer Penus AI Assistant (Mobile & Fullscreen) -->
+<div id="mobileAiBackdrop" class="fixed inset-0 z-50 bg-navy/50 backdrop-blur-xs hidden" onclick="toggleMobileAi(false)"></div>
+<div id="mobileAiDrawer" class="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
     <div class="p-4 border-b border-line flex items-center justify-between">
         <div class="flex items-center gap-2">
             <i data-lucide="sparkles" class="w-4 h-4 text-maroon"></i>
             <span class="font-bold text-sm text-navy">Penus AI Assistant</span>
         </div>
-        <button onclick="toggleMobileAi(false)" class="w-8 h-8 rounded-full grid place-items-center hover:bg-canvas cursor-pointer text-muted">
+        <button onclick="toggleMobileAi(false)" class="w-8 h-8 rounded-full grid place-items-center hover:bg-navy/5 text-muted cursor-pointer">
             <i data-lucide="x" class="w-4 h-4"></i>
         </button>
     </div>
-    <!-- Injected mobile content clone -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs" id="mobileAiContent">
-        <!-- Cloned or synced from desktop panel -->
-    </div>
+    <div id="mobileAiContent" class="flex-1 overflow-y-auto"></div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-    // Initial Form State matching Prototype
-    const isSiswa = "{{ $isSiswa }}" === "1";
-    let currentTab = "pribadi";
-
-    let experiences = isSiswa ? [
-        {
-            title: "Teknisi Jaringan (PKL)",
-            company: "PT Telkom Akses",
-            period: "Jan 2025 – Apr 2025",
-            bullets: "Membantu instalasi jaringan fiber ke rumah pelanggan\nMembantu teknisi senior memperbaiki gangguan\nMencatat laporan harian pekerjaan"
-        }
-    ] : [
-        {
-            title: "Kasir Senior",
-            company: "Hypermart",
-            period: "Jan 2024 – Sekarang",
-            bullets: "Mengelola transaksi kasir harian\nMembuat laporan penjualan shift\nMelatih kasir baru"
-        },
-        {
-            title: "Admin Keuangan (PKL)",
-            company: "Koperasi Sejahtera",
-            period: "Jul 2022 – Des 2022",
-            bullets: "Menginput jurnal umum dan buku besar\nMembantu rekonsiliasi kas bulanan"
-        }
-    ];
-
-    let skills = isSiswa ? [
-        "Mikrotik RouterOS, Cisco Packet Tracer",
-        "Instalasi & splicing Fiber Optik",
-        "Linux Server (Ubuntu), DNS, DHCP"
-    ] : [
-        "Accurate 5, MYOB, Zahir",
-        "Microsoft Excel (Pivot, VLOOKUP)",
-        "Perpajakan dasar (PPh 21, PPN)"
-    ];
-
+    const isSiswa = @json($isSiswa);
     let currentAiResult = null;
+    let isFullscreenMode = false;
 
-    document.addEventListener('DOMContentLoaded', function () {
-        renderExperiences();
-        renderSkills();
-        syncMarkdownPreview();
+    // 1. Inisialisasi & Live ATS Preview
+    document.addEventListener('DOMContentLoaded', () => {
+        const raw = document.getElementById('rawMarkdownTextarea')?.value || '';
+        updateAtsLivePreview(raw);
+        updateStats(raw);
         lucide.createIcons();
     });
 
-    // 1. Controller Top Bar Section Tab
-    function setSectionTab(tabId) {
-        currentTab = tabId;
-        document.querySelectorAll('.sec-tab-btn').forEach(btn => {
-            btn.classList.remove('text-navy', 'font-bold', 'active');
-            btn.classList.add('text-muted');
-        });
-        document.querySelectorAll('[id^="tab-indicator-"]').forEach(ind => ind.classList.add('hidden'));
+    function onRawMarkdownInput() {
+        const textarea = document.getElementById('rawMarkdownTextarea');
+        const md = textarea ? textarea.value : '';
+        updateAtsLivePreview(md);
+        updateStats(md);
+    }
 
-        const activeBtn = document.getElementById('tab-btn-' + tabId);
-        const activeInd = document.getElementById('tab-indicator-' + tabId);
-        if (activeBtn) {
-            activeBtn.classList.remove('text-muted');
-            activeBtn.classList.add('text-navy', 'font-bold', 'active');
+    function updateAtsLivePreview(markdownText) {
+        const container = document.getElementById('livePreviewContainer');
+        if (!container) return;
+        if (!markdownText || !markdownText.trim()) {
+            container.innerHTML = '<div class="text-center py-16 text-muted italic text-xs">Mulai ketik isi CV di editor untuk melihat pratinjau lembar ATS secara langsung.</div>';
+            return;
         }
-        if (activeInd) {
-            activeInd.classList.remove('hidden');
-        }
+        container.innerHTML = marked.parse(markdownText);
+    }
 
-        // Tampilkan HANYA section yang dipilih, sembunyikan sisanya
-        document.querySelectorAll('.sec-content').forEach(sec => sec.classList.add('hidden'));
-        const activeSec = document.getElementById('sec-' + tabId);
-        if (activeSec) {
-            activeSec.classList.remove('hidden');
-            activeSec.classList.add('fade-up');
+    function updateStats(text) {
+        const charEl = document.getElementById('charCount');
+        const lineEl = document.getElementById('lineCount');
+        if (charEl) charEl.innerText = `${text.length} karakter`;
+        if (lineEl) lineEl.innerText = `${text.split('\n').length} baris`;
+    }
+
+    function getActiveMarkdown() {
+        const textarea = document.getElementById('rawMarkdownTextarea');
+        return textarea ? textarea.value : '';
+    }
+
+    function setContent(markdownText) {
+        const textarea = document.getElementById('rawMarkdownTextarea');
+        if (textarea) textarea.value = markdownText;
+        updateAtsLivePreview(markdownText);
+        updateStats(markdownText);
+    }
+
+    function handleEditorKeydown(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const textarea = e.target;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            textarea.value = textarea.value.substring(0, start) + "  " + textarea.value.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + 2;
+            onRawMarkdownInput();
+        }
+    }
+
+    // 2. Fullscreen Toggle (Zen Focus Mode)
+    function toggleFullscreen() {
+        isFullscreenMode = !isFullscreenMode;
+        const wrapper = document.getElementById('cvEditorWrapper');
+        const icon = document.getElementById('fullscreenIcon');
+        const text = document.getElementById('fullscreenText');
+        const workspace = document.getElementById('editorWorkspaceGrid');
+        const columnsWrapper = document.getElementById('editorColumnsWrapper');
+        const desktopAi = document.getElementById('desktopAiPanel');
+        const editorCard = document.getElementById('editorCard');
+        const previewCard = document.getElementById('previewCard');
+        const textarea = document.getElementById('rawMarkdownTextarea');
+        const previewScroll = document.getElementById('previewScrollContainer');
+
+        if (isFullscreenMode) {
+            // Fullscreen ON: fixed 100vw x 100vh overlay, menutupi header & sidebar
+            wrapper.className = "fixed inset-0 z-50 bg-[#f8f9fa] p-4 sm:p-6 flex flex-col h-screen w-screen overflow-hidden space-y-3";
+            workspace.className = "flex-1 min-h-0 flex flex-col";
+            columnsWrapper.className = "flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch";
+            if (desktopAi) desktopAi.classList.add('!hidden');
+
+            editorCard.className = "bg-white border border-line rounded-2xl p-4 shadow-sm flex flex-col h-full min-h-0 space-y-2";
+            previewCard.className = "bg-white border border-line rounded-2xl p-4 shadow-sm flex flex-col h-full min-h-0 space-y-2";
+
+            textarea.className = "editor-textarea flex-1 w-full p-4 rounded-xl border border-line bg-canvas/30 focus:bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs text-navy leading-relaxed resize-none overflow-y-auto";
+            previewScroll.className = "flex-1 min-h-0 rounded-xl border border-line bg-[#f8f9fa] p-4 sm:p-6 overflow-y-auto";
+
+            if (icon) icon.setAttribute('data-lucide', 'minimize-2');
+            if (text) text.innerText = 'Keluar Layar Penuh';
+            document.body.style.overflow = 'hidden';
+            showToast('Mode Layar Penuh aktif. Tekan ESC untuk keluar.');
+        } else {
+            // Fullscreen OFF: kembali ke layout normal portal
+            wrapper.className = "fade-up space-y-5 transition-all duration-150";
+            workspace.className = "grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start";
+            columnsWrapper.className = "grid grid-cols-1 lg:grid-cols-2 gap-4 items-start min-w-0";
+            if (desktopAi) desktopAi.classList.remove('!hidden');
+
+            editorCard.className = "bg-white border border-line rounded-3xl p-4 sm:p-5 shadow-sm space-y-2";
+            previewCard.className = "bg-white border border-line rounded-3xl p-4 sm:p-5 shadow-sm space-y-2";
+
+            textarea.className = "editor-textarea w-full p-4 rounded-2xl border border-line bg-canvas/30 focus:bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs text-navy leading-relaxed resize-y transition";
+            previewScroll.className = "rounded-2xl border border-line bg-[#f8f9fa] p-3 sm:p-4 max-h-[640px] overflow-y-auto";
+
+            if (icon) icon.setAttribute('data-lucide', 'maximize-2');
+            if (text) text.innerText = 'Layar Penuh';
+            document.body.style.overflow = '';
         }
         lucide.createIcons();
     }
 
-    // 2. Render Pengalaman List
-    function renderExperiences() {
-        const container = document.getElementById('experienceList');
-        if (!container) return;
-
-        container.innerHTML = experiences.map((exp, idx) => `
-            <div class="rounded-2xl border border-line p-4 space-y-3 bg-[#f8f9fa]/50">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-muted uppercase tracking-wide">Pengalaman #${idx + 1}</span>
-                    ${experiences.length > 1 ? `
-                        <button type="button" onclick="deleteExperience(${idx})" class="text-muted hover:text-maroon cursor-pointer p-1" title="Hapus Pengalaman">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    ` : ''}
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div>
-                        <label class="block font-medium text-muted mb-1">Posisi</label>
-                        <input type="text" value="${exp.title}" oninput="updateExpField(${idx}, 'title', this.value)" class="w-full h-10 px-3 rounded-xl border border-line bg-white focus:border-navy outline-none text-navy font-medium" />
-                    </div>
-                    <div>
-                        <label class="block font-medium text-muted mb-1">Perusahaan</label>
-                        <input type="text" value="${exp.company}" oninput="updateExpField(${idx}, 'company', this.value)" class="w-full h-10 px-3 rounded-xl border border-line bg-white focus:border-navy outline-none text-navy font-medium" />
-                    </div>
-                    <div>
-                        <label class="block font-medium text-muted mb-1">Periode</label>
-                        <input type="text" value="${exp.period}" oninput="updateExpField(${idx}, 'period', this.value)" class="w-full h-10 px-3 rounded-xl border border-line bg-white focus:border-navy outline-none text-navy font-medium" />
-                    </div>
-                </div>
-                <div>
-                    <label class="block font-medium text-muted text-xs mb-1">Butir Pencapaian (1 poin per baris)</label>
-                    <textarea rows="3" oninput="updateExpField(${idx}, 'bullets', this.value)" class="w-full p-3 rounded-xl border border-line bg-white focus:border-navy outline-none text-xs text-navy leading-relaxed font-mono">${exp.bullets}</textarea>
-                </div>
-            </div>
-        `).join('');
-
-        lucide.createIcons({ root: container });
-    }
-
-    function updateExpField(idx, field, val) {
-        if (experiences[idx]) {
-            experiences[idx][field] = val;
-            autoSync();
+    // ESC key listener to exit fullscreen
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isFullscreenMode) {
+            toggleFullscreen();
         }
+    });
+
+    // 3. CV Switcher Helper
+    function switchCvVersion(url) {
+        if (!url) return;
+        window.location.href = url;
     }
 
-    function addExperience() {
-        experiences.push({ title: "", company: "", period: "", bullets: "" });
-        renderExperiences();
-        autoSync();
-    }
-
-    function deleteExperience(idx) {
-        experiences.splice(idx, 1);
-        renderExperiences();
-        autoSync();
-    }
-
-    // 3. Render Keahlian List
-    function renderSkills() {
-        const container = document.getElementById('skillsList');
-        if (!container) return;
-
-        container.innerHTML = skills.map((s, idx) => `
-            <div class="flex gap-2 items-center">
-                <input type="text" value="${s}" oninput="updateSkill(${idx}, this.value)" class="w-full h-10 px-3.5 rounded-xl border border-line bg-white focus:border-navy outline-none text-xs sm:text-sm text-navy font-medium" />
-                <button type="button" onclick="deleteSkill(${idx})" class="w-10 h-10 shrink-0 rounded-xl border border-line grid place-items-center hover:text-maroon hover:border-maroon/40 cursor-pointer text-muted transition-colors">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </div>
-        `).join('');
-
-        lucide.createIcons({ root: container });
-    }
-
-    function updateSkill(idx, val) {
-        skills[idx] = val;
-        autoSync();
-    }
-
-    function addSkill() {
-        skills.push("");
-        renderSkills();
-    }
-
-    function deleteSkill(idx) {
-        skills.splice(idx, 1);
-        renderSkills();
-        autoSync();
-    }
-
-    // 4. Sinkronisasi Form ke Markdown
-    function buildMarkdownFromForm() {
-        const name = document.getElementById('fName')?.value || 'Nama Siswa';
-        const headline = document.getElementById('fHeadline')?.value || '';
-        const city = document.getElementById('fCity')?.value || '';
-        const email = document.getElementById('fEmail')?.value || '';
-        const phone = document.getElementById('fPhone')?.value || '';
-        const summary = document.getElementById('fSummary')?.value || '';
-        const school = document.getElementById('fSchool')?.value || '';
-        const major = document.getElementById('fMajor')?.value || '';
-        const period = document.getElementById('fPeriod')?.value || '';
-        const grade = document.getElementById('fGrade')?.value || '';
-        const portfolio = document.getElementById('fPortfolio')?.value || '';
-
-        const lines = [
-            `# ${name}`,
-            `*${headline} · ${city} · ${email} · ${phone}*`,
-            "",
-            "## Ringkasan Profil",
-            summary,
-            "",
-            "## Pendidikan",
-            `### ${school} — ${major}`,
-            `*${period} · ${grade}*`,
-            "",
-            `## Pengalaman ${experiences.length > 1 ? "Kerja" : "PKL"}`
-        ];
-
-        experiences.forEach(e => {
-            lines.push(`### ${e.title} — ${e.company}`);
-            lines.push(`*${e.period}*`);
-            const bullets = e.bullets.split("\n").filter(Boolean);
-            bullets.forEach(b => lines.push(`- ${b.trim()}`));
-            lines.push("");
-        });
-
-        lines.push("## Keahlian Teknis");
-        skills.filter(Boolean).forEach(s => lines.push(`- ${s.trim()}`));
-        lines.push("");
-
-        lines.push("## Portofolio & Sertifikat");
-        portfolio.split("\n").filter(Boolean).forEach(p => lines.push(`- ${p.trim()}`));
-        lines.push("");
-
-        return lines.join("\n");
-    }
-
-    function syncFormToMarkdown(showNotification = false) {
-        const md = buildMarkdownFromForm();
-        const textarea = document.getElementById('rawMarkdownTextarea');
-        if (textarea) {
-            textarea.value = md;
-            syncMarkdownPreview();
-        }
-        if (showNotification) {
-            showToast('Formulir berhasil disinkronkan ke dokumen Markdown.');
-        }
-    }
-
-    function autoSync() {
-        // Otomatis update preview jika user mengetik di form
-        const md = buildMarkdownFromForm();
-        const textarea = document.getElementById('rawMarkdownTextarea');
-        if (textarea) {
-            textarea.value = md;
-            syncMarkdownPreview();
-        }
-    }
-
-    function onMarkdownInput() {
-        syncMarkdownPreview();
-    }
-
-    function syncMarkdownPreview() {
-        const raw = document.getElementById('rawMarkdownTextarea')?.value || '';
-        const preview = document.getElementById('liveMarkdownPreview');
-        if (preview && typeof marked !== 'undefined') {
-            preview.innerHTML = marked.parse(raw);
-        }
-    }
-
-    // 5. AI Assistant Functions (Summary, Polish, Chat)
+    // 4. AI Assistant
     const improvedMap = {
         "Membantu instalasi jaringan fiber ke rumah pelanggan": "Mengimplementasikan instalasi jaringan FTTH untuk 60+ pelanggan residensial dengan tingkat keberhasilan aktivasi 98%",
         "Membantu teknisi senior memperbaiki gangguan": "Mendiagnosis dan menyelesaikan 40+ tiket gangguan jaringan per minggu bersama tim teknisi, memenuhi SLA 95%",
         "Mencatat laporan harian pekerjaan": "Menyusun laporan harian terstruktur yang mempercepat evaluasi supervisor hingga 30%",
         "Mengelola transaksi kasir harian": "Memproses 300+ transaksi kasir harian dengan akurasi kas 100% tanpa selisih selama 12 bulan berturut-turut",
         "Membuat laporan penjualan shift": "Menyusun laporan penjualan per shift yang menjadi acuan rekap harian supervisor toko",
-        "Melatih kasir baru": "Membimbing 8 kasir baru hingga mandiri dalam 2 minggu, menurunkan kesalahan input sebesar 40%",
-        "Menginput jurnal umum dan buku besar": "Mencatat 500+ entri jurnal umum dan buku besar per bulan menggunakan Accurate 5",
-        "Membantu rekonsiliasi kas bulanan": "Melaksanakan rekonsiliasi kas bulanan dan mengidentifikasi selisih senilai Rp2,4 jt"
+        "Melatih kasir baru": "Membimbing 8 kasir baru hingga mandiri dalam 2 minggu, menurunkan kesalahan input sebesar 40%"
     };
 
     function runAiImprove() {
@@ -599,44 +492,51 @@
 
         setTimeout(() => {
             showAiLoading(false);
+            const md = getActiveMarkdown();
+            const lines = md.split('\n');
             const items = [];
-            experiences.forEach(exp => {
-                exp.bullets.split("\n").filter(Boolean).forEach(line => {
-                    const trimmed = line.trim();
-                    const improved = improvedMap[trimmed] || ("Mengeksekusi " + trimmed.replace(/^Membantu\s+/i, '') + " dengan hasil terukur");
-                    if (improved !== trimmed) {
-                        items.push({ before: trimmed, after: improved });
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('- ')) {
+                    const content = trimmed.substring(2);
+                    const improved = improvedMap[content] || ("Mengeksekusi " + content.replace(/^Membantu\s+/i, '') + " dengan hasil terukur");
+                    if (improved !== content) {
+                        items.push({ before: content, after: improved });
                     }
-                });
+                }
             });
+
+            if (!items.length) {
+                items.push({
+                    before: "Melaksanakan penugasan kerja industri",
+                    after: "Mengeksekusi 40+ penugasan kerja industri harian dengan tingkat akurasi 98% sesuai SOP"
+                });
+            }
 
             currentAiResult = { kind: "improve", items: items };
             const container = document.getElementById('aiResultContent');
             const pill = document.getElementById('aiResultKindPill');
             pill.innerText = "Hasil Improvisasi";
 
-            if (items.length) {
-                container.innerHTML = `
-                    <div class="space-y-3">
-                        ${items.map(it => `
-                            <div>
-                                <div class="text-muted line-through decoration-maroon/50">${it.before}</div>
-                                <div class="mt-1 font-semibold text-navy flex gap-1.5 items-start">
-                                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0"></i>
-                                    <span>${it.after}</span>
-                                </div>
+            container.innerHTML = `
+                <div class="space-y-3">
+                    ${items.map(it => `
+                        <div>
+                            <div class="text-muted line-through decoration-maroon/50">${it.before}</div>
+                            <div class="mt-1 font-semibold text-navy flex gap-1.5 items-start">
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0"></i>
+                                <span>${it.after}</span>
                             </div>
-                        `).join('')}
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `<p class="text-muted">Poin pengalaman Anda sudah sangat kuat dan terukur. 🎉</p>`;
-            }
+                        </div>
+                    `).join('')}
+                </div>
+            `;
 
             document.getElementById('aiResultBox').classList.remove('hidden');
             lucide.createIcons();
             showToast('AI berhasil merumuskan poin pengalaman dengan action verbs.');
-        }, 1400);
+        }, 1200);
     }
 
     function runAiSummary() {
@@ -645,42 +545,45 @@
 
         setTimeout(() => {
             showAiLoading(false);
-            const text = isSiswa ?
-                "Calon teknisi jaringan dari jurusan Teknik Komputer & Jaringan SMK Penus dengan pengalaman PKL 4 bulan di PT Telkom Akses. Terampil dalam instalasi FTTH, konfigurasi Mikrotik, dan troubleshooting jaringan; terbukti menangani 40+ tiket gangguan per minggu. Siap berkontribusi di lingkungan ISP maupun infrastruktur IT perusahaan." :
-                "Staff akuntansi lulusan terbaik jurusan AKL SMK Penus dengan 1,5+ tahun pengalaman di bidang retail dan koperasi. Menguasai Accurate, Excel tingkat lanjut, dan perpajakan dasar; terbiasa mengelola 300+ transaksi harian dengan akurasi 100%. Berorientasi detail dan siap mendukung fungsi finance & tax perusahaan.";
+            const generatedSummary = isSiswa ?
+                "Siswa Kejuruan Teknik Komputer & Jaringan SMK Plus Pelita Nusantara berintegritas tinggi dengan pengalaman praktik instalasi FTTH dan konfigurasi router Mikrotik. Terbiasa bekerja sesuai SOP industri dan siap berkontribusi aktif pada program PKL perusahaan." :
+                "Lulusan Akuntansi & Keuangan Lembaga SMK Plus Pelita Nusantara dengan rekam jejak pengelolaan 300+ transaksi kasir harian dan rekonsiliasi kas tanpa selisih. Memiliki kedisiplinan tinggi, penguasaan aplikasi akuntansi, dan siap menempati posisi finance operasional.";
 
-            currentAiResult = { kind: "summary", text: text };
+            currentAiResult = { kind: "summary", text: generatedSummary };
             const container = document.getElementById('aiResultContent');
             const pill = document.getElementById('aiResultKindPill');
-            pill.innerText = "Draf Ringkasan";
+            pill.innerText = "Summary Siap Pakai";
 
-            container.innerHTML = `<p class="text-navy font-medium leading-relaxed">${text}</p>`;
+            container.innerHTML = `
+                <div class="rounded-xl bg-canvas p-3 border border-line text-xs italic text-navy leading-relaxed">
+                    "${generatedSummary}"
+                </div>
+            `;
+
             document.getElementById('aiResultBox').classList.remove('hidden');
-            lucide.createIcons();
-            showToast('Ringkasan profesional berhasil digenerate oleh AI.');
+            showToast('AI berhasil menyusun ringkasan profil profesional.');
         }, 1200);
     }
 
     function applyAiResult() {
         if (!currentAiResult) return;
+        let md = getActiveMarkdown();
 
         if (currentAiResult.kind === "improve") {
-            experiences.forEach(exp => {
-                exp.bullets = exp.bullets.split("\n").map(line => {
-                    const trimmed = line.trim();
-                    return improvedMap[trimmed] || (trimmed.startsWith("Membantu") ? "Mengeksekusi " + trimmed.replace(/^Membantu\s+/i, '') + " dengan hasil terukur" : trimmed);
-                }).join("\n");
+            currentAiResult.items.forEach(it => {
+                md = md.replace(`- ${it.before}`, `- ${it.after}`);
             });
-            renderExperiences();
-            autoSync();
-            showToast('Poin pengalaman telah diperbarui dengan bahasa profesional.');
+            setContent(md);
+            showToast('Improvisasi AI diterapkan ke CV!');
         } else if (currentAiResult.kind === "summary") {
-            const summaryEl = document.getElementById('fSummary');
-            if (summaryEl) {
-                summaryEl.value = currentAiResult.text;
+            const sumBlock = `## Ringkasan Profil\n${currentAiResult.text}\n\n`;
+            if (md.includes('## Ringkasan Profil')) {
+                md = md.replace(/## Ringkasan Profil[\s\S]*?(?=\n## |\n---|$)/, sumBlock.trim());
+            } else {
+                md = sumBlock + md;
             }
-            autoSync();
-            showToast('Ringkasan profil profesional berhasil diterapkan ke form & Markdown.');
+            setContent(md);
+            showToast('Ringkasan AI berhasil disisipkan ke CV!');
         }
 
         hideAiResult();
@@ -689,14 +592,6 @@
     function discardAiResult() {
         currentAiResult = null;
         hideAiResult();
-    }
-
-    function reRunAi() {
-        if (currentAiResult && currentAiResult.kind === "summary") {
-            runAiSummary();
-        } else {
-            runAiImprove();
-        }
     }
 
     function showAiLoading(show) {
@@ -717,7 +612,6 @@
         const chatContainer = document.getElementById('aiChatHistory');
         if (!chatContainer) return;
 
-        // User bubble
         const userDiv = document.createElement('div');
         userDiv.className = "flex justify-end";
         userDiv.innerHTML = `<div class="text-xs rounded-2xl px-3 py-2 max-w-[85%] bg-navy text-white rounded-br-sm leading-relaxed">${query}</div>`;
@@ -725,17 +619,16 @@
 
         if (input) input.value = '';
 
-        // AI Reply
         setTimeout(() => {
-            let reply = "Saya sudah meninjau CV Anda. Pastikan menyertakan metrik terukur pada pengalaman PKL dan kata kunci standar industri.";
+            let reply = "Saya sudah meninjau dokumen CV Anda. Pastikan menyertakan metrik terukur pada pengalaman PKL dan kata kunci standar industri.";
             if (/singkat/i.test(query)) {
                 reply = "Saran: batasi ringkasan profil menjadi 2 kalimat dan maksimal 3 poin per pengalaman. CV satu halaman lebih disukai rekruter entry-level.";
             } else if (/formal/i.test(query)) {
                 reply = "Gunakan bentuk kalimat aktif yang konsisten, hindari kata santai seperti 'bantu-bantu', dan tambahkan terminologi kejuruan resmi.";
             } else if (/ats|kata kunci/i.test(query)) {
                 reply = isSiswa ?
-                    "Kata kunci ATS yang direkomendasikan untuk TKJ: FTTH, OTDR, Mikrotik MTCNA, Cisco Packet Tracer, troubleshooting jaringan, SLA 95%." :
-                    "Kata kunci ATS yang direkomendasikan untuk AKL: rekonsiliasi kas, jurnal umum, Accurate 5, SAP, PPh 21, accounts payable.";
+                    "Kata kunci ATS yang direkomendasikan untuk TKJ/RPL: Git, Laravel, API, troubleshooting jaringan, FTTH, SLA 95%." :
+                    "Kata kunci ATS yang direkomendasikan untuk Akuntansi: rekonsiliasi kas, jurnal umum, Accurate 5, SAP, PPh 21, accounts payable.";
             }
 
             const aiDiv = document.createElement('div');
@@ -748,7 +641,7 @@
             `;
             chatContainer.appendChild(aiDiv);
             lucide.createIcons({ root: aiDiv });
-        }, 800);
+        }, 700);
     }
 
     function toggleMobileAi(open) {
@@ -770,16 +663,41 @@
         }
     }
 
+    // 5. Modal Riwayat Versi
+    function openVersionModal(open = true) {
+        const modal = document.getElementById('versionModalBackdrop');
+        if (modal) modal.classList.toggle('hidden', !open);
+    }
+
+    function loadVersionContent(markdown) {
+        if (!markdown) return;
+        setContent(markdown);
+        showToast('Konten versi terpilih berhasil dimuat ke editor.');
+        openVersionModal(false);
+    }
+
+    // 6. Robust Save CV via AJAX (Anti-stuck spinner)
     async function saveCv() {
         const btn = document.getElementById('btnSaveCv');
-        const raw = document.getElementById('rawMarkdownTextarea')?.value || buildMarkdownFromForm();
+        const raw = getActiveMarkdown();
+
+        if (!raw.trim()) {
+            showToast('Konten CV tidak boleh kosong.');
+            return;
+        }
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
+        // Tampilkan State Loading dengan Inline SVG yang kebal DOM replacement
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> <span>Menyimpan…</span>`;
-            lucide.createIcons();
+            btn.innerHTML = `
+                <svg class="animate-spin w-3.5 h-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Menyimpan…</span>
+            `;
         }
 
         try {
@@ -791,7 +709,7 @@
                     "X-CSRF-TOKEN": csrfToken
                 },
                 body: JSON.stringify({
-                    markdown: raw
+                    raw_markdown: raw
                 })
             });
 
@@ -802,14 +720,30 @@
                 return;
             }
 
-            showToast(data.message || 'Perubahan CV Anda berhasil disimpan ke database!');
+            if (data.data && data.data.checksum) {
+                const newSha = data.data.checksum;
+                const checksumEl = document.getElementById('checksumText');
+                if (checksumEl) checksumEl.innerText = `sha256: ${newSha.substring(0, 12)}…`;
+            }
+
+            showToast(data.message || 'Perubahan CV Anda berhasil disimpan sebagai versi terbaru!');
+
+            // Jika sebelumnya menyunting versi arsip, arahkan ke CV Utama setelah jeda singkat
+            @if(!$isMainCv)
+                setTimeout(() => {
+                    window.location.href = "{{ route('bkk.me.cv.edit') }}";
+                }, 1000);
+            @endif
         } catch (err) {
             showToast('Terjadi kesalahan jaringan saat menyimpan CV.');
         } finally {
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> <span>Simpan</span>`;
-                lucide.createIcons();
+                btn.innerHTML = `
+                    <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                    <span>Simpan CV</span>
+                `;
+                lucide.createIcons({ root: btn });
             }
         }
     }

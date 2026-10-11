@@ -107,7 +107,9 @@ Route::prefix('bkk')->group(function () {
         Route::get('/lamaran', [MeController::class, 'lamaran'])->name('lamaran');
         Route::get('/cv', [MeController::class, 'cv'])->name('cv');
         Route::post('/cv', [MeController::class, 'cvUpdate'])->name('cv.update');
+        Route::post('/cv/{id}/main', [MeController::class, 'cvSetMain'])->name('cv.setMain');
         Route::get('/cv/edit', [MeController::class, 'cvEdit'])->name('cv.edit');
+        Route::get('/cv/{id}/edit', [MeController::class, 'cvEditVersion'])->name('cv.editVersion');
         Route::get('/jurnal', [MeController::class, 'jurnal'])->name('jurnal');
         Route::post('/jurnal', [MeController::class, 'storeJurnal'])->name('jurnal.store');
         Route::get('/laporan', [MeController::class, 'laporan'])->name('laporan');

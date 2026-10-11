@@ -14,9 +14,10 @@
 @endpush
 
 @php
-    $scoreVal = $cvScore['total'] ?? 82;
+    $scoreVal = $cvScore['total'] ?? 85;
     $label = ($scoreVal >= 90) ? 'Sangat Baik' : (($scoreVal >= 80) ? 'Baik' : (($scoreVal >= 70) ? 'Cukup' : 'Perlu Perbaikan'));
     $paramIcons = ['target', 'layers', 'file-search', 'award'];
+    $shortChecksum = substr($checksum ?? '', 0, 12);
 @endphp
 
 @section('content')
@@ -24,8 +25,18 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-navy tracking-tight">CV & AI Scoring Hub</h1>
-            <p class="text-xs sm:text-sm text-muted">Pratinjau CV profesional ATS dan evaluasi kesiapan kerja berbasis AI.</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-2xl font-bold text-navy tracking-tight">CV & AI Scoring Hub</h1>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    <span>CV Utama (Aktif)</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono bg-navy/5 text-navy border border-line" title="Checksum SHA-256: {{ $checksum }}">
+                    <i data-lucide="hash" class="w-3 h-3 text-muted"></i>
+                    <span>{{ $shortChecksum }}…</span>
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-muted mt-1">Pratinjau CV profesional ATS dan evaluasi kesiapan kerja berbasis AI.</p>
         </div>
 
         <div class="flex gap-2">
@@ -41,7 +52,7 @@
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        <!-- Left Column: AI Score & Recommendations (5 cols) -->
+        <!-- Left Column: AI Score, Versioning & Recommendations (5 cols) -->
         <div class="xl:col-span-5 space-y-6">
             <!-- Penus AI Score Card -->
             <div class="p-6 bg-white gemini-border rounded-3xl relative overflow-hidden shadow-sm">
@@ -70,7 +81,7 @@
                     <div class="relative w-[132px] h-[132px] shrink-0">
                         <svg width="132" height="132" class="-rotate-90">
                             <defs>
-                                <linearGradient id="scoreGrad" x1="0" x2="1" y1="0" y2="1">
+                                <linearGradient id="scoreGrad" x1="0" x2="1" y1="0" x2="1">
                                     <stop offset="0%" stop-color="#741918"></stop>
                                     <stop offset="100%" stop-color="#1b283b"></stop>
                                 </linearGradient>
@@ -114,6 +125,76 @@
                 </div>
             </div>
 
+            <!-- Versioning / Riwayat Versi CV Card -->
+            <div class="bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
+                <div class="p-5 border-b border-line flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-navy/10 text-navy grid place-items-center">
+                            <i data-lucide="history" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm text-navy">Riwayat Versi CV</div>
+                            <div class="text-[11px] text-muted">{{ count($cvVersions ?? []) }} versi tersimpan</div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-muted font-mono">Checksum SHA-256</span>
+                </div>
+
+                <div class="divide-y divide-line/60 max-h-[300px] overflow-y-auto">
+                    @forelse($cvVersions ?? [] as $ver)
+                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-[#f8f9fa] transition-colors {{ $ver->is_main ? 'bg-emerald-50/40' : '' }}">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-navy truncate">
+                                        Versi #{{ $ver->id }}
+                                    </span>
+                                    @if($ver->is_main)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                            Utama
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2 mt-1 text-[11px] text-muted">
+                                    <span class="font-mono">{{ substr($ver->checksum, 0, 12) }}…</span>
+                                    <span>•</span>
+                                    <span>{{ $ver->created_at ? $ver->created_at->format('d M Y, H:i') : '-' }}</span>
+                                </div>
+                            </div>
+
+                            @if(!$ver->is_main)
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <a href="{{ route('bkk.me.cv.editVersion', $ver->id) }}" class="h-7 px-2.5 rounded-full border border-line bg-white hover:bg-canvas text-navy text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1" title="Sunting versi ini">
+                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                        <span>Sunting</span>
+                                    </a>
+                                    <form action="{{ route('bkk.me.cv.setMain', $ver->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="h-7 px-2.5 rounded-full border border-line bg-white hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition-colors cursor-pointer" title="Jadikan versi ini sebagai CV Utama">
+                                            Aktifkan
+                                        </button>
+                                    </form>
+                                </div>
+                            @else
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <a href="{{ route('bkk.me.cv.edit') }}" class="h-7 px-2.5 rounded-full bg-navy text-white text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1">
+                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                        <span>Sunting</span>
+                                    </a>
+                                    <span class="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Digunakan
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="p-5 text-center text-xs text-muted">
+                            Belum ada riwayat versi CV lainnya.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
             <!-- AI Suggestions Card -->
             <div class="bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
                 <div class="p-5 border-b border-line flex items-center justify-between">
@@ -149,7 +230,7 @@
                                 </div>
                             </div>
                             <div class="mt-3 flex justify-end">
-                                <button id="btn-sug-{{ $s['id'] }}" onclick="applySuggestion('{{ $s['id'] }}')" class="h-7 px-3.5 rounded-full bg-navy/5 hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer">
+                                <button id="btn-sug-" . {{ $s['id'] }} onclick="applySuggestion('{{ $s['id'] }}')" class="h-7 px-3.5 rounded-full bg-navy/5 hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition-all inline-flex items-center gap-1.5 cursor-pointer">
                                     <i data-lucide="check" class="w-3 h-3"></i>
                                     <span>Terapkan ke CV</span>
                                 </button>
@@ -167,7 +248,7 @@
                     <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i>
                     <span>Format Standar ATS Friendly (A4 Ready)</span>
                 </span>
-                <span class="text-[11px]">Terakhir diselaraskan: Hari ini</span>
+                <span class="font-mono text-[11px] text-muted">sha256: {{ $shortChecksum }}…</span>
             </div>
 
             <!-- Printable Paper Container -->

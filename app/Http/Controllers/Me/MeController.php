@@ -136,22 +136,20 @@ class MeController extends Controller
         $suggestions = $this->dataService->getCvSuggestions($role, $userId);
         $cvMarkdown = $this->dataService->getCvMarkdown($role, $profile, $userId);
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $activeCv = null;
+        $cvVersions = collect();
 
         try {
             if (Schema::hasTable('cv_resumes')) {
-                $dbCv = CvResume::where('siswa_id', $userId)->where('is_primary', true)->first();
-                if ($dbCv && !empty($dbCv->konten_markdown)) {
-                    $cvMarkdown = $dbCv->konten_markdown;
-                    $cvScore['total'] = $dbCv->skor_total_ai;
-                    if (!empty($dbCv->skor_parameter_json)) {
-                        $cvScore['params'] = $dbCv->skor_parameter_json;
-                    }
-                    if (!empty($dbCv->saran_perbaikan_ai_json)) {
-                        $suggestions = $dbCv->saran_perbaikan_ai_json;
-                    }
+                $activeCv = CvResume::where('user_id', $userId)->where('is_main', true)->first();
+                if ($activeCv && !empty($activeCv->raw_markdown)) {
+                    $cvMarkdown = $activeCv->raw_markdown;
                 }
+                $cvVersions = CvResume::where('user_id', $userId)->latest('id')->get();
             }
         } catch (\Throwable) {}
+
+        $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -160,6 +158,11 @@ class MeController extends Controller
                     'score' => $cvScore,
                     'suggestions' => $suggestions,
                     'markdown' => $cvMarkdown,
+                    'raw_markdown' => $cvMarkdown,
+                    'checksum' => $checksum,
+                    'is_main' => (bool) ($activeCv?->is_main ?? true),
+                    'active_cv' => $activeCv,
+                    'versions' => $cvVersions,
                 ],
             ]);
         }
@@ -170,7 +173,10 @@ class MeController extends Controller
             'cvScore',
             'suggestions',
             'cvMarkdown',
-            'notifications'
+            'notifications',
+            'activeCv',
+            'cvVersions',
+            'checksum'
         ));
     }
 
@@ -187,21 +193,31 @@ class MeController extends Controller
         $cvScore = $this->dataService->getCvScore($role, $userId);
         $cvMarkdown = $this->dataService->getCvMarkdown($role, $profile, $userId);
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $activeCv = null;
+        $cvVersions = collect();
 
         try {
             if (Schema::hasTable('cv_resumes')) {
-                $dbCv = CvResume::where('siswa_id', $userId)->where('is_primary', true)->first();
-                if ($dbCv && !empty($dbCv->konten_markdown)) {
-                    $cvMarkdown = $dbCv->konten_markdown;
+                $activeCv = CvResume::where('user_id', $userId)->where('is_main', true)->first();
+                if ($activeCv && !empty($activeCv->raw_markdown)) {
+                    $cvMarkdown = $activeCv->raw_markdown;
                 }
+                $cvVersions = CvResume::where('user_id', $userId)->latest('id')->get();
             }
         } catch (\Throwable) {}
+
+        $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'data' => [
                     'markdown' => $cvMarkdown,
+                    'raw_markdown' => $cvMarkdown,
+                    'checksum' => $checksum,
+                    'is_main' => (bool) ($activeCv?->is_main ?? true),
+                    'active_cv' => $activeCv,
+                    'versions' => $cvVersions,
                 ],
             ]);
         }
@@ -211,7 +227,75 @@ class MeController extends Controller
             'profile',
             'cvScore',
             'cvMarkdown',
-            'notifications'
+            'notifications',
+            'activeCv',
+            'cvVersions',
+            'checksum'
+        ));
+    }
+
+    /**
+     * Editor CV Versi Spesifik (/bkk/me/cv/{id}/edit)
+     */
+    public function cvEditVersion(Request $request, int|string $id): View|RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+        $role = $authUser['role'];
+
+        $targetCv = null;
+        try {
+            if (Schema::hasTable('cv_resumes')) {
+                $targetCv = CvResume::where('user_id', $userId)->where('id', $id)->first();
+            }
+        } catch (\Throwable) {}
+
+        if (!$targetCv) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Versi CV tidak ditemukan atau bukan milik Anda.'], 404);
+            }
+            return redirect()->route('bkk.me.cv.edit')->with('error', 'Versi CV arsip yang dipilih tidak ditemukan.');
+        }
+
+        $profile = $this->dataService->getProfile($authUser);
+        $cvScore = $this->dataService->getCvScore($role, $userId);
+        $cvMarkdown = $targetCv->raw_markdown ?? '';
+        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+        $activeCv = $targetCv;
+        $cvVersions = collect();
+
+        try {
+            if (Schema::hasTable('cv_resumes')) {
+                $cvVersions = CvResume::where('user_id', $userId)->latest('id')->get();
+            }
+        } catch (\Throwable) {}
+
+        $checksum = $targetCv->checksum ?? CvResume::generateChecksum($cvMarkdown);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $targetCv->id,
+                    'markdown' => $cvMarkdown,
+                    'raw_markdown' => $cvMarkdown,
+                    'checksum' => $checksum,
+                    'is_main' => (bool) $targetCv->is_main,
+                    'active_cv' => $activeCv,
+                    'versions' => $cvVersions,
+                ],
+            ]);
+        }
+
+        return view('me.pages.cv-edit', compact(
+            'authUser',
+            'profile',
+            'cvScore',
+            'cvMarkdown',
+            'notifications',
+            'activeCv',
+            'cvVersions',
+            'checksum'
         ));
     }
 
@@ -224,23 +308,22 @@ class MeController extends Controller
         $userId = $authUser['id'];
 
         $validated = $request->validate([
-            'markdown' => ['required', 'string'],
+            'raw_markdown' => ['nullable', 'string'],
+            'markdown' => ['nullable', 'string'],
         ]);
-        $markdown = $validated['markdown'];
+        $markdown = $validated['raw_markdown'] ?? $validated['markdown'] ?? '';
 
+        if (trim($markdown) === '') {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Konten Markdown CV tidak boleh kosong.'], 422);
+            }
+            return back()->withInput()->with('error', 'Konten Markdown CV tidak boleh kosong.');
+        }
+
+        $cv = null;
         try {
-            if (Schema::hasTable('cv_resumes') && $markdown) {
-                CvResume::updateOrCreate(
-                    [
-                        'siswa_id' => $userId,
-                        'is_primary' => true,
-                    ],
-                    [
-                        'judul_cv' => 'CV ATS - ' . ($authUser['nama_lengkap'] ?? 'Siswa'),
-                        'konten_markdown' => $markdown,
-                        'terakhir_dianalisis_ai' => now(),
-                    ]
-                );
+            if (Schema::hasTable('cv_resumes')) {
+                $cv = CvResume::saveVersion($userId, $markdown);
             }
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
@@ -253,10 +336,44 @@ class MeController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Konten CV ATS berhasil diperbarui!',
+                'data' => $cv ? [
+                    'id' => $cv->id,
+                    'user_id' => $cv->user_id,
+                    'checksum' => $cv->checksum,
+                    'is_main' => $cv->is_main,
+                    'raw_markdown' => $cv->raw_markdown,
+                    'created_at' => $cv->created_at ? $cv->created_at->format('d M Y H:i') : null,
+                ] : null,
             ]);
         }
 
         return redirect()->route('bkk.me.cv')->with('success', 'CV berhasil disimpan!');
+    }
+
+    /**
+     * Aktifkan Versi CV Tertentu Sebagai CV Utama (POST /bkk/me/cv/{id}/main)
+     */
+    public function cvSetMain(Request $request, int|string $id): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+
+        $cv = CvResume::where('user_id', $userId)->findOrFail($id);
+        $cv->setAsMain();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Versi CV berhasil diaktifkan sebagai CV Utama!',
+                'data' => [
+                    'id' => $cv->id,
+                    'checksum' => $cv->checksum,
+                    'is_main' => $cv->is_main,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Versi CV berhasil diaktifkan sebagai CV Utama!');
     }
 
     /**
@@ -567,7 +684,7 @@ class MeController extends Controller
             $tolak = 'Batas akhir pendaftaran lowongan ini sudah lewat.';
         }
 
-        $cv = CvResume::where('siswa_id', $userId)->where('is_primary', true)->first();
+        $cv = CvResume::where('user_id', $userId)->where('is_main', true)->first();
         if (!$tolak && !$cv) {
             $tolak = 'Lengkapi CV Anda terlebih dahulu sebelum melamar.';
         }

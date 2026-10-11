@@ -23,7 +23,7 @@ class LamaranSeeder extends Seeder
 
         // 1. Lamaran Siswa ke PT Solusi Teknologi Nusantara (Diterima)
         if ($siswa && $lowonganPklStn) {
-            $cvSiswa = CvResume::where('siswa_id', $siswa->user_id)->first();
+            $cvSiswa = CvResume::where('user_id', $siswa->user_id)->where('is_main', true)->first();
 
             $lamaran1 = Lamaran::updateOrCreate(
                 ['kode_lamaran' => 'LMR-2025-001'],
@@ -69,7 +69,7 @@ class LamaranSeeder extends Seeder
 
         // 2. Lamaran Siswa ke PT Telkom Akses (Dipanggil Interview)
         if ($siswa && $lowonganPklTelkom) {
-            $cvSiswa = CvResume::where('siswa_id', $siswa->user_id)->first();
+            $cvSiswa = CvResume::where('user_id', $siswa->user_id)->where('is_main', true)->first();
 
             $lamaran2 = Lamaran::updateOrCreate(
                 ['kode_lamaran' => 'LMR-2025-002'],
@@ -119,7 +119,7 @@ class LamaranSeeder extends Seeder
 
         // 3. Lamaran Alumni ke PT BCA Digital (Diterima)
         if ($alumni && $lowonganBca) {
-            $cvAlumni = CvResume::where('siswa_id', $alumni->user_id)->first();
+            $cvAlumni = CvResume::where('user_id', $alumni->user_id)->where('is_main', true)->first();
 
             $lamaran3 = Lamaran::updateOrCreate(
                 ['kode_lamaran' => 'LMR-2025-003'],

@@ -24,12 +24,17 @@ class ProfilSiswa extends Model
 
     public function resumes(): HasMany
     {
-        return $this->hasMany(CvResume::class, 'siswa_id', 'user_id');
+        return $this->hasMany(CvResume::class, 'user_id', 'user_id');
+    }
+
+    public function mainResume(): HasOne
+    {
+        return $this->hasOne(CvResume::class, 'user_id', 'user_id')->where('is_main', true);
     }
 
     public function primaryResume(): HasOne
     {
-        return $this->hasOne(CvResume::class, 'siswa_id', 'user_id')->where('is_primary', true);
+        return $this->mainResume();
     }
 
     public function lamarans(): HasMany
