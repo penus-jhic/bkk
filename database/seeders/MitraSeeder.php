@@ -5,12 +5,19 @@ namespace Database\Seeders;
 use App\Models\Mitra;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class MitraSeeder extends Seeder
 {
     public function run(): void
     {
-        $defaultPassword = Hash::make('Password123!');
+        // Akun mitra contoh hanya untuk development; jangan pernah di-seed ke database server
+        if (! app()->environment('local', 'testing')) {
+            throw new \RuntimeException('MitraSeeder hanya boleh dijalankan saat APP_ENV=local atau testing.');
+        }
+
+        // Placeholder yang tidak bisa dipakai login; kata sandi asli per akun dibuat di bawah
+        $defaultPassword = Hash::make(Str::random(40));
 
         Mitra::updateOrCreate(
             ['npwp' => '01.234.567.8-091.000'],
@@ -131,5 +138,18 @@ class MitraSeeder extends Seeder
                 'pic_phone' => '0856-7788-9900',
             ]
         );
+
+        // Kata sandi acak per akun, ditampilkan sekali di konsol saat seeding
+        $credentials = [];
+        foreach (Mitra::whereIn('npwp', [
+            '01.234.567.8-091.000', '02.345.678.9-501.000', '03.456.789.0-021.000',
+            '04.567.890.1-401.000', '05.678.901.2-123.000',
+        ])->get() as $mitra) {
+            $password = Str::password(16);
+            $mitra->update(['password' => Hash::make($password)]);
+            $credentials[] = [$mitra->singkatan, $mitra->npwp, $password];
+        }
+
+        $this->command?->table(['Mitra', 'NPWP', 'Kata sandi'], $credentials);
     }
 }

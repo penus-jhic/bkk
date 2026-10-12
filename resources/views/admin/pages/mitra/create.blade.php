@@ -84,13 +84,13 @@
                             type="text"
                             id="password"
                             name="password"
-                            value="{{ old('password', 'Password123!') }}"
+                            value="{{ old('password') }}"
                             required
                             minlength="8"
                             placeholder="Minimal 8 karakter"
                             class="w-full bg-canvas text-navy text-sm rounded-xl px-4 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy font-mono"
                         />
-                        <p class="text-[11px] text-muted mt-1">Kata sandi default: <code class="font-mono text-navy font-bold">Password123!</code></p>
+                        <p class="text-[11px] text-muted mt-1">Buat kata sandi unik untuk setiap mitra, lalu kirimkan lewat jalur yang aman.</p>
                     </div>
 
                     <!-- NPWP -->

@@ -56,7 +56,7 @@ Route::prefix('bkk')->group(function () {
     Route::post('/kerja-sama', [PublicController::class, 'storeKerjasama'])->middleware('throttle:5,1')->name('bkk.kerjasama.store');
 
     // Keluar sesi admin / siswa: hapus cookie access_token dari auth service lalu kembali ke beranda BKK
-    Route::match(['GET', 'POST'], '/logout', fn () => redirect()->route('bkk.index')->withoutCookie('access_token')->withoutCookie(DevAuth::COOKIE))->name('bkk.logout');
+    Route::post('/logout', fn () => redirect()->route('bkk.index')->withoutCookie('access_token')->withoutCookie(DevAuth::COOKIE))->name('bkk.logout');
 
     // 2. Router Group Terproteksi Admin Sekolah: /bkk/admin/*
     Route::middleware('verify.auth:ADMIN,KEPALA_SEKOLAH,TU,DEVELOPER')->prefix('admin')->group(function () {

@@ -54,6 +54,11 @@ class DevAuth
 
     public static function enabled(Request $request): bool
     {
+        // Request yang lewat reverse proxy membawa header ini, jadi tidak pernah dianggap akses lokal
+        if ($request->headers->has('X-Forwarded-For') || $request->headers->has('X-Real-IP') || $request->headers->has('Forwarded')) {
+            return false;
+        }
+
         // REMOTE_ADDR langsung, bukan $request->ip(), supaya tidak bisa dipalsukan lewat header X-Forwarded-For
         return self::configured() && in_array($request->server('REMOTE_ADDR'), ['127.0.0.1', '::1'], true);
     }

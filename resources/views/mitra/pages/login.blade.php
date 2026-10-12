@@ -199,7 +199,7 @@
                                 @endforeach
                             </div>
                             <p class="text-[11px] text-brand-ink/50 mt-2.5">
-                                Kata sandi bawaan seeder: <code class="bg-white border border-brand-ink/10 px-1.5 py-0.5 rounded font-mono font-bold text-brand-ink">Password123!</code>
+                                Kata sandi tiap akun dicetak di konsol saat menjalankan <code class="bg-white border border-brand-ink/10 px-1.5 py-0.5 rounded font-mono font-bold text-brand-ink">php artisan db:seed</code>
                             </p>
                         </div>
                     @endif
@@ -239,7 +239,6 @@
         document.querySelectorAll('.js-fill-login').forEach((chip) => {
             chip.addEventListener('click', () => {
                 document.getElementById('nama_perusahaan').value = chip.dataset.company;
-                passwordInput.value = 'Password123!';
                 passwordInput.focus();
             });
         });

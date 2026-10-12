@@ -184,6 +184,12 @@ class DashboardDataFetchingTest extends TestCase
         $response->assertCookieExpired('access_token');
     }
 
+    public function test_logout_via_get_is_rejected(): void
+    {
+        // Logout lintas situs lewat <img src="/bkk/logout"> tidak boleh berhasil
+        $this->get('/bkk/logout')->assertStatus(405);
+    }
+
     public function test_admin_header_shows_live_pending_work_counts(): void
     {
         $this->fakeAuth('ADMIN', 'usr-admin-001');

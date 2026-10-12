@@ -23,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Gagal cepat: login uji coba tidak boleh aktif di luar APP_ENV=local
+        if (config('services.auth_service.dev_bypass') && ! $this->app->environment('local')) {
+            throw new \RuntimeException('AUTH_DEV_BYPASS=true hanya boleh dipakai saat APP_ENV=local.');
+        }
+
         View::composer(['admin.partials.header', 'admin.partials.sidebar'], AdminAlertsComposer::class);
         View::composer(['mitra.partials.header', 'mitra.partials.sidebar'], MitraAlertsComposer::class);
     }

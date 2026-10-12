@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Providers\AppServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -63,6 +64,28 @@ class DevAuthBypassTest extends TestCase
         $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
             ->getJson('/bkk/admin')
             ->assertUnauthorized();
+    }
+
+    public function test_loopback_request_through_reverse_proxy_is_not_bypassed(): void
+    {
+        $this->enableBypass();
+
+        // Reverse proxy di host yang sama: REMOTE_ADDR 127.0.0.1 tapi membawa header proxy
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+            ->withHeader('X-Forwarded-For', '203.0.113.7')
+            ->getJson('/bkk/admin');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_app_refuses_to_boot_with_bypass_outside_local(): void
+    {
+        $this->app['env'] = 'production';
+        config(['services.auth_service.dev_bypass' => true]);
+
+        $this->expectException(\RuntimeException::class);
+
+        (new AppServiceProvider($this->app))->boot();
     }
 
     public function test_bypass_is_off_when_flag_is_not_set(): void

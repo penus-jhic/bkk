@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SafeMarkdown;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -87,10 +88,7 @@ class Berita extends Model
      */
     public function getRenderedKontenAttribute(): string
     {
-        return Str::markdown($this->konten ?? '', [
-            'html_input' => 'strip',
-            'allow_unsafe_links' => false,
-        ]);
+        return SafeMarkdown::render($this->konten);
     }
 
     /**

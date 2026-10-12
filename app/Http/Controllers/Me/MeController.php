@@ -965,7 +965,7 @@ class MeController extends Controller
      */
     protected function resolveAuthUser(Request $request): array
     {
-        $authUser = $request->attributes->get('auth_user') ?? $request->auth_user ?? $request->input('auth_user') ?? [];
+        $authUser = $request->attributes->get('auth_user') ?? [];
 
         $role = strtoupper($authUser['role'] ?? 'SISWA');
         if (!in_array($role, ['SISWA', 'ALUMNI'])) {

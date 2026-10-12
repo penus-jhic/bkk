@@ -1,0 +1,48 @@
+# Rahasia & konfigurasi lokal: disuntik saat runtime lewat env_file, jangan pernah masuk image
+.env
+.env.*
+!.env.example
+auth.json
+
+# Version control & editor
+.git
+.gitignore
+.gitattributes
+.claude
+.idea
+.vscode
+.fleet
+.zed
+.nova
+.phpactor.json
+FeLandingPageJhic
+
+# Dependensi dipasang ulang di dalam image
+node_modules
+vendor
+
+# Hasil build / state lokal
+public/build
+public/hot
+public/storage
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/framework/lsp-*.php
+storage/pail
+storage/*.key
+bootstrap/cache/*.php
+database/*.sqlite
+*.log
+.phpunit.result.cache
+.phpunit.cache
+
+# Tidak dibutuhkan saat runtime
+tests
+phpunit.xml
+REPORT.md
+Dockerfile
+compose.yml
+.dockerignore

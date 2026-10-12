@@ -24,3 +24,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Editor helper (LSP) yang tidak boleh masuk version control
+/storage/framework/lsp-*.php
+
+# Submodule yatim (gitlink tanpa .gitmodules)
+/FeLandingPageJhic
