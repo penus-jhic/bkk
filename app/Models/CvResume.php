@@ -17,6 +17,9 @@ class CvResume extends Model
 
     protected $casts = [
         'is_main' => 'boolean',
+        'temp' => 'boolean',
+        'score' => 'integer',
+        'feedback' => 'array',
     ];
 
     protected static function booted(): void
@@ -26,6 +29,16 @@ class CvResume extends Model
                 $model->checksum = self::generateChecksum($model->raw_markdown);
             }
         });
+    }
+
+    public function scopeSaved($query)
+    {
+        return $query->where('temp', false);
+    }
+
+    public function scopeTemp($query)
+    {
+        return $query->where('temp', true);
     }
 
     /**
@@ -38,25 +51,111 @@ class CvResume extends Model
     }
 
     /**
-     * Simpan versi baru CV. Jika checksum identik dengan CV utama saat ini, hindari duplikasi.
+     * Simpan atau perbarui 1 baris draf sementara (temp = true, is_main = false) per user.
+     * Jika checksum sama dengan CV utama saat ini, langsung kembalikan CV utama tanpa membuat draf.
+     */
+    public static function saveDraft(string $userId, string $rawMarkdown): self
+    {
+        $checksum = self::generateChecksum($rawMarkdown);
+
+        $currentMain = self::where('user_id', $userId)
+            ->where('temp', false)
+            ->where('is_main', true)
+            ->first();
+
+        if ($currentMain && $currentMain->checksum === $checksum) {
+            return $currentMain;
+        }
+
+        return DB::transaction(function () use ($userId, $rawMarkdown, $checksum) {
+            $tempDraft = self::where('user_id', $userId)
+                ->where('temp', true)
+                ->latest('id')
+                ->first();
+
+            if ($tempDraft) {
+                self::where('user_id', $userId)
+                    ->where('temp', true)
+                    ->where('id', '!=', $tempDraft->id)
+                    ->delete();
+
+                $tempDraft->update([
+                    'raw_markdown' => $rawMarkdown,
+                    'checksum' => $checksum,
+                    'is_main' => false,
+                    'temp' => true,
+                    'score' => null,
+                    'feedback' => null,
+                ]);
+
+                return $tempDraft->fresh();
+            }
+
+            return self::create([
+                'user_id' => $userId,
+                'raw_markdown' => $rawMarkdown,
+                'checksum' => $checksum,
+                'is_main' => false,
+                'temp' => true,
+                'score' => null,
+                'feedback' => null,
+            ]);
+        });
+    }
+
+    /**
+     * Simpan versi resmi CV (temp = false, is_main = true).
+     * Jika checksum identik dengan CV utama saat ini, hindari duplikasi.
+     * Jika terdapat draf sementara (temp = true), promosikan menjadi versi resmi.
      */
     public static function saveVersion(string $userId, string $rawMarkdown): self
     {
         $checksum = self::generateChecksum($rawMarkdown);
 
-        $currentMain = self::where('user_id', $userId)->where('is_main', true)->first();
+        $currentMain = self::where('user_id', $userId)
+            ->where('temp', false)
+            ->where('is_main', true)
+            ->first();
+
         if ($currentMain && $currentMain->checksum === $checksum) {
+            self::where('user_id', $userId)->where('temp', true)->delete();
             return $currentMain;
         }
 
         return DB::transaction(function () use ($userId, $rawMarkdown, $checksum) {
             self::where('user_id', $userId)->update(['is_main' => false]);
 
+            $tempDraft = self::where('user_id', $userId)
+                ->where('temp', true)
+                ->latest('id')
+                ->first();
+
+            if ($tempDraft) {
+                self::where('user_id', $userId)
+                    ->where('temp', true)
+                    ->where('id', '!=', $tempDraft->id)
+                    ->delete();
+
+                $tempDraft->update([
+                    'raw_markdown' => $rawMarkdown,
+                    'checksum' => $checksum,
+                    'temp' => false,
+                    'is_main' => true,
+                    'score' => null,
+                    'feedback' => null,
+                ]);
+
+                return $tempDraft->fresh();
+            }
+
             return self::create([
                 'user_id' => $userId,
                 'raw_markdown' => $rawMarkdown,
                 'checksum' => $checksum,
                 'is_main' => true,
+                'temp' => false,
+                'score' => null,
+                'feedback' => null,
             ]);
         });
     }
@@ -71,7 +170,10 @@ class CvResume extends Model
                 ->where('id', '!=', $this->id)
                 ->update(['is_main' => false]);
 
-            $this->update(['is_main' => true]);
+            $this->update([
+                'is_main' => true,
+                'temp' => false,
+            ]);
             return $this->fresh();
         });
     }
@@ -127,6 +229,32 @@ class CvResume extends Model
 
     public function getSkorTotalAiAttribute(): int
     {
+        if ($this->score !== null) {
+            return (int) $this->score;
+        }
+
+        $feedback = $this->feedback;
+        if (is_array($feedback) && isset($feedback['total_score'])) {
+            return (int) $feedback['total_score'];
+        }
         return 88;
+    }
+
+    public function getSkorParameterJsonAttribute(): array
+    {
+        $feedback = $this->feedback;
+        if (is_array($feedback) && !empty($feedback['parameters']) && is_array($feedback['parameters'])) {
+            return array_map(fn ($p) => [
+                'id' => $p['id'] ?? '',
+                'label' => $p['label'] ?? 'Parameter ATS',
+                'value' => (int) ($p['score'] ?? $p['value'] ?? 85),
+                'score' => (int) ($p['score'] ?? $p['value'] ?? 85),
+                'max_score' => (int) ($p['max_score'] ?? 100),
+                'status' => $p['status'] ?? 'GOOD',
+                'weight' => $p['weight'] ?? 0.25,
+                'feedback' => $p['feedback'] ?? '',
+            ], $feedback['parameters']);
+        }
+        return [];
     }
 }

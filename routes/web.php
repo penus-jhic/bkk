@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminLowonganController;
 use App\Http\Controllers\Admin\AdminMitraController;
 use App\Http\Controllers\Admin\AdminPklController;
 use App\Http\Controllers\Admin\AdminTracerController;
+use App\Http\Controllers\Api\AiCvController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Me\MeController;
 use App\Http\Controllers\Mitra\MitraAuthController;
@@ -31,7 +32,22 @@ use Illuminate\Support\Facades\Route;
 // Redirect root ke /bkk
 Route::redirect('/', '/bkk');
 
+// Endpoint Integrasi AI CV sesuai AI_CONTRACT.md (/api/ai/cv/*)
+Route::middleware('verify.auth:SISWA,ALUMNI,ADMIN')->prefix('api/ai/cv')->name('api.ai.cv.')->group(function () {
+    Route::post('/score', [AiCvController::class, 'score'])->name('score');
+    Route::post('/scores', [AiCvController::class, 'score'])->name('scores');
+    Route::post('/suggestions', [AiCvController::class, 'suggestions'])->name('suggestions');
+    Route::post('/chat', [AiCvController::class, 'chat'])->name('chat');
+});
+
 Route::prefix('bkk')->group(function () {
+    // Alias /bkk/api/ai/cv/* untuk kompatibilitas path-based reverse proxy
+    Route::middleware('verify.auth:SISWA,ALUMNI,ADMIN')->prefix('api/ai/cv')->name('bkk.api.ai.cv.')->group(function () {
+        Route::post('/score', [AiCvController::class, 'score'])->name('score');
+        Route::post('/scores', [AiCvController::class, 'score'])->name('scores');
+        Route::post('/suggestions', [AiCvController::class, 'suggestions'])->name('suggestions');
+        Route::post('/chat', [AiCvController::class, 'chat'])->name('chat');
+    });
     // 0. Static Asset Handlers (Kompatibilitas Reverse Proxy Path-Based)
     Route::get('/images/{path}', [StaticAssetController::class, 'serveImage'])->where('path', '.*')->name('bkk.static.images');
     Route::get('/uploads/{path}', [StaticAssetController::class, 'serveUpload'])->where('path', '.*')->name('bkk.static.uploads');

@@ -39,6 +39,8 @@ MARKDOWN;
                 [
                     'raw_markdown' => $oldMarkdownSiswa,
                     'is_main' => false,
+                    'temp' => false,
+                    'feedback' => null,
                     'created_at' => now()->subDays(14),
                     'updated_at' => now()->subDays(14),
                 ]
@@ -77,11 +79,70 @@ Siswa kelas XII jurusan Rekayasa Perangkat Lunak SMK Plus Pelita Nusantara denga
 - **LSP-P1 Junior Web Developer** — Badan Nasional Sertifikasi Profesi (BNSP), 2025 (No: BNSP-SMK-PENUS-2025-089)
 MARKDOWN;
 
+            $checksumSiswa = CvResume::generateChecksum($markdownSiswa);
             CvResume::updateOrCreate(
-                ['user_id' => $siswa->user_id, 'checksum' => CvResume::generateChecksum($markdownSiswa)],
+                ['user_id' => $siswa->user_id, 'checksum' => $checksumSiswa],
                 [
                     'raw_markdown' => $markdownSiswa,
                     'is_main' => true,
+                    'temp' => false,
+                    'score' => 88,
+                    'feedback' => [
+                        'checksum' => $checksumSiswa,
+                        'total_score' => 88,
+                        'grade_label' => 'Baik',
+                        'percentile' => 82,
+                        'summary_verdict' => 'CV memiliki struktur ATS yang sangat rapi dan mudah di-parse mesin. Kualitas dapat ditingkatkan hingga skor 95+ dengan menambahkan metrik numerik pada bagian sertifikasi dan proyek kejuruan.',
+                        'parameters' => [
+                            [
+                                'id' => 'param_industry_fit',
+                                'label' => 'Kesesuaian Industri',
+                                'score' => 90,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.35,
+                                'feedback' => 'Terminologi teknis (Laravel, PostgreSQL, JWT, Tailwind CSS) selaras dengan kebutuhan industri software engineering.',
+                            ],
+                            [
+                                'id' => 'param_completeness',
+                                'label' => 'Kelengkapan Data',
+                                'score' => 84,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.25,
+                                'feedback' => 'Semua bagian utama telah tersedia lengkap dengan kontak LinkedIn dan GitHub.',
+                            ],
+                            [
+                                'id' => 'param_ats_format',
+                                'label' => 'Format & Parsing ATS',
+                                'score' => 95,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.25,
+                                'feedback' => 'Hirarki heading (H1, H2), bullet points, dan tipografi Markdown sepenuhnya bebas dari karakter pemecah parser.',
+                            ],
+                            [
+                                'id' => 'param_portfolio_impact',
+                                'label' => 'Daya Tarik Portofolio',
+                                'score' => 85,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.15,
+                                'feedback' => 'Sebagian besar butir telah mencantumkan hasil terukur, tambahkan 1 tautan proyek mandiri unggulan.',
+                            ],
+                        ],
+                        'detected_sections' => [
+                            'HEADER_IDENTITY',
+                            'SUMMARY',
+                            'EDUCATION',
+                            'EXPERIENCE',
+                            'SKILLS',
+                            'CERTIFICATIONS',
+                        ],
+                        'missing_sections' => [
+                            'PROJECTS',
+                        ],
+                    ],
                     'created_at' => now()->subDays(2),
                     'updated_at' => now()->subDays(2),
                 ]
@@ -116,11 +177,70 @@ Alumni SMK Plus Pelita Nusantara 2024 jurusan Teknik Komputer & Jaringan dengan 
 - Bandwidth Management & VLAN Trunking
 MARKDOWN;
 
+            $checksumAlumni = CvResume::generateChecksum($markdownAlumni);
             CvResume::updateOrCreate(
-                ['user_id' => $alumni->user_id, 'checksum' => CvResume::generateChecksum($markdownAlumni)],
+                ['user_id' => $alumni->user_id, 'checksum' => $checksumAlumni],
                 [
                     'raw_markdown' => $markdownAlumni,
                     'is_main' => true,
+                    'temp' => false,
+                    'score' => 91,
+                    'feedback' => [
+                        'checksum' => $checksumAlumni,
+                        'total_score' => 91,
+                        'grade_label' => 'Sangat Baik',
+                        'percentile' => 89,
+                        'summary_verdict' => 'Dokumen CV berstandar profesional dengan kredensial MTCNA dan metrik pemeliharaan jaringan yang kuat.',
+                        'parameters' => [
+                            [
+                                'id' => 'param_industry_fit',
+                                'label' => 'Kesesuaian Industri',
+                                'score' => 93,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.35,
+                                'feedback' => 'Kata kunci teknis jaringan ISP (MTCNA, ODP, VLAN, OTDR) sangat relevan dengan target industri.',
+                            ],
+                            [
+                                'id' => 'param_completeness',
+                                'label' => 'Kelengkapan Data',
+                                'score' => 88,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.25,
+                                'feedback' => 'Identitas, pengalaman kerja, pendidikan, dan nomor lisensi sertifikasi sudah lengkap.',
+                            ],
+                            [
+                                'id' => 'param_ats_format',
+                                'label' => 'Format & Parsing ATS',
+                                'score' => 94,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.25,
+                                'feedback' => 'Struktur bagian kronologis terbalik memudahkan pembacaan sistem ATS perusahaan.',
+                            ],
+                            [
+                                'id' => 'param_portfolio_impact',
+                                'label' => 'Daya Tarik Portofolio',
+                                'score' => 87,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.15,
+                                'feedback' => 'Tambahkan persentase SLA uptime jaringan yang berhasil dipertahankan.',
+                            ],
+                        ],
+                        'detected_sections' => [
+                            'HEADER_IDENTITY',
+                            'SUMMARY',
+                            'EXPERIENCE',
+                            'EDUCATION',
+                            'SKILLS',
+                            'CERTIFICATIONS',
+                        ],
+                        'missing_sections' => [
+                            'PROJECTS',
+                        ],
+                    ],
                     'created_at' => now()->subDay(),
                     'updated_at' => now()->subDay(),
                 ]

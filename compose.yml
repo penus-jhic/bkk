@@ -29,6 +29,7 @@ services:
 
   postgrest:
     image: postgrest/postgrest
+    container_name: rest-bkk
     environment:
       PGRST_SERVER_HOST: 0.0.0.0
       PGRST_DB_URI: postgres://postgres:${DB_PASSWORD}@postgres:5432/${DB_DATABASE}
