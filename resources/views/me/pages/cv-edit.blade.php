@@ -721,7 +721,170 @@
         return false;
     }
 
-    // 5. Feature: Context-Aware Interactive CV Chat Assistant (POST /api/ai/cv/chat dengan stream: true SSE)
+    // 5. Feature: Context-Aware Interactive CV Chat Assistant (POST /api/ai/cv/chat JSON mode)
+    let chatActionRegistry = [];
+
+    function extractChatData(resJson) {
+        let raw = resJson?.data || resJson;
+        let reply = '';
+        let actions = [];
+        let quickChips = [];
+
+        if (typeof raw === 'string') {
+            try {
+                raw = JSON.parse(raw);
+            } catch (_) {}
+        }
+
+        if (raw && typeof raw === 'object') {
+            reply = raw.reply || '';
+            actions = Array.isArray(raw.suggested_actions) ? raw.suggested_actions : [];
+            quickChips = Array.isArray(raw.quick_chips) ? raw.quick_chips : [];
+
+            // Robust parsing jika reply berupa JSON string atau markdown json block
+            if (typeof reply === 'string') {
+                let trimmed = reply.trim();
+                if (trimmed.startsWith('```json') && trimmed.endsWith('```')) {
+                    trimmed = trimmed.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+                }
+                if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                    try {
+                        const parsedInside = JSON.parse(trimmed);
+                        if (parsedInside && typeof parsedInside === 'object') {
+                            if (parsedInside.reply) reply = parsedInside.reply;
+                            if (Array.isArray(parsedInside.suggested_actions) && !actions.length) {
+                                actions = parsedInside.suggested_actions;
+                            }
+                            if (Array.isArray(parsedInside.quick_chips) && !quickChips.length) {
+                                quickChips = parsedInside.quick_chips;
+                            }
+                        }
+                    } catch (_) {}
+                }
+            }
+        } else {
+            reply = String(raw || 'Berikut saran untuk CV Anda.');
+        }
+
+        return { reply, actions, quickChips };
+    }
+
+    function renderAiChatResponseElement(bubbleEl, chatData) {
+        if (!bubbleEl) return;
+
+        const { reply, actions, quickChips } = chatData;
+
+        // 1. Markdown prose balasan AI
+        let html = `<div class="prose prose-xs max-w-none text-navy leading-relaxed">${marked.parse(reply || 'Berikut saran untuk CV Anda.')}</div>`;
+
+        // 2. Kartu Aksi Terstruktur (APPLY_DIFF / PROMPT) langsung di dalam bubble
+        if (Array.isArray(actions) && actions.length > 0) {
+            html += `
+                <div class="mt-3 pt-2.5 border-t border-navy/10 space-y-2">
+                    <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+                        <i data-lucide="sparkles" class="w-3 h-3 text-maroon"></i>
+                        <span>Tindakan Disarankan AI:</span>
+                    </div>
+                    <div class="flex flex-col gap-2">
+            `;
+
+            actions.forEach(act => {
+                const actionId = chatActionRegistry.length;
+                chatActionRegistry.push(act);
+
+                if (act.action_type === 'APPLY_DIFF') {
+                    const before = act.payload?.before || '';
+                    const after = act.payload?.after || '';
+                    html += `
+                        <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 space-y-2 text-[11px] transition shadow-2xs">
+                            <div class="flex items-center justify-between gap-1.5">
+                                <span class="font-bold text-emerald-950 flex items-center gap-1.5 truncate">
+                                    <i data-lucide="wand-2" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                                    <span class="truncate">${escapeHtml(act.label || 'Terapkan Rekomendasi')}</span>
+                                </span>
+                                <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-200/70 text-emerald-800 shrink-0">Patch CV</span>
+                            </div>
+                            ${(before || after) ? `
+                                <div class="space-y-1 font-mono text-[10px] bg-white/90 rounded-lg p-2 border border-emerald-100/80 leading-relaxed overflow-x-auto">
+                                    ${before ? `
+                                        <div class="text-rose-700 bg-rose-50/80 px-1.5 py-0.5 rounded">
+                                            <span class="font-bold">- Sebelum:</span> ${escapeHtml(before)}
+                                        </div>
+                                    ` : ''}
+                                    ${after ? `
+                                        <div class="text-emerald-700 bg-emerald-50/80 px-1.5 py-0.5 rounded font-medium">
+                                            <span class="font-bold">+ Sesudah:</span> ${escapeHtml(after)}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            <button type="button" onclick="executeInlineChatAction(${actionId}, this)" class="w-full h-7.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-[11px] inline-flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>Terapkan ke Editor CV</span>
+                            </button>
+                        </div>
+                    `;
+                } else if (act.action_type === 'PROMPT') {
+                    const label = act.label || act.payload || 'Tanyakan ke AI';
+                    html += `
+                        <button type="button" onclick="executeInlineChatAction(${actionId}, this)" class="w-full text-left px-2.5 py-2 rounded-xl border border-line bg-white hover:bg-navy hover:text-white text-navy text-[11px] font-medium transition flex items-center justify-between gap-2 shadow-2xs cursor-pointer group">
+                            <span class="flex items-center gap-2 truncate">
+                                <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-maroon group-hover:text-white shrink-0 transition"></i>
+                                <span class="truncate">${escapeHtml(label)}</span>
+                            </span>
+                            <i data-lucide="arrow-right" class="w-3 h-3 text-muted group-hover:text-white shrink-0 transition"></i>
+                        </button>
+                    `;
+                }
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Quick Chips rekomendasi topik lanjutan di dalam bubble
+        if (Array.isArray(quickChips) && quickChips.length > 0) {
+            html += `
+                <div class="mt-2.5 pt-2 border-t border-navy/10 flex flex-wrap gap-1.5">
+                    ${quickChips.map(chip => `
+                        <button type="button" onclick="sendChatPrompt('${escapeHtml(chip).replace(/'/g, "\\'")}')" class="px-2 py-0.5 rounded-lg bg-white border border-line/80 hover:bg-navy hover:text-white hover:border-navy text-[10px] font-medium text-navy transition cursor-pointer">
+                            ${escapeHtml(chip)}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        bubbleEl.innerHTML = html;
+        lucide.createIcons({ root: bubbleEl });
+    }
+
+    function executeInlineChatAction(actionId, btnEl) {
+        const act = chatActionRegistry[actionId];
+        if (!act) return;
+
+        if (act.action_type === 'APPLY_DIFF' && act.payload) {
+            const beforeText = act.payload.before || '';
+            const afterText = act.payload.after || '';
+            const ok = applyAiPatch(beforeText, afterText);
+            if (!ok && afterText) {
+                const current = getActiveMarkdown();
+                setContent(current.trimEnd() + `\n- ${afterText}\n`);
+                showToast('Rekomendasi kalimat AI berhasil ditambahkan ke CV!');
+            }
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.className = "w-full h-7.5 rounded-lg bg-emerald-100 text-emerald-800 font-semibold text-[11px] inline-flex items-center justify-center gap-1.5 cursor-default transition";
+                btnEl.innerHTML = `<i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-600"></i><span>✓ Perubahan Berhasil Diterapkan</span>`;
+                lucide.createIcons({ root: btnEl });
+            }
+        } else if (act.action_type === 'PROMPT' && typeof act.payload === 'string') {
+            sendChatPrompt(act.payload);
+        }
+    }
+
     async function sendChatPrompt(promptText) {
         if (isChatStreaming) return;
 
@@ -744,15 +907,21 @@
 
         if (input && !promptText) input.value = '';
 
-        // Buat gelembung balasan AI untuk diisi secara streaming SSE
+        // Buat gelembung balasan AI dengan status loading 'Berfikir...'
         const aiDiv = document.createElement('div');
         aiDiv.className = "flex gap-2 items-start";
         aiDiv.innerHTML = `
             <div class="w-6 h-6 rounded-full bg-navy grid place-items-center text-white shrink-0 mt-0.5">
                 <i data-lucide="bot" class="w-3.5 h-3.5"></i>
             </div>
-            <div class="ai-chat-prose text-xs rounded-2xl px-3 py-2 max-w-[88%] bg-[#f1f3f4] text-navy rounded-bl-sm leading-relaxed">
-                <span class="inline-flex items-center gap-1 text-muted italic">Mengetik...</span>
+            <div class="ai-chat-prose text-xs rounded-2xl px-3.5 py-2.5 max-w-[88%] bg-[#f1f3f4] text-navy rounded-bl-sm leading-relaxed">
+                <span class="inline-flex items-center gap-1.5 text-navy/70 font-medium italic text-[11px]">
+                    <svg class="animate-spin w-3 h-3 text-maroon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Berfikir...
+                </span>
             </div>
         `;
         chatContainer.appendChild(aiDiv);
@@ -765,14 +934,14 @@
         try {
             const res = await fetch('/api/ai/cv/chat', {
                 method: 'POST',
-                headers: buildApiHeaders('text/event-stream, application/json'),
+                headers: buildApiHeaders('application/json'),
                 credentials: 'include',
                 body: JSON.stringify({
                     messages: chatMessages,
                     context: {
                         jurusan: userJurusan
                     },
-                    stream: true
+                    stream: false
                 })
             });
 
@@ -785,74 +954,20 @@
                 throw new Error(errMsg);
             }
 
-            const contentType = res.headers.get('content-type') || '';
-            let fullReply = '';
+            const json = await res.json();
+            const chatData = extractChatData(json);
 
-            if (contentType.includes('text/event-stream') && res.body) {
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder('utf-8');
-                let sseBuffer = '';
-                let currentEvent = 'message';
+            renderAiChatResponseElement(bubbleEl, chatData);
 
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-
-                    sseBuffer += decoder.decode(value, { stream: true });
-                    const blocks = sseBuffer.split('\n\n');
-                    sseBuffer = blocks.pop() || '';
-
-                    for (const block of blocks) {
-                        const lines = block.split('\n');
-                        currentEvent = 'message';
-                        let dataStr = '';
-
-                        for (const line of lines) {
-                            if (line.startsWith('event:')) {
-                                currentEvent = line.slice(6).trim();
-                            } else if (line.startsWith('data:')) {
-                                dataStr += line.slice(5).trim();
-                            }
-                        }
-
-                        if (!dataStr) continue;
-
-                        try {
-                            const parsed = JSON.parse(dataStr);
-                            if (currentEvent === 'delta' && typeof parsed.content === 'string') {
-                                fullReply += parsed.content;
-                                if (bubbleEl) {
-                                    bubbleEl.innerHTML = marked.parse(fullReply);
-                                }
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
-                            } else if (currentEvent === 'done') {
-                                if (Array.isArray(parsed.suggested_actions)) {
-                                    renderChatSuggestedActions(parsed.suggested_actions);
-                                }
-                                if (Array.isArray(parsed.quick_chips) && parsed.quick_chips.length) {
-                                    renderChatQuickChips(parsed.quick_chips);
-                                }
-                            }
-                        } catch (_) {}
-                    }
-                }
-            } else {
-                // Fallback jika server mengembalikan JSON non-stream
-                const json = await res.json();
-                fullReply = json.data?.reply || 'Berikut saran untuk CV Anda.';
-                if (bubbleEl) {
-                    bubbleEl.innerHTML = marked.parse(fullReply);
-                }
-                if (Array.isArray(json.data?.suggested_actions)) {
-                    renderChatSuggestedActions(json.data.suggested_actions);
-                }
-                if (Array.isArray(json.data?.quick_chips) && json.data.quick_chips.length) {
-                    renderChatQuickChips(json.data.quick_chips);
-                }
+            if (chatData.actions && chatData.actions.length) {
+                renderChatSuggestedActions(chatData.actions);
+            }
+            if (chatData.quickChips && chatData.quickChips.length) {
+                renderChatQuickChips(chatData.quickChips);
             }
 
-            if (fullReply) {
-                chatMessages.push({ role: 'assistant', content: fullReply });
+            if (chatData.reply) {
+                chatMessages.push({ role: 'assistant', content: chatData.reply });
             }
         } catch (err) {
             if (bubbleEl) {
