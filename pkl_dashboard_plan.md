@@ -141,3 +141,5 @@ if ($activePkl) {
    - Buka `/bkk/admin`:
      - Periksa KPI Card PKL: menampilkan counter siswa belum PKL dan selesai PKL.
      - Periksa Section Monitoring PKL: bar distribusi 3 status (Belum PKL, Sedang PKL, Selesai PKL) ter-render dengan proporsi angka yang akurat.
+
+     testing
