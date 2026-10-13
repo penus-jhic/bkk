@@ -65,12 +65,19 @@ class MeController extends Controller
 
         $activeApplications = array_values(array_filter($applications, fn ($a) => !in_array($a['status'], ['Diterima', 'Ditolak'])));
         $interviews = array_values(array_filter($applications, fn ($a) => $a['status'] === 'Dipanggil Interview'));
+        $pklStatus = $this->resolvePklStatus($userId, $role);
+
+        if ($role === 'SISWA') {
+            $profile['status'] = $pklStatus['label'];
+        }
+        $profile['pkl_status'] = $pklStatus;
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'data' => [
                     'profile' => $profile,
+                    'pkl_status' => $pklStatus,
                     'applications' => $applications,
                     'vacancies' => $vacancies,
                     'cv_score' => $cvScore,
@@ -83,6 +90,7 @@ class MeController extends Controller
         return view('me.pages.dashboard', compact(
             'authUser',
             'profile',
+            'pklStatus',
             'applications',
             'vacancies',
             'cvScore',
@@ -893,5 +901,91 @@ class MeController extends Controller
                 );
             }
         } catch (\Throwable) {}
+    }
+
+    /**
+     * Resolves PKL status for the authenticated student/alumni:
+     * - BELUM_PKL: Siswa belum memiliki penempatan PKL aktif atau selesai
+     * - SEDANG_PKL: Siswa sedang menjalani penempatan PKL (BERJALAN)
+     * - SUDAH_PKL: Siswa telah menyelesaikan PKL (SELESAI)
+     */
+    protected function resolvePklStatus(string $userId, string $role): array
+    {
+        if (strtoupper($role) !== 'SISWA') {
+            return [
+                'code' => 'ALUMNI',
+                'label' => 'Alumni',
+                'badge_class' => 'bg-maroon text-white',
+                'penempatan' => null,
+            ];
+        }
+
+        $activePkl = null;
+        $finishedPkl = null;
+
+        try {
+            if (Schema::hasTable('penempatan_pkl')) {
+                $activePkl = PenempatanPkl::with('mitra')
+                    ->where('siswa_id', $userId)
+                    ->where('status', 'BERJALAN')
+                    ->latest('tanggal_mulai')
+                    ->first();
+
+                if (!$activePkl) {
+                    $finishedPkl = PenempatanPkl::with('mitra')
+                        ->where('siswa_id', $userId)
+                        ->where('status', 'SELESAI')
+                        ->latest('tanggal_selesai')
+                        ->first();
+                }
+            }
+        } catch (\Throwable) {}
+
+        if ($activePkl) {
+            $totalHours = (int) $activePkl->total_jam_tercapai;
+            $targetHours = (int) ($activePkl->target_jam ?: 640);
+            $progressPercent = $targetHours > 0 ? min(100, (int) round(($totalHours / $targetHours) * 100)) : 0;
+
+            return [
+                'code' => 'SEDANG_PKL',
+                'label' => 'Sedang PKL',
+                'badge_class' => 'bg-navy text-white',
+                'penempatan' => $activePkl,
+                'mitra_nama' => $activePkl->mitra?->nama_perusahaan ?? 'Mitra Industri',
+                'unit_kerja' => $activePkl->unit_kerja_divisi ?: 'Divisi PKL',
+                'pembimbing_industri' => $activePkl->pembimbing_industri_nama ?: 'Pembimbing Lapangan',
+                'tanggal_mulai' => $activePkl->tanggal_mulai?->translatedFormat('d M Y') ?? $activePkl->tanggal_mulai?->format('d M Y'),
+                'tanggal_selesai' => $activePkl->tanggal_selesai?->translatedFormat('d M Y') ?? $activePkl->tanggal_selesai?->format('d M Y'),
+                'total_jam' => $totalHours,
+                'target_jam' => $targetHours,
+                'progress_jam' => $progressPercent,
+            ];
+        }
+
+        if ($finishedPkl) {
+            return [
+                'code' => 'SUDAH_PKL',
+                'label' => 'Sudah Selesai PKL',
+                'badge_class' => 'bg-emerald-600 text-white',
+                'penempatan' => $finishedPkl,
+                'mitra_nama' => $finishedPkl->mitra?->nama_perusahaan ?? 'Mitra Industri',
+                'unit_kerja' => $finishedPkl->unit_kerja_divisi ?: 'Divisi PKL',
+                'pembimbing_industri' => $finishedPkl->pembimbing_industri_nama ?: 'Pembimbing Lapangan',
+                'tanggal_mulai' => $finishedPkl->tanggal_mulai?->translatedFormat('d M Y') ?? $finishedPkl->tanggal_mulai?->format('d M Y'),
+                'tanggal_selesai' => $finishedPkl->tanggal_selesai?->translatedFormat('d M Y') ?? $finishedPkl->tanggal_selesai?->format('d M Y'),
+                'total_jam' => (int) $finishedPkl->total_jam_tercapai,
+                'target_jam' => (int) ($finishedPkl->target_jam ?: 640),
+                'nilai_industri' => $finishedPkl->nilai_akhir_industri,
+                'nilai_sekolah' => $finishedPkl->nilai_akhir_sekolah,
+            ];
+        }
+
+        return [
+            'code' => 'BELUM_PKL',
+            'label' => 'Belum PKL',
+            'badge_class' => 'bg-amber-100 text-amber-800 border border-amber-300',
+            'penempatan' => null,
+            'mitra_nama' => null,
+        ];
     }
 }

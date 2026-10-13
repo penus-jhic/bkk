@@ -5,6 +5,11 @@
 @php
     $role = strtoupper($authUser['role'] ?? 'SISWA');
     $isSiswa = ($role === 'SISWA');
+    $pkl = $pklStatus ?? ($profile['pkl_status'] ?? [
+        'code' => $isSiswa ? 'BELUM_PKL' : 'ALUMNI',
+        'label' => $isSiswa ? 'Belum PKL' : 'Alumni',
+        'badge_class' => $isSiswa ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-maroon text-white',
+    ]);
     $activeCount = count($activeApplications ?? []);
     $interviewCount = count($interviews ?? []);
     $completion = $profile['completion'] ?? 75;
@@ -25,22 +30,53 @@
         <div class="relative flex flex-col md:flex-row md:items-center gap-6">
             <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2">
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $isSiswa ? 'bg-navy text-white' : 'bg-maroon text-white' }}">
-                        {{ $isSiswa ? 'Siswa PKL' : 'Alumni' }}
-                    </span>
+                    @if(!$isSiswa)
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold bg-maroon text-white">
+                            Alumni
+                        </span>
+                    @elseif($pkl['code'] === 'SEDANG_PKL')
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold bg-navy text-white inline-flex items-center gap-1.5 shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Sedang PKL</span>
+                        </span>
+                    @elseif($pkl['code'] === 'SUDAH_PKL')
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold bg-emerald-700 text-white inline-flex items-center gap-1.5 shadow-sm">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                            <span>PKL Selesai</span>
+                        </span>
+                    @else
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Belum PKL</span>
+                        </span>
+                    @endif
                     <span class="text-xs text-muted font-medium">{{ $profile['jurusan'] ?? 'SMK Plus Pelita Nusantara' }}</span>
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-navy tracking-tight">
                     Halo, {{ $profile['name'] }} 👋
                 </h1>
-                <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
-                    {{ $greet }}!
-                    @if($interviewCount > 0)
-                        Anda punya <b class="text-maroon">{{ $interviewCount }} undangan interview</b> yang menunggu konfirmasi kehadiran.
-                    @else
-                        Terus pantau status lamaran kerja/PKL dan rekomendasi lowongan mitra industri terbaru.
-                    @endif
-                </p>
+                @if($isSiswa && $pkl['code'] === 'BELUM_PKL')
+                    <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
+                        {{ $greet }}! Anda belum terdaftar dalam penempatan PKL aktif. Siapkan berkas dan telusuri lowongan mitra industri resmi BKK.
+                    </p>
+                @elseif($isSiswa && $pkl['code'] === 'SEDANG_PKL')
+                    <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
+                        {{ $greet }}! Sedang menjalani PKL di <b class="text-navy">{{ $pkl['mitra_nama'] ?? 'Mitra Industri' }}</b>. Jangan lupa perbarui jurnal kegiatan harian Anda.
+                    </p>
+                @elseif($isSiswa && $pkl['code'] === 'SUDAH_PKL')
+                    <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
+                        {{ $greet }}! Selamat, Anda telah menyelesaikan masa PKL di <b class="text-navy">{{ $pkl['mitra_nama'] ?? 'Mitra Industri' }}</b>. Lanjutkan persiapan karier Anda menuju dunia kerja.
+                    </p>
+                @else
+                    <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
+                        {{ $greet }}!
+                        @if($interviewCount > 0)
+                            Anda punya <b class="text-maroon">{{ $interviewCount }} undangan interview</b> yang menunggu konfirmasi kehadiran.
+                        @else
+                            Terus pantau status lamaran kerja dan rekomendasi lowongan mitra industri terbaru.
+                        @endif
+                    </p>
+                @endif
             </div>
 
             <div class="md:w-80 bg-[#f8f9fa] rounded-2xl border border-line p-4">
@@ -58,6 +94,177 @@
             </div>
         </div>
     </div>
+
+    <!-- Dedicated PKL Status Widget (Khusus Siswa) -->
+    @if($isSiswa)
+        @if($pkl['code'] === 'SEDANG_PKL')
+            <!-- Widget Kondisi 1: Sedang Melaksanakan PKL -->
+            <div class="p-6 bg-gradient-to-r from-navy via-navy to-navy-dark text-white rounded-3xl border border-navy shadow-sm relative overflow-hidden">
+                <div class="absolute right-0 top-0 h-full w-1/3 pointer-events-none opacity-10">
+                    <div class="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-white"></div>
+                </div>
+
+                <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-3 flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Sedang Berjalan
+                            </span>
+                            <span class="text-xs text-white/70">Periode: {{ $pkl['tanggal_mulai'] ?? '-' }} s.d. {{ $pkl['tanggal_selesai'] ?? '-' }}</span>
+                        </div>
+
+                        <div>
+                            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                                <span>{{ $pkl['mitra_nama'] ?? 'Mitra Industri' }}</span>
+                            </h2>
+                            <p class="text-xs sm:text-sm text-white/80 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <span class="inline-flex items-center gap-1">
+                                    <i data-lucide="building" class="w-3.5 h-3.5 text-white/60"></i>
+                                    {{ $pkl['unit_kerja'] ?? 'Divisi PKL' }}
+                                </span>
+                                <span class="text-white/40 hidden sm:inline">•</span>
+                                <span class="inline-flex items-center gap-1">
+                                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-white/60"></i>
+                                    {{ $pkl['pembimbing_industri'] ?? 'Pembimbing Industri' }}
+                                </span>
+                            </p>
+                        </div>
+
+                        <!-- Progress Bar Jam PKL -->
+                        <div class="space-y-1.5 max-w-xl">
+                            <div class="flex justify-between text-xs text-white/90 font-medium">
+                                <span>Progres Jam PKL</span>
+                                <span class="font-bold text-emerald-300">{{ $pkl['total_jam'] ?? 0 }} / {{ $pkl['target_jam'] ?? 640 }} Jam ({{ $pkl['progress_jam'] ?? 0 }}%)</span>
+                            </div>
+                            <div class="h-2.5 rounded-full bg-white/20 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-300 transition-all duration-700" style="width: {{ $pkl['progress_jam'] ?? 0 }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap lg:flex-col gap-2.5 shrink-0">
+                        <a href="{{ route('bkk.me.jurnal') }}" class="h-10 px-5 rounded-full bg-white text-navy text-xs sm:text-sm font-semibold hover:bg-white/90 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="notebook-pen" class="w-4 h-4 text-navy"></i>
+                            <span>Isi Jurnal Harian</span>
+                        </a>
+                        <a href="{{ route('bkk.me.laporan') }}" class="h-10 px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2">
+                            <i data-lucide="book-open" class="w-4 h-4"></i>
+                            <span>Kelola Laporan PKL</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @elseif($pkl['code'] === 'SUDAH_PKL')
+            <!-- Widget Kondisi 2: Sudah Selesai PKL -->
+            <div class="p-6 bg-gradient-to-r from-emerald-900 via-teal-900 to-navy text-white rounded-3xl border border-emerald-800 shadow-sm relative overflow-hidden">
+                <div class="absolute right-0 top-0 h-full w-1/3 pointer-events-none opacity-10">
+                    <div class="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-emerald-400"></div>
+                </div>
+
+                <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-3 flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                Telah Menyelesaikan PKL
+                            </span>
+                            <span class="text-xs text-white/70">Selesai: {{ $pkl['tanggal_selesai'] ?? '-' }}</span>
+                        </div>
+
+                        <div>
+                            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                                {{ $pkl['mitra_nama'] ?? 'Mitra Industri' }}
+                            </h2>
+                            <p class="text-xs sm:text-sm text-white/80 mt-1">
+                                Divisi: {{ $pkl['unit_kerja'] ?? 'Divisi PKL' }} · Total Jam: <b class="text-white">{{ $pkl['total_jam'] ?? 640 }} Jam</b>
+                            </p>
+                        </div>
+
+                        <!-- Info Nilai Akhir jika tersedia -->
+                        <div class="flex flex-wrap items-center gap-3 pt-1">
+                            <div class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs">
+                                <span class="text-white/70">Nilai Industri:</span>
+                                <b class="ml-1 text-emerald-300">{{ !empty($pkl['nilai_industri']) ? number_format($pkl['nilai_industri'], 1) : 'Terverifikasi' }}</b>
+                            </div>
+                            <div class="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-xs">
+                                <span class="text-white/70">Nilai Sekolah:</span>
+                                <b class="ml-1 text-emerald-300">{{ !empty($pkl['nilai_sekolah']) ? number_format($pkl['nilai_sekolah'], 1) : 'Lulus' }}</b>
+                            </div>
+                            <span class="text-xs text-emerald-200/90 flex items-center gap-1">
+                                <i data-lucide="badge-check" class="w-4 h-4 text-emerald-400"></i>
+                                Sertifikat & Laporan Siap untuk Portofolio
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap lg:flex-col gap-2.5 shrink-0">
+                        <a href="{{ route('bkk.me.laporan') }}" class="h-10 px-5 rounded-full bg-white text-emerald-950 text-xs sm:text-sm font-semibold hover:bg-white/90 transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="file-check-2" class="w-4 h-4 text-emerald-800"></i>
+                            <span>Lihat Laporan Akhir</span>
+                        </a>
+                        <a href="{{ route('bkk.lowongan') }}" class="h-10 px-5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2">
+                            <i data-lucide="briefcase" class="w-4 h-4"></i>
+                            <span>Cari Peluang Kerja</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @else
+            <!-- Widget Kondisi 3: Belum PKL -->
+            <div class="p-6 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 rounded-3xl border border-amber-200/80 shadow-sm relative overflow-hidden">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-2.5 flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600"></i>
+                                Belum Terdaftar PKL
+                            </span>
+                            <span class="text-xs text-muted">Tahun Ajaran Aktif</span>
+                        </div>
+
+                        <h2 class="text-lg sm:text-xl font-bold tracking-tight text-navy">
+                            Anda belum memiliki tempat penempatan PKL aktif
+                        </h2>
+                        <p class="text-xs sm:text-sm text-muted leading-relaxed max-w-2xl">
+                            Untuk memulai Praktik Kerja Lapangan (PKL), silakan cari lowongan PKL yang dibuka oleh mitra industri sekolah, optimalkan CV Anda, atau koordinasikan dengan tim BKK / Guru Pembimbing sekolah.
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-4 pt-1 text-xs text-navy font-medium">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-full bg-amber-200/60 text-amber-900 grid place-items-center text-[11px] font-bold">1</span>
+                                Lengkapi CV & Portofolio
+                            </span>
+                            <span class="text-line hidden sm:inline">→</span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-full bg-amber-200/60 text-amber-900 grid place-items-center text-[11px] font-bold">2</span>
+                                Lamar Posisi PKL Mitra
+                            </span>
+                            <span class="text-line hidden sm:inline">→</span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-full bg-amber-200/60 text-amber-900 grid place-items-center text-[11px] font-bold">3</span>
+                                Terbit Surat Tugas BKK
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap lg:flex-col gap-2.5 shrink-0">
+                        <a href="{{ route('bkk.lowongan', ['tipe' => 'PKL']) }}" class="h-10 px-5 rounded-full bg-maroon text-white text-xs sm:text-sm font-semibold hover:bg-maroon-dark transition-all inline-flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                            <span>Eksplorasi Lowongan PKL</span>
+                        </a>
+                        <a href="{{ route('bkk.me.cv.edit') }}" class="h-10 px-5 rounded-full bg-white hover:bg-canvas border border-line text-navy text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-2">
+                            <i data-lucide="file-pen-line" class="w-4 h-4 text-maroon"></i>
+                            <span>Lengkapi Profil & CV</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endif
 
     <!-- 4 Metric Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
