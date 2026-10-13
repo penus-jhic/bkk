@@ -364,6 +364,8 @@ class MeController extends Controller
         $userId = $authUser['id'];
         $role = $authUser['role'] ?? 'SISWA';
 
+        $this->ensureProfilSiswa($authUser);
+
         $validated = $request->validate([
             'raw_markdown' => ['nullable', 'string'],
             'markdown' => ['nullable', 'string'],

@@ -51,55 +51,116 @@ class CvResume extends Model
     }
 
     /**
+     * Pastikan profil_siswa ada sebelum operasi insert pada cv_resumes
+     * demi integritas referensial foreign key.
+     */
+    public static function ensureProfilSiswaExists(string $userId): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('profil_siswa')) {
+                ProfilSiswa::firstOrCreate(
+                    ['user_id' => $userId],
+                    [
+                        'nis' => '-',
+                        'jurusan' => 'Belum diisi',
+                        'angkatan' => (string) date('Y'),
+                        'status_kelulusan' => 'SISWA_AKTIF',
+                    ]
+                );
+            }
+        } catch (\Throwable) {}
+    }
+
+    public static function getUserColumn(): string
+    {
+        static $col = null;
+        if ($col === null) {
+            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'user_id') ? 'user_id' : 'siswa_id';
+        }
+        return $col;
+    }
+
+    public static function getMarkdownColumn(): string
+    {
+        static $col = null;
+        if ($col === null) {
+            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'raw_markdown') ? 'raw_markdown' : 'konten_markdown';
+        }
+        return $col;
+    }
+
+    public static function getMainColumn(): string
+    {
+        static $col = null;
+        if ($col === null) {
+            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'is_main') ? 'is_main' : 'is_primary';
+        }
+        return $col;
+    }
+
+    /**
      * Simpan atau perbarui 1 baris draf sementara (temp = true, is_main = false) per user.
      * Jika checksum sama dengan CV utama saat ini, langsung kembalikan CV utama tanpa membuat draf.
      */
     public static function saveDraft(string $userId, string $rawMarkdown): self
     {
-        $checksum = self::generateChecksum($rawMarkdown);
+        self::ensureProfilSiswaExists($userId);
 
-        $currentMain = self::where('user_id', $userId)
+        $checksum = self::generateChecksum($rawMarkdown);
+        $userCol = self::getUserColumn();
+        $mainCol = self::getMainColumn();
+        $mdCol = self::getMarkdownColumn();
+
+        $currentMain = self::where($userCol, $userId)
             ->where('temp', false)
-            ->where('is_main', true)
+            ->where($mainCol, true)
             ->first();
 
         if ($currentMain && $currentMain->checksum === $checksum) {
+            self::where($userCol, $userId)->where('temp', true)->delete();
             return $currentMain;
         }
 
-        return DB::transaction(function () use ($userId, $rawMarkdown, $checksum) {
-            $tempDraft = self::where('user_id', $userId)
+        return DB::transaction(function () use ($userId, $rawMarkdown, $checksum, $userCol, $mainCol, $mdCol) {
+            $tempDraft = self::where($userCol, $userId)
                 ->where('temp', true)
                 ->latest('id')
                 ->first();
 
             if ($tempDraft) {
-                self::where('user_id', $userId)
+                self::where($userCol, $userId)
                     ->where('temp', true)
                     ->where('id', '!=', $tempDraft->id)
                     ->delete();
 
-                $tempDraft->update([
-                    'raw_markdown' => $rawMarkdown,
+                $updateData = [
+                    $mdCol => $rawMarkdown,
                     'checksum' => $checksum,
-                    'is_main' => false,
+                    $mainCol => false,
                     'temp' => true,
                     'score' => null,
                     'feedback' => null,
-                ]);
+                ];
+
+                $tempDraft->update($updateData);
 
                 return $tempDraft->fresh();
             }
 
-            return self::create([
-                'user_id' => $userId,
-                'raw_markdown' => $rawMarkdown,
+            $createData = [
+                $userCol => $userId,
+                $mdCol => $rawMarkdown,
                 'checksum' => $checksum,
-                'is_main' => false,
+                $mainCol => false,
                 'temp' => true,
                 'score' => null,
                 'feedback' => null,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'judul_cv')) {
+                $createData['judul_cv'] = 'Draf CV ATS';
+            }
+
+            return self::create($createData);
         });
     }
 
@@ -110,53 +171,80 @@ class CvResume extends Model
      */
     public static function saveVersion(string $userId, string $rawMarkdown): self
     {
-        $checksum = self::generateChecksum($rawMarkdown);
+        self::ensureProfilSiswaExists($userId);
 
-        $currentMain = self::where('user_id', $userId)
+        $checksum = self::generateChecksum($rawMarkdown);
+        $userCol = self::getUserColumn();
+        $mainCol = self::getMainColumn();
+        $mdCol = self::getMarkdownColumn();
+
+        $currentMain = self::where($userCol, $userId)
             ->where('temp', false)
-            ->where('is_main', true)
+            ->where($mainCol, true)
             ->first();
 
         if ($currentMain && $currentMain->checksum === $checksum) {
-            self::where('user_id', $userId)->where('temp', true)->delete();
+            self::where($userCol, $userId)->where('temp', true)->delete();
             return $currentMain;
         }
 
-        return DB::transaction(function () use ($userId, $rawMarkdown, $checksum) {
-            self::where('user_id', $userId)->update(['is_main' => false]);
+        // Jika terdapat versi resmi lama yang memiliki checksum identik, cukup aktifkan kembali
+        $existingIdentical = self::where($userCol, $userId)
+            ->where('temp', false)
+            ->where('checksum', $checksum)
+            ->first();
 
-            $tempDraft = self::where('user_id', $userId)
+        if ($existingIdentical) {
+            return DB::transaction(function () use ($userCol, $mainCol, $userId, $existingIdentical) {
+                self::where($userCol, $userId)->where('temp', true)->delete();
+                self::where($userCol, $userId)->where('id', '!=', $existingIdentical->id)->update([$mainCol => false]);
+                $existingIdentical->update([$mainCol => true]);
+                return $existingIdentical->fresh();
+            });
+        }
+
+        return DB::transaction(function () use ($userId, $rawMarkdown, $checksum, $userCol, $mainCol, $mdCol) {
+            self::where($userCol, $userId)->update([$mainCol => false]);
+
+            $tempDraft = self::where($userCol, $userId)
                 ->where('temp', true)
                 ->latest('id')
                 ->first();
 
             if ($tempDraft) {
-                self::where('user_id', $userId)
+                self::where($userCol, $userId)
                     ->where('temp', true)
                     ->where('id', '!=', $tempDraft->id)
                     ->delete();
 
-                $tempDraft->update([
-                    'raw_markdown' => $rawMarkdown,
+                $updateData = [
+                    $mdCol => $rawMarkdown,
                     'checksum' => $checksum,
                     'temp' => false,
-                    'is_main' => true,
+                    $mainCol => true,
                     'score' => null,
                     'feedback' => null,
-                ]);
+                ];
+
+                $tempDraft->update($updateData);
 
                 return $tempDraft->fresh();
             }
 
-            return self::create([
-                'user_id' => $userId,
-                'raw_markdown' => $rawMarkdown,
+            $createData = [
+                $userCol => $userId,
+                $mdCol => $rawMarkdown,
                 'checksum' => $checksum,
-                'is_main' => true,
+                $mainCol => true,
                 'temp' => false,
                 'score' => null,
                 'feedback' => null,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'judul_cv')) {
+                $createData['judul_cv'] = 'CV ATS Utama';
+            }
+
+            return self::create($createData);
         });
     }
 
@@ -165,13 +253,17 @@ class CvResume extends Model
      */
     public function setAsMain(): self
     {
-        return DB::transaction(function () {
-            self::where('user_id', $this->user_id)
+        $userCol = self::getUserColumn();
+        $mainCol = self::getMainColumn();
+        $userId = $this->{$userCol} ?? $this->user_id;
+
+        return DB::transaction(function () use ($userCol, $mainCol, $userId) {
+            self::where($userCol, $userId)
                 ->where('id', '!=', $this->id)
-                ->update(['is_main' => false]);
+                ->update([$mainCol => false]);
 
             $this->update([
-                'is_main' => true,
+                $mainCol => true,
                 'temp' => false,
             ]);
             return $this->fresh();
@@ -192,9 +284,24 @@ class CvResume extends Model
     /* Accessor / Mutator Kompatibilitas Transisional                              */
     /* -------------------------------------------------------------------------- */
 
+    public function getUserIdAttribute(): ?string
+    {
+        return $this->attributes['user_id'] ?? $this->attributes['siswa_id'] ?? null;
+    }
+
+    public function getRawMarkdownAttribute(): string
+    {
+        return (string) ($this->attributes['raw_markdown'] ?? $this->attributes['konten_markdown'] ?? '');
+    }
+
+    public function getIsMainAttribute(): bool
+    {
+        return (bool) ($this->attributes['is_main'] ?? $this->attributes['is_primary'] ?? false);
+    }
+
     public function getKontenMarkdownAttribute(): string
     {
-        return (string) ($this->attributes['raw_markdown'] ?? '');
+        return (string) ($this->attributes['raw_markdown'] ?? $this->attributes['konten_markdown'] ?? '');
     }
 
     public function setKontenMarkdownAttribute($value): void
