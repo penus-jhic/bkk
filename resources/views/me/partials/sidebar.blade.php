@@ -85,12 +85,23 @@
         <div class="p-4 rounded-2xl bg-navy text-white relative overflow-hidden shadow-sm">
             <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-maroon/60 blur-sm pointer-events-none"></div>
             <div class="relative">
-                <div class="text-xs text-white/70 font-medium">
-                    {{ $isSiswa ? 'Status PKL' : 'Status Karier' }}
+                <div class="flex items-center justify-between text-xs text-white/70 font-medium">
+                    <span>{{ $isSiswa ? 'Status PKL' : 'Status Karier' }}</span>
+                    @if($isSiswa)
+                        @php
+                            $code = $profile['pkl_status']['code'] ?? 'BELUM_PKL';
+                        @endphp
+                        <span class="w-2 h-2 rounded-full {{ $code === 'SEDANG_PKL' ? 'bg-emerald-400 animate-pulse' : ($code === 'SUDAH_PKL' ? 'bg-emerald-300' : 'bg-amber-400') }}"></span>
+                    @endif
                 </div>
                 <div class="text-sm font-semibold mt-0.5 leading-snug">
-                    {{ $profile['status'] ?? ($isSiswa ? 'PKL Aktif' : 'Pencari Kerja') }}
+                    {{ $profile['status'] ?? ($isSiswa ? 'Belum PKL' : 'Pencari Kerja') }}
                 </div>
+                @if($isSiswa && !empty($profile['pkl_status']['mitra_nama']))
+                    <div class="text-[11px] text-white/80 mt-1 truncate">
+                        {{ $profile['pkl_status']['mitra_nama'] }}
+                    </div>
+                @endif
                 <div class="text-[11px] text-white/60 mt-2 font-mono">
                     {{ $profile['kelas'] ?? ($isSiswa ? 'XII' : 'Alumni') }} · NIS {{ $profile['nis'] ?? '-' }}
                 </div>

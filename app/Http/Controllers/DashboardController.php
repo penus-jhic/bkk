@@ -11,6 +11,7 @@ use App\Models\PenempatanPkl;
 use App\Models\PermohonanKerjasama;
 use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
+use App\Models\ProfilSiswa;
 use App\Models\TracerRespon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,22 @@ class DashboardController extends Controller
     {
         $authUser = $request->auth_user ?? $request->input('auth_user');
 
-        $has = fn (string $table) => Schema::hasTable($table);
+        $has = function (string $table): bool {
+            try {
+                return Schema::hasTable($table);
+            } catch (\Throwable) {
+                return false;
+            }
+        };
+
+        $totalSiswaAktif = $has('profil_siswa') ? ProfilSiswa::where('status_kelulusan', 'SISWA_AKTIF')->count() : 0;
+        $totalSiswaPkl = $has('penempatan_pkl') ? PenempatanPkl::where('status', 'BERJALAN')->count() : 0;
+        $totalPklSelesai = $has('penempatan_pkl') ? PenempatanPkl::where('status', 'SELESAI')->count() : 0;
+        $totalSiswaBelumPkl = ($has('profil_siswa') && $has('penempatan_pkl'))
+            ? ProfilSiswa::where('status_kelulusan', 'SISWA_AKTIF')
+                ->whereDoesntHave('penempatanPkl', fn ($q) => $q->whereIn('status', ['BERJALAN', 'SELESAI']))
+                ->count()
+            : max(0, $totalSiswaAktif - $totalSiswaPkl - $totalPklSelesai);
 
         $stats = [
             'total_berita' => $has('berita') ? Berita::count() : 0,
@@ -45,8 +61,10 @@ class DashboardController extends Controller
             'total_mitra' => $has('mitra') ? Mitra::count() : 0,
             'total_mitra_verified' => $has('mitra') ? Mitra::where('is_verified', true)->count() : 0,
             'total_permohonan_pending' => $has('permohonan_kerjasama') ? PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count() : 0,
-            'total_siswa_pkl' => $has('penempatan_pkl') ? PenempatanPkl::where('status', 'BERJALAN')->count() : 0,
-            'total_pkl_selesai' => $has('penempatan_pkl') ? PenempatanPkl::where('status', 'SELESAI')->count() : 0,
+            'total_siswa_aktif' => $totalSiswaAktif,
+            'total_siswa_belum_pkl' => $totalSiswaBelumPkl,
+            'total_siswa_pkl' => $totalSiswaPkl,
+            'total_pkl_selesai' => $totalPklSelesai,
             'total_jurnal_menunggu' => $has('pkl_jurnal_harian') ? PklJurnalHarian::where('status', 'Menunggu')->count() : 0,
             'total_laporan_ditinjau' => $has('pkl_laporan_akhir') ? PklLaporanAkhir::where('status', 'Ditinjau')->count() : 0,
             'total_pelamar' => $has('lamaran') ? Lamaran::count() : 0,
@@ -69,6 +87,31 @@ class DashboardController extends Controller
             ->map(fn (string $status) => ['status' => $status, 'total' => (int) ($tracerCounts[$status] ?? 0)])
             ->all();
         $stats['tracer_terserap'] = (int) $tracerCounts->only(['Bekerja', 'Melanjutkan Pendidikan', 'Wirausaha'])->sum();
+
+        $totalPklDistributionBase = max(1, $totalSiswaBelumPkl + $totalSiswaPkl + $totalPklSelesai);
+        $pklDistribution = [
+            [
+                'status' => 'Belum PKL',
+                'total' => $totalSiswaBelumPkl,
+                'percent' => (int) round(($totalSiswaBelumPkl / $totalPklDistributionBase) * 100),
+                'color' => 'bg-amber-500',
+                'badge' => 'bg-amber-50 text-amber-800 border border-amber-200',
+            ],
+            [
+                'status' => 'Sedang PKL',
+                'total' => $totalSiswaPkl,
+                'percent' => (int) round(($totalSiswaPkl / $totalPklDistributionBase) * 100),
+                'color' => 'bg-blue-600',
+                'badge' => 'bg-blue-50 text-blue-800 border border-blue-200',
+            ],
+            [
+                'status' => 'Selesai PKL',
+                'total' => $totalPklSelesai,
+                'percent' => (int) round(($totalPklSelesai / $totalPklDistributionBase) * 100),
+                'color' => 'bg-emerald-600',
+                'badge' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+            ],
+        ];
 
         $recentBeritas = $has('berita')
             ? Berita::with('kategori')->latest('created_at')->take(4)->get()
@@ -108,6 +151,7 @@ class DashboardController extends Controller
                 'data' => [
                     'user' => $authUser,
                     'stats' => $stats,
+                    'pkl_distribution' => $pklDistribution,
                     'lamaran_funnel' => $lamaranFunnel,
                     'tracer_breakdown' => $tracerBreakdown,
                     'kategori' => $kategoriList,
@@ -123,6 +167,7 @@ class DashboardController extends Controller
         return view('admin.pages.dashboard', compact(
             'authUser',
             'stats',
+            'pklDistribution',
             'lamaranFunnel',
             'tracerBreakdown',
             'recentBeritas',

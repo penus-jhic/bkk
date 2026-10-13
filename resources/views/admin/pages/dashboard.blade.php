@@ -68,7 +68,7 @@
             'label' => 'Siswa PKL Berjalan',
             'value' => $s('total_siswa_pkl'),
             'icon' => 'activity',
-            'note' => $s('total_pkl_selesai') . ' selesai · ' . $s('total_jurnal_menunggu') . ' jurnal menunggu',
+            'note' => $s('total_siswa_belum_pkl') . ' belum penempatan · ' . $s('total_pkl_selesai') . ' selesai',
             'href' => route('bkk.admin.pkl.monitoring'),
         ],
         [
@@ -291,7 +291,56 @@
                     Monitoring <x-sketch.arrow class="w-5 h-2.5 group-hover:translate-x-0.5 transition-transform" />
                 </a>
             </div>
-            <ul class="mt-5 space-y-4">
+
+            {{-- Ringkasan Distribusi Status PKL Siswa Aktif --}}
+            <div class="mt-4 p-4 rounded-xl bg-brand-softmist/60 border border-brand-ink/10">
+                <div class="flex items-center justify-between text-xs font-semibold text-brand-ink mb-2">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-brand-darkred"></i>
+                        <span>Distribusi Status PKL Siswa</span>
+                    </span>
+                    <span class="text-[11px] text-brand-ink/60">Total: {{ $s('total_siswa_aktif') > 0 ? $s('total_siswa_aktif') : ($s('total_siswa_belum_pkl') + $s('total_siswa_pkl') + $s('total_pkl_selesai')) }} Siswa Aktif</span>
+                </div>
+
+                {{-- Stacked Progress Bar --}}
+                <div class="h-2.5 rounded-full bg-brand-paper overflow-hidden flex w-full">
+                    @foreach($pklDistribution as $dist)
+                        @if($dist['percent'] > 0)
+                            <div class="h-full {{ $dist['color'] }}" style="width: {{ $dist['percent'] }}%" title="{{ $dist['status'] }}: {{ $dist['total'] }} siswa ({{ $dist['percent'] }}%)"></div>
+                        @endif
+                    @endforeach
+                </div>
+
+                {{-- Legend & Counts --}}
+                <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                    @foreach($pklDistribution as $dist)
+                        <div class="p-2 rounded-lg bg-white border border-brand-ink/5 shadow-xs">
+                            <div class="flex items-center justify-center gap-1.5 text-[11px] font-medium text-brand-ink/70">
+                                <span class="w-2 h-2 rounded-full {{ $dist['color'] }}"></span>
+                                <span>{{ $dist['status'] }}</span>
+                            </div>
+                            <div class="font-display text-base font-bold text-brand-ink mt-0.5">
+                                {{ $dist['total'] }}
+                                <span class="text-[10px] font-sans font-normal text-brand-ink/50">({{ $dist['percent'] }}%)</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($s('total_siswa_belum_pkl') > 0)
+                    <div class="mt-3 flex items-center gap-2 text-[11px] text-amber-800 bg-amber-50/80 border border-amber-200/60 rounded-lg px-2.5 py-1.5">
+                        <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
+                        <span>Terdapat <b>{{ $s('total_siswa_belum_pkl') }} siswa</b> yang belum terdaftar di penempatan mitra PKL.</span>
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-brand-ink/70">
+                <span>Aktivitas Berjalan Terbaru</span>
+                <span class="text-[11px] font-normal lowercase text-brand-ink/50">target jam</span>
+            </div>
+
+            <ul class="mt-3 space-y-4">
                 @forelse($recentPkl as $pkl)
                     @php $progress = $pkl->target_jam > 0 ? min(100, (int) round($pkl->total_jam_tercapai / $pkl->target_jam * 100)) : 0; @endphp
                     <li>
