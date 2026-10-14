@@ -74,7 +74,9 @@ class CvResume extends Model
                 );
                 $ensured[$userId] = true;
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public static function getUserColumn(): string
