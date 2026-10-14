@@ -336,3 +336,6 @@ The local `cv_resumes` table still had the old columns (`siswa_id`, `konten_mark
 4. **D1, D3, D4**: wire the dashboard score, timeline and match/skills to real data.
 5. **D6**: run migrations locally and add logging to the empty `catch` blocks.
 6. Remaining low-severity items.
+
+
+testing
