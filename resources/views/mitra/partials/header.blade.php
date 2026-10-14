@@ -15,11 +15,10 @@
     </button>
 
     <!-- Brand -->
-    <a href="{{ route('bkk.mitra.dashboard') }}" class="flex items-center gap-2.5 group shrink-0" title="Dashboard Mitra IDUKA">
-        <img src="{{ asset('images/logosmkpenus.png') }}" alt="Logo SMK Plus Pelita Nusantara" class="w-9 h-9 object-contain group-hover:scale-105 transition-transform" />
-        <span class="hidden sm:flex flex-col">
-            <span class="font-display text-[15px] font-bold uppercase tracking-wide text-brand-ink leading-tight group-hover:text-brand-darkred transition-colors">BKK Pelita Nusantara</span>
-            <span class="text-[10px] uppercase font-semibold tracking-wider text-brand-darkred mt-0.5">Portal Mitra IDUKA</span>
+    <a href="{{ route('bkk.mitra.dashboard') }}" class="flex items-center gap-3 group shrink-0" title="Dashboard Mitra IDUKA">
+        <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-9 sm:h-10 w-auto max-w-[190px] object-contain group-hover:scale-105 transition-transform" />
+        <span class="hidden sm:inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-brand-darkred bg-brand-darkred/10 px-2.5 py-1 rounded-full">
+            Portal Mitra IDUKA
         </span>
     </a>
 

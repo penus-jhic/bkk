@@ -50,6 +50,7 @@ Route::prefix('bkk')->group(function () {
     });
     // 0. Static Asset Handlers (Kompatibilitas Reverse Proxy Path-Based)
     Route::get('/images/{path}', [StaticAssetController::class, 'serveImage'])->where('path', '.*')->name('bkk.static.images');
+    Route::get('/favicon.ico', fn () => response()->file(public_path('images/logo-penus.png'), ['Content-Type' => 'image/png']));
     Route::get('/uploads/{path}', [StaticAssetController::class, 'serveUpload'])->where('path', '.*')->name('bkk.static.uploads');
     Route::get('/storage/{path}', [StaticAssetController::class, 'serveStorage'])->where('path', '.*')->name('bkk.static.storage');
     Route::get('/build/{path}', [StaticAssetController::class, 'serveBuild'])->where('path', '.*')->name('bkk.static.build');

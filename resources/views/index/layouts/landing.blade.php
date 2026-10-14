@@ -86,14 +86,6 @@
         ],
     ];
 
-    // KHUSUS TESTING PANITIA LOMBA: hapus array ini & blok "Akses Uji Coba" di footer sebelum production
-    $testingLinks = [
-        ['label' => 'Login Admin / Siswa', 'href' => config('services.auth_service.login_url', '/login'), 'note' => 'Akun dari auth service'],
-        ['label' => 'Dashboard Admin', 'href' => route('bkk.admin.index'), 'note' => 'Role ADMIN, KEPALA_SEKOLAH, TU, DEVELOPER'],
-        ['label' => 'Portal Siswa / Alumni', 'href' => route('bkk.me.index'), 'note' => 'Role SISWA, ALUMNI'],
-        ['label' => 'Login Mitra IDUKA', 'href' => route('bkk.mitra.login'), 'note' => 'STN / Password123!'],
-    ];
-
     $mapsQuery = 'SMK+Plus+Pelita+Nusantara+Cibinong+Bogor';
 @endphp
 <!DOCTYPE html>
@@ -104,7 +96,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'BKK Penus - Bursa Kerja Khusus SMK Plus Pelita Nusantara')</title>
     <meta name="description" content="@yield('description', 'Bursa Kerja Khusus SMK Plus Pelita Nusantara: lowongan PKL & kerja terverifikasi IDUKA, dan AI CV Enhancer berstandar ATS.')">
-    <link rel="icon" href="{{ asset('images/logosmkpenus.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-penus.png') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,8 +164,8 @@
      ============================================================ --}}
 @php
     // Kelas navbar di paling atas halaman (bar penuh) & setelah discroll (pill mengambang), sama dengan Navbar.tsx
-    $navAtTop = 'max-w-full rounded-none bg-white border-transparent border-b-brand-ink/10 px-[max(1.5rem,calc((100%-72rem)/2))] py-3 md:py-4';
-    $navFloating = 'max-w-5xl rounded-[2.5rem] bg-brand-softmist border-brand-ink/10 shadow-softpill px-6 md:px-8 py-3 md:py-3.5';
+    $navAtTop = 'max-w-full rounded-none bg-white border-transparent border-b-brand-ink/10 px-[max(1.5rem,calc((100%-80rem)/2))] py-3 md:py-4';
+    $navFloating = 'max-w-6xl rounded-[2.5rem] bg-brand-softmist border-brand-ink/10 shadow-softpill px-6 md:px-10 py-3 md:py-3.5';
     $chevron = '<path d="m6 9 6 6 6-6"/>';
 @endphp
 <header
@@ -186,12 +180,8 @@
         class="pointer-events-auto w-full border flex items-center justify-between gap-4 transition-all duration-300 motion-reduce:transition-none {{ $navAtTop }}"
         :class="{ '{{ $navAtTop }}': atTop, '{{ $navFloating }}': !atTop }"
     >
-        <a href="{{ $schoolSite }}/" class="flex items-center gap-2.5 sm:gap-3 group">
-            <img src="{{ asset('images/logosmkpenus.png') }}" alt="Logo SMK Pelita Nusantara" class="w-9 h-9 sm:w-10 sm:h-10 object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0" loading="eager">
-            <div class="flex flex-col">
-                <span class="font-display text-base font-bold uppercase tracking-wide text-brand-ink leading-tight group-hover:text-brand-darkred transition-colors">SMK PLUS PELITA NUSANTARA</span>
-                <span class="text-[10px] uppercase font-semibold tracking-wider text-brand-darkred mt-0.5">We Are Different</span>
-            </div>
+        <a href="{{ $schoolSite }}/" class="flex items-center group py-0.5" title="SMK Plus Pelita Nusantara">
+            <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-10 sm:h-11 md:h-12 w-auto max-w-[210px] object-contain drop-shadow-xs group-hover:scale-105 transition-transform shrink-0" loading="eager">
         </a>
 
         <ul class="hidden lg:flex items-center gap-1 xl:gap-1.5">
@@ -277,13 +267,9 @@
         class="pointer-events-auto size-full max-w-none max-h-none flex-col overscroll-contain bg-brand-darkred/95 backdrop-blur-lg p-6 sm:p-8 text-brand-mist open:flex"
     >
         <div class="flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <img src="{{ asset('images/logosmkpenus.png') }}" alt="" class="w-9 h-9 object-contain drop-shadow shrink-0">
-                <div class="flex flex-col">
-                    <span class="font-display text-base font-bold uppercase tracking-wide text-white leading-tight">SMK PLUS PELITA NUSANTARA</span>
-                    <span class="text-[10px] uppercase font-semibold tracking-wider text-brand-mist/70 mt-0.5">We Are Different</span>
-                </div>
-            </div>
+            <a href="{{ $schoolSite }}/" class="flex items-center bg-white/95 rounded-xl px-3 py-1.5 shadow-sm">
+                <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-8 sm:h-9 w-auto max-w-[180px] object-contain shrink-0">
+            </a>
             <button type="button" @click="closeMenu()" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white shrink-0" aria-label="Tutup menu">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -392,12 +378,9 @@
         <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
             {{-- Identitas, kontak, media sosial, logo mitra --}}
             <div class="lg:col-span-4 space-y-4">
-                <a href="{{ url('/bkk') }}" class="group flex w-fit items-center gap-3">
-                    <img src="{{ asset('images/logosmkpenus.png') }}" alt="" class="h-12 w-12 shrink-0 object-contain transition-transform group-hover:scale-105" loading="lazy">
-                    <span class="flex flex-col">
-                        <span class="font-display text-base font-bold uppercase tracking-wide leading-tight text-brand-ink transition-colors group-hover:text-brand-darkred">SMK Plus Pelita Nusantara</span>
-                        <span class="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-darkred">Bursa Kerja Khusus</span>
-                    </span>
+                <a href="{{ url('/bkk') }}" class="group flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-fit">
+                    <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-11 sm:h-12 w-auto max-w-[210px] shrink-0 object-contain transition-transform group-hover:scale-105" loading="lazy">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-brand-darkred bg-brand-darkred/10 px-2.5 py-1 rounded-full w-fit">Bursa Kerja Khusus</span>
                 </a>
                 <p class="max-w-sm text-xs sm:text-[13px] leading-relaxed text-brand-ink/75">
                     Lembaga penyalur kerja dan PKL resmi SMK Plus Pelita Nusantara. Mempersiapkan lulusan vokasi yang kompeten dan siap terserap di dunia industri.
@@ -465,27 +448,6 @@
                     <p class="mt-3 text-[11px] leading-tight text-brand-ink/60">Ciriung, Cibinong, dekat pusat pemerintahan Kabupaten Bogor.</p>
                 </div>
             </div>
-        </div>
-
-        {{-- KHUSUS TESTING PANITIA LOMBA: hapus blok ini sebelum production --}}
-        <div class="max-w-6xl mx-auto mt-12 rounded-card border border-dashed border-brand-signal/40 bg-brand-signal/5 p-5">
-            <div class="flex flex-wrap items-center gap-2">
-                <h2 class="font-display text-sm sm:text-base font-bold uppercase tracking-wide text-brand-ink">Akses Uji Coba Panitia</h2>
-                <span class="rounded-full bg-brand-signal px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">Testing</span>
-            </div>
-            <p class="mt-1.5 text-[11px] sm:text-xs leading-relaxed text-brand-ink/70">
-                Link di bawah ini hanya untuk keperluan penilaian &amp; uji coba oleh panitia lomba, bukan akses resmi, dan akan dihapus saat production.
-            </p>
-            <ul class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                @foreach ($testingLinks as $link)
-                    <li>
-                        <a href="{{ $link['href'] }}" class="group block h-full rounded-lg border border-brand-ink/10 bg-white px-3.5 py-2.5 transition-colors hover:border-brand-darkred">
-                            <span class="block text-xs sm:text-[13px] font-semibold text-brand-ink group-hover:text-brand-darkred">{{ $link['label'] }}</span>
-                            <span class="mt-0.5 block text-[11px] text-brand-ink/60">{{ $link['note'] }}</span>
-                        </a>
-                    </li>
-                @endforeach
-            </ul>
         </div>
 
         <div class="max-w-6xl mx-auto mt-12 flex flex-col gap-3 border-t border-brand-ink/10 pt-6 text-[11px] sm:text-xs font-medium text-brand-ink/60 sm:flex-row sm:items-center sm:justify-between">
