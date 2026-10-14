@@ -23,6 +23,8 @@ use Illuminate\View\View;
 
 class MeController extends Controller
 {
+    protected ?ProfilSiswa $currentProfilSiswa = null;
+
     public function __construct(
         protected MeDataService $dataService,
         protected AiCvService $aiCvService
@@ -46,14 +48,19 @@ class MeController extends Controller
         // Sinkronisasi data riil profil dari database jika record siswa/alumni ada
         try {
             if (Schema::hasTable('profil_siswa')) {
-                $dbSiswa = ProfilSiswa::with(['primaryResume', 'penempatanPkl.mitra'])->find($userId);
+                $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
+                    ? $this->currentProfilSiswa
+                    : ProfilSiswa::find($userId);
+
                 if ($dbSiswa) {
+                    $this->currentProfilSiswa = $dbSiswa;
                     $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
                     $profile['jurusan'] = $dbSiswa->jurusan ?: $profile['jurusan'];
                     $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
                     $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
                     $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
 
+                    $dbSiswa->loadMissing('primaryResume');
                     $primaryCv = $dbSiswa->primaryResume;
                     if ($primaryCv) {
                         $cvScore['total'] = $primaryCv->skor_total_ai;
@@ -143,17 +150,19 @@ class MeController extends Controller
 
         try {
             if (Schema::hasTable('cv_resumes')) {
-                $activeCv = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->where('is_main', true)
-                    ->first();
-                if ($activeCv && !empty($activeCv->raw_markdown)) {
-                    $cvMarkdown = $activeCv->raw_markdown;
-                }
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
+                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
                     ->latest('id')
                     ->get();
+
+                $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+                if ($activeHeader) {
+                    $activeCv = CvResume::find($activeHeader->id);
+                    if ($activeCv && !empty($activeCv->raw_markdown)) {
+                        $cvMarkdown = $activeCv->raw_markdown;
+                    }
+                }
             }
         } catch (\Throwable) {}
 
@@ -227,17 +236,19 @@ class MeController extends Controller
 
         try {
             if (Schema::hasTable('cv_resumes')) {
-                $activeCv = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->where('is_main', true)
-                    ->first();
-                if ($activeCv && !empty($activeCv->raw_markdown)) {
-                    $cvMarkdown = $activeCv->raw_markdown;
-                }
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
+                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
                     ->latest('id')
                     ->get();
+
+                $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+                if ($activeHeader) {
+                    $activeCv = CvResume::find($activeHeader->id);
+                    if ($activeCv && !empty($activeCv->raw_markdown)) {
+                        $cvMarkdown = $activeCv->raw_markdown;
+                    }
+                }
             }
         } catch (\Throwable) {}
 
@@ -315,6 +326,7 @@ class MeController extends Controller
             if (Schema::hasTable('cv_resumes')) {
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
+                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
                     ->latest('id')
                     ->get();
             }
@@ -363,8 +375,6 @@ class MeController extends Controller
         $authUser = $this->resolveAuthUser($request);
         $userId = $authUser['id'];
         $role = $authUser['role'] ?? 'SISWA';
-
-        $this->ensureProfilSiswa($authUser);
 
         $validated = $request->validate([
             'raw_markdown' => ['nullable', 'string'],
@@ -1098,7 +1108,8 @@ class MeController extends Controller
         }
 
         $authUser['role'] = $role;
-        $this->ensureProfilSiswa($authUser);
+        $this->currentProfilSiswa = $this->ensureProfilSiswa($authUser);
+        $request->attributes->set('profil_siswa_model', $this->currentProfilSiswa);
 
         return $authUser;
     }
@@ -1107,8 +1118,12 @@ class MeController extends Controller
     {
         try {
             if (Schema::hasTable('profil_siswa')) {
-                $dbSiswa = ProfilSiswa::find($userId);
+                $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
+                    ? $this->currentProfilSiswa
+                    : ProfilSiswa::find($userId);
+
                 if ($dbSiswa) {
+                    $this->currentProfilSiswa = $dbSiswa;
                     $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
                     if (!empty($dbSiswa->jurusan) && $dbSiswa->jurusan !== 'Belum diisi') {
                         $profile['jurusan'] = $dbSiswa->jurusan;
@@ -1130,24 +1145,35 @@ class MeController extends Controller
     }
 
     /**
-     * Buat record profil_siswa minimal untuk user dari auth service yang belum punya profil,
+     * Buat atau ambil record profil_siswa minimal untuk user dari auth service yang belum punya profil,
      * karena cv_resumes, lamaran, dan penempatan_pkl ber-FK ke profil_siswa.user_id.
      */
-    protected function ensureProfilSiswa(array $authUser): void
+    protected function ensureProfilSiswa(array $authUser): ?ProfilSiswa
     {
+        $userId = (string) ($authUser['id'] ?? '');
+        if ($userId === '') {
+            return null;
+        }
+
+        if ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === $userId) {
+            return $this->currentProfilSiswa;
+        }
+
         try {
             if (Schema::hasTable('profil_siswa')) {
-                ProfilSiswa::firstOrCreate(
-                    ['user_id' => (string) $authUser['id']],
+                return $this->currentProfilSiswa = ProfilSiswa::firstOrCreate(
+                    ['user_id' => $userId],
                     [
                         'nis' => $authUser['nomor_induk'] ?? $authUser['nis'] ?? '-',
                         'jurusan' => $authUser['jurusan'] ?? 'Belum diisi',
                         'kelas' => $authUser['kelas'] ?? null,
                         'angkatan' => (string) ($authUser['angkatan'] ?? date('Y')),
-                        'status_kelulusan' => $authUser['role'] === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
+                        'status_kelulusan' => ($authUser['role'] ?? '') === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
                     ]
                 );
             }
         } catch (\Throwable) {}
+
+        return null;
     }
 }

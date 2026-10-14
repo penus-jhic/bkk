@@ -340,7 +340,9 @@
                             @if($v->is_main)
                                 <span class="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Utama</span>
                             @endif
-                            @if(is_array($v->feedback) && isset($v->feedback['total_score']))
+                            @if($v->score !== null)
+                                <span class="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">Skor {{ $v->score }}</span>
+                            @elseif(is_array($v->feedback) && isset($v->feedback['total_score']))
                                 <span class="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">Skor {{ $v->feedback['total_score'] }}</span>
                             @endif
                             @if($activeCv?->id === $v->id)
@@ -359,7 +361,7 @@
                                 Buka
                             </a>
                         @endif
-                        <button type="button" onclick="loadVersionContent(@js($v->raw_markdown))" class="h-7 px-3 rounded-full bg-navy/5 hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition cursor-pointer">
+                        <button type="button" onclick="loadVersionContent({{ $v->id }})" class="h-7 px-3 rounded-full bg-navy/5 hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition cursor-pointer">
                             Muat Teks
                         </button>
                     </div>
@@ -1129,11 +1131,25 @@
         if (modal) modal.classList.toggle('hidden', !open);
     }
 
-    function loadVersionContent(markdown) {
-        if (!markdown) return;
-        setContent(markdown);
-        showToast('Konten versi terpilih berhasil dimuat ke editor.');
-        openVersionModal(false);
+    async function loadVersionContent(versionId) {
+        if (!versionId) return;
+        try {
+            showToast('Memuat konten versi CV...');
+            const res = await fetch(`{{ url('/bkk/me/cv') }}/${versionId}/edit`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'include'
+            });
+            const json = await res.json();
+            if (!res.ok || !json.success || !json.data) {
+                throw new Error(json.message || 'Gagal memuat konten versi CV.');
+            }
+            const markdown = json.data.raw_markdown || json.data.markdown || '';
+            setContent(markdown);
+            showToast('Konten versi terpilih berhasil dimuat ke editor.');
+            openVersionModal(false);
+        } catch (err) {
+            showToast(err.message || 'Gagal memuat konten versi.');
+        }
     }
 
     // 7. Simpan CV Resmi (temp = false) -> Memicu Evaluasi /api/ai/cv/score & Notifikasi di Backend

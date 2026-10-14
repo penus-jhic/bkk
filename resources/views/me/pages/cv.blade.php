@@ -245,7 +245,11 @@
                                             Utama
                                         </span>
                                     @endif
-                                    @if(is_array($ver->feedback) && isset($ver->feedback['total_score']))
+                                    @if($ver->score !== null)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">
+                                            Skor {{ $ver->score }}
+                                        </span>
+                                    @elseif(is_array($ver->feedback) && isset($ver->feedback['total_score']))
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">
                                             Skor {{ $ver->feedback['total_score'] }}
                                         </span>

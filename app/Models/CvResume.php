@@ -56,6 +56,11 @@ class CvResume extends Model
      */
     public static function ensureProfilSiswaExists(string $userId): void
     {
+        static $ensured = [];
+        if (isset($ensured[$userId])) {
+            return;
+        }
+
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('profil_siswa')) {
                 ProfilSiswa::firstOrCreate(
@@ -67,6 +72,7 @@ class CvResume extends Model
                         'status_kelulusan' => 'SISWA_AKTIF',
                     ]
                 );
+                $ensured[$userId] = true;
             }
         } catch (\Throwable) {}
     }

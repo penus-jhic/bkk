@@ -139,7 +139,11 @@ class PublicController extends Controller
             })
             ->firstOrFail();
 
-        $berita->increment('views_count');
+        $viewKey = 'viewed_berita_' . $berita->id;
+        if (!session()->has($viewKey)) {
+            $berita->increment('views_count');
+            session()->put($viewKey, true);
+        }
 
         $relatedBerita = Berita::published()
             ->where('id', '!=', $berita->id)
@@ -254,7 +258,11 @@ class PublicController extends Controller
             ->first();
 
         if ($lowongan) {
-            $lowongan->increment('views_count');
+            $viewKey = 'viewed_lowongan_' . $lowongan->id;
+            if (!session()->has($viewKey)) {
+                $lowongan->increment('views_count');
+                session()->put($viewKey, true);
+            }
         }
 
         $relatedLowongan = Lowongan::with('mitra')

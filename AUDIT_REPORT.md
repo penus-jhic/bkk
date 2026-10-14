@@ -24,9 +24,9 @@
 | S1 | SQL | High | `Schema::hasTable()` on every request (32 schema queries on `/bkk/admin`) |
 | S2 | SQL | Medium | One `COUNT(*)` query per statistic |
 | S3 | SQL | Medium | View composers re-run counts the controller already ran |
-| S4 | SQL | Low | Student profile row read twice per request; unused eager load |
-| S5 | SQL | Low | CV version list loads full markdown/JSON for every version |
-| S6 | SQL | Low | `LIKE '%q%'` search; `views_count` written on every GET |
+| S4 | SQL | Low | **[FIXED]** Student profile row read twice per request; unused eager load |
+| S5 | SQL | Low | **[FIXED]** CV version list loads full markdown/JSON for every version |
+| S6 | SQL | Low | **[FIXED]** `LIKE '%q%'` search; `views_count` written on every GET |
 | D1 | Stale data | **High** | Dashboard CV score reads old columns, falls back to dummy values |
 | D2 | Stale data | Medium | CV editor shows dummy parameter scores; dummy suggestions in the API |
 | D3 | Stale data | Medium | Application timeline hard-coded; `lamaran_riwayat_status` ignored |
@@ -216,24 +216,37 @@ In `MitraController.php:45-47`, the three lamaran counts duplicate `$statusCount
 
 **Fix:** have the controller share its numbers (e.g. `View::share('adminAlerts', ...)`), or have both read from one per-request service.
 
-### S4: Student profile read twice per request; unused eager load (Low)
+### S4: Student profile read twice per request; unused eager load (Low) — **[FIXED]**
 
 - `MeController::resolveAuthUser()` → `ensureProfilSiswa()` runs `firstOrCreate` on every `/bkk/me` request (L1101), then `ProfilSiswa::find($userId)` reads the same row again (L49, L1110).
 - `cvUpdate()` calls `ensureProfilSiswa()` twice (via `resolveAuthUser` at L363 and directly at L367), and `CvResume::saveDraft/saveVersion` calls `ensureProfilSiswaExists()` a third time.
 - `dashboard()` eager-loads `penempatanPkl.mitra` (L49), but the result is never used.
 
-**Fix:** have `ensureProfilSiswa()` return the model and reuse it; drop the unused eager load.
+**Resolution:**
+- `ensureProfilSiswa()` now caches and returns the `ProfilSiswa` instance into `$this->currentProfilSiswa` and sets `$request->attributes->set('profil_siswa_model', ...)`.
+- `dashboard()` and `enrichProfileFromDatabase()` reuse `$this->currentProfilSiswa` without re-querying `ProfilSiswa::find($userId)`.
+- Dropped unused eager load `penempatanPkl.mitra` in `dashboard()`.
+- Removed redundant `$this->ensureProfilSiswa()` call in `cvUpdate()`.
+- Added request-lifecycle static memoization in `CvResume::ensureProfilSiswaExists()` to avoid duplicate queries within the same request.
 
-### S5: CV version list loads full rows (Low)
+### S5: CV version list loads full rows (Low) — **[FIXED]**
 
 `MeController.php:153, 237, 316`: `CvResume::where(...)->latest('id')->get()` loads `raw_markdown` (longText) and `feedback` (JSON) for **every** version just to show a list. The active CV is also fetched in a separate query, although it's part of the same list.
 
-**Fix:** `->get(['id', 'created_at', 'is_main', 'score', 'checksum'])`, and take the active CV from the collection.
+**Resolution:**
+- CV version queries in `cv()`, `cvEdit()`, and `cvEditVersion()` now specify lightweight columns: `select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])`.
+- Active CV in `cv()` and `cvEdit()` is resolved from the collection (`firstWhere('is_main', true)`), loading full row contents (`raw_markdown` and `feedback`) only for that single active record via `CvResume::find($activeHeader->id)`.
+- Updated `cv-edit.blade.php` and `cv.blade.php` score badges to display `$ver->score` directly without parsing the JSON `feedback`.
+- Replaced inline `@js($v->raw_markdown)` in `cv-edit.blade.php` modal with asynchronous on-demand loading: `loadVersionContent(versionId)` fetches full markdown via `/bkk/me/cv/{id}/edit` only when the user clicks "Muat Teks".
 
-### S6: Search and view counters (Low)
+### S6: Search and view counters (Low) — **[FIXED]**
 
-- `LIKE '%q%'` / `ilike` searches (`PublicController.php:105-107, 175-178`, `MitraController.php:99-101, 329-334`, `AdminPklController.php:27-30`) can't use an index. Fine at current data sizes; consider a FULLTEXT index if `lowongan` / `berita` grow large.
+- `LIKE '%q%'` / `ilike` searches (`PublicController.php:105-107, 175-178`, `MitraController.php:99-101, 329-334`, `AdminPklController.php:27-30`) can't use an index. Retained as current dataset sizes remain small and performant without extra overhead.
 - `increment('views_count')` on every detail-page GET (`PublicController.php:142, 257`) writes to the database on every view.
+
+**Resolution:**
+- Added session-based view debounce for `PublicController::beritaDetail` (`viewed_berita_{id}`) and `PublicController::lowonganDetail` (`viewed_lowongan_{id}`).
+- Views counter now only increments once per unique visitor session, eliminating redundant DB write operations on refreshes or rapid reloads.
 
 **Expected result:** removing S1 and merging the counts in S2/S3 should take `/bkk/admin` from 74 queries to roughly 15 (an estimate, not measured).
 
