@@ -46,6 +46,7 @@ class MeController extends Controller
         $notifications = $this->getMappedNotifications($userId, $role);
 
         // Sinkronisasi data riil profil dari database jika record siswa/alumni ada
+        $primaryCv = null;
         try {
             if (Schema::hasTable('profil_siswa')) {
                 $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
@@ -62,15 +63,12 @@ class MeController extends Controller
 
                     $dbSiswa->loadMissing('primaryResume');
                     $primaryCv = $dbSiswa->primaryResume;
-                    if ($primaryCv) {
-                        $cvScore['total'] = $primaryCv->skor_total_ai;
-                        if (!empty($primaryCv->skor_parameter_json)) {
-                            $cvScore['params'] = $primaryCv->skor_parameter_json;
-                        }
-                    }
                 }
             }
         } catch (\Throwable) {}
+
+        $resolvedCv = $this->resolveActiveCvAndScore($userId, $role, $profile, $primaryCv);
+        $cvScore = $resolvedCv['score'];
 
         $activeApplications = array_values(array_filter($applications, fn ($a) => !in_array($a['status'], ['Diterima', 'Ditolak'])));
         $interviews = array_values(array_filter($applications, fn ($a) => $a['status'] === 'Dipanggil Interview'));
@@ -141,9 +139,7 @@ class MeController extends Controller
         $role = $authUser['role'];
 
         $profile = $this->enrichProfileFromDatabase($this->dataService->getProfile($authUser), $userId);
-        $cvScore = $this->dataService->getCvScore($role, $userId);
         $suggestions = $this->dataService->getCvSuggestions($role, $userId);
-        $cvMarkdown = $this->dataService->getCvMarkdown($role, $profile, $userId);
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
         $activeCv = null;
         $cvVersions = collect();
@@ -159,33 +155,16 @@ class MeController extends Controller
                 $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
                 if ($activeHeader) {
                     $activeCv = CvResume::find($activeHeader->id);
-                    if ($activeCv && !empty($activeCv->raw_markdown)) {
-                        $cvMarkdown = $activeCv->raw_markdown;
-                    }
                 }
             }
         } catch (\Throwable) {}
 
-        $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
-        $cvFeedback = ($activeCv && is_array($activeCv->feedback) && !empty($activeCv->feedback))
-            ? $activeCv->feedback
-            : $this->aiCvService->computeHeuristicScore($cvMarkdown, $checksum);
-
-        $resolvedCvScore = $activeCv?->score !== null ? (int) $activeCv->score : (isset($cvFeedback['total_score']) ? (int) $cvFeedback['total_score'] : (int) ($cvScore['total'] ?? 85));
-        $cvScore['total'] = $resolvedCvScore;
-
-        if (!empty($cvFeedback['parameters']) && is_array($cvFeedback['parameters'])) {
-            $cvScore['params'] = array_map(fn ($p) => [
-                'id' => $p['id'] ?? '',
-                'label' => $p['label'] ?? 'Parameter ATS',
-                'value' => (int) ($p['score'] ?? $p['value'] ?? 85),
-                'score' => (int) ($p['score'] ?? $p['value'] ?? 85),
-                'max_score' => (int) ($p['max_score'] ?? 100),
-                'status' => $p['status'] ?? 'GOOD',
-                'weight' => $p['weight'] ?? 0.25,
-                'feedback' => $p['feedback'] ?? '',
-            ], $cvFeedback['parameters']);
-        }
+        $resolved = $this->resolveActiveCvAndScore($userId, $role, $profile, $activeCv);
+        $cvScore = $resolved['score'];
+        $cvFeedback = $resolved['feedback'];
+        $cvMarkdown = $resolved['markdown'];
+        $checksum = $resolved['checksum'];
+        $activeCv = $resolved['activeCv'];
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -1175,5 +1154,69 @@ class MeController extends Controller
         } catch (\Throwable) {}
 
         return null;
+    }
+
+    /**
+     * Resolusi terpusat untuk CV Aktif, skor ATS, feedback, dan parameter.
+     * Digunakan bersama oleh dashboard() dan cv() untuk menjamin konsistensi 100%.
+     */
+    protected function resolveActiveCvAndScore(string $userId, string $role, array $profile = [], ?CvResume $preferredCv = null): array
+    {
+        $cvScore = $this->dataService->getCvScore($role, $userId);
+        $activeCv = $preferredCv;
+
+        if (!$activeCv) {
+            try {
+                if (Schema::hasTable('cv_resumes')) {
+                    $cvVersions = CvResume::where('user_id', $userId)
+                        ->where('temp', false)
+                        ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                        ->latest('id')
+                        ->get();
+
+                    $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+                    if ($activeHeader) {
+                        $activeCv = CvResume::find($activeHeader->id);
+                    }
+                }
+            } catch (\Throwable) {}
+        }
+
+        $cvMarkdown = (!empty($activeCv?->raw_markdown))
+            ? $activeCv->raw_markdown
+            : $this->dataService->getCvMarkdown($role, $profile, $userId);
+
+        $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
+
+        $cvFeedback = ($activeCv && is_array($activeCv->feedback) && !empty($activeCv->feedback))
+            ? $activeCv->feedback
+            : $this->aiCvService->computeHeuristicScore($cvMarkdown, $checksum);
+
+        $resolvedCvScore = $activeCv?->score !== null
+            ? (int) $activeCv->score
+            : (isset($cvFeedback['total_score']) ? (int) $cvFeedback['total_score'] : (int) ($cvScore['total'] ?? 85));
+
+        $cvScore['total'] = $resolvedCvScore;
+
+        if (!empty($cvFeedback['parameters']) && is_array($cvFeedback['parameters'])) {
+            $cvScore['params'] = array_map(fn ($p) => [
+                'id' => $p['id'] ?? '',
+                'label' => $p['label'] ?? 'Parameter ATS',
+                'value' => (int) ($p['score'] ?? $p['value'] ?? 85),
+                'score' => (int) ($p['score'] ?? $p['value'] ?? 85),
+                'max_score' => (int) ($p['max_score'] ?? 100),
+                'status' => $p['status'] ?? 'GOOD',
+                'weight' => $p['weight'] ?? 0.25,
+                'feedback' => $p['feedback'] ?? '',
+            ], $cvFeedback['parameters']);
+        }
+
+        return [
+            'score' => $cvScore,
+            'feedback' => $cvFeedback,
+            'activeCv' => $activeCv,
+            'markdown' => $cvMarkdown,
+            'checksum' => $checksum,
+        ];
     }
 }

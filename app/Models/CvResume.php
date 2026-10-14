@@ -340,7 +340,7 @@ class CvResume extends Model
         return 'CV ATS Utama';
     }
 
-    public function getSkorTotalAiAttribute(): int
+    public function getSkorTotalAiAttribute(): ?int
     {
         if ($this->score !== null) {
             return (int) $this->score;
@@ -350,7 +350,7 @@ class CvResume extends Model
         if (is_array($feedback) && isset($feedback['total_score'])) {
             return (int) $feedback['total_score'];
         }
-        return 88;
+        return null;
     }
 
     public function getSkorParameterJsonAttribute(): array
