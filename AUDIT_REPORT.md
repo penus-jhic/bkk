@@ -27,7 +27,7 @@
 | S4 | SQL | Low | **[FIXED]** Student profile row read twice per request; unused eager load |
 | S5 | SQL | Low | **[FIXED]** CV version list loads full markdown/JSON for every version |
 | S6 | SQL | Low | **[FIXED]** `LIKE '%q%'` search; `views_count` written on every GET |
-| D1 | Stale data | **High** | Dashboard CV score reads old columns, falls back to dummy values |
+| D1 | Stale data | **High** | **[FIXED]** Dashboard CV score reads old columns, falls back to dummy values |
 | D2 | Stale data | Medium | CV editor shows dummy parameter scores; dummy suggestions in the API |
 | D3 | Stale data | Medium | Application timeline hard-coded; `lamaran_riwayat_status` ignored |
 | D4 | Stale data | Medium | Fixed match scores and skills shown to students and mitra |
@@ -254,7 +254,7 @@ In `MitraController.php:45-47`, the three lamaran counts duplicate `$statusCount
 
 ## 3. Stale / dummy data
 
-### D1: Dashboard CV score reads old columns (High)
+### D1: Dashboard CV score reads old columns (High) — **[FIXED]**
 
 **Location:** `app/Http/Controllers/Me/MeController.php:59-61`
 
@@ -267,7 +267,12 @@ AI scoring (`AiCvService::evaluateAndStoreScore`) now writes `cv_resumes.score` 
 
 **Result:** the dashboard score doesn't match the CV page score.
 
-**Fix:** use `score` and `feedback['parameters']`, the same way `cv()` does (L161-179).
+**Resolution:**
+- Implemented `resolveActiveCvAndScore()` helper in `MeController` shared by both `dashboard()` and `cv()`.
+- Modern columns `cv_resumes.score` and `cv_resumes.feedback` are read directly, mapping parameters into `$cvScore['params']`.
+- Unevaluated CVs run deterministic heuristic scoring (`AiCvService::computeHeuristicScore`) across both pages, ensuring 100% parity between `/bkk/me` and `/bkk/me/cv`.
+- Updated legacy accessor `CvResume::getSkorTotalAiAttribute()` to return `?int` without hardcoded dummy fallbacks (`88`).
+- Added feature tests in `tests/Feature/MeCvScoreParityTest.php` verifying score and parameter parity across evaluated and unevaluated CV states.
 
 ### D2: Dummy CV scores and suggestions (Medium)
 
