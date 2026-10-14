@@ -598,15 +598,6 @@
         }
     }
 
-    function escapeHtml(str) {
-        return String(str ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
     function renderAiSuggestions(suggestions) {
         const listBox = document.getElementById('aiSuggestionsList');
         const countBadge = document.getElementById('suggestionsCountBadge');

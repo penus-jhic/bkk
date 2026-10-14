@@ -329,15 +329,6 @@
         }
     }
 
-    function escapeHtml(str) {
-        return String(str ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
     async function reanalyzeCv() {
         const btn = document.getElementById('btnReanalyze');
         const icon = document.getElementById('reanalyzeIcon');

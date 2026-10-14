@@ -143,6 +143,16 @@
     <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] space-y-2 w-[min(92vw,420px)] pointer-events-none"></div>
 
     <script>
+        // Global HTML Escape Helper
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Global Toast Notification Helper
         function showToast(msg, duration = 3000) {
             const container = document.getElementById('toast-container');
