@@ -4,6 +4,7 @@
 
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
 <style>
     .editor-textarea {
         tab-size: 2;
@@ -284,13 +285,13 @@
 
                     <!-- Dynamic Quick Chips -->
                     <div id="aiQuickChipsContainer" class="flex flex-wrap gap-1.5 pt-2.5 mt-2 border-t border-line">
-                        <button type="button" onclick="sendChatPrompt('Perbaiki kalimat pengalaman agar lebih formal')" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
+                        <button type="button" data-chat-prompt="Perbaiki kalimat pengalaman agar lebih formal" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
                             Perbaiki formalitas
                         </button>
-                        <button type="button" onclick="sendChatPrompt('Bagaimana membuat ringkasan profil lebih singkat?')" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
+                        <button type="button" data-chat-prompt="Bagaimana membuat ringkasan profil lebih singkat?" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
                             Ringkas profil
                         </button>
-                        <button type="button" onclick="sendChatPrompt('Berikan kata kunci ATS terbaik untuk jurusan {{ $userJurusan }}')" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
+                        <button type="button" data-chat-prompt="Berikan kata kunci ATS terbaik untuk jurusan {{ $userJurusan }}" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
                             Kata kunci ATS
                         </button>
                     </div>
@@ -414,6 +415,17 @@
         updateAtsLivePreview(raw);
         updateStats(raw);
         lucide.createIcons();
+
+        document.addEventListener('click', function(e) {
+            const chipBtn = e.target.closest('[data-chat-prompt]');
+            if (chipBtn) {
+                e.preventDefault();
+                const prompt = chipBtn.getAttribute('data-chat-prompt') || '';
+                if (prompt) {
+                    sendChatPrompt(prompt);
+                }
+            }
+        });
     });
 
     @php
@@ -466,7 +478,8 @@
             container.innerHTML = '<div class="text-center py-16 text-muted italic text-xs">Mulai ketik isi CV di editor untuk melihat pratinjau lembar ATS secara langsung.</div>';
             return;
         }
-        container.innerHTML = marked.parse(markdownText);
+        const parsed = marked.parse(markdownText);
+        container.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
     }
 
     function updateStats(text) {
@@ -766,7 +779,9 @@
         const { reply, actions, quickChips } = chatData;
 
         // 1. Markdown prose balasan AI
-        let html = `<div class="prose prose-xs max-w-none text-navy leading-relaxed">${marked.parse(reply || 'Berikut saran untuk CV Anda.')}</div>`;
+        const parsedReply = marked.parse(reply || 'Berikut saran untuk CV Anda.');
+        const safeReply = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedReply) : parsedReply;
+        let html = `<div class="prose prose-xs max-w-none text-navy leading-relaxed">${safeReply}</div>`;
 
         // 2. Kartu Aksi Terstruktur (APPLY_DIFF / PROMPT) langsung di dalam bubble
         if (Array.isArray(actions) && actions.length > 0) {
@@ -840,7 +855,7 @@
             html += `
                 <div class="mt-2.5 pt-2 border-t border-navy/10 flex flex-wrap gap-1.5">
                     ${quickChips.map(chip => `
-                        <button type="button" onclick="sendChatPrompt('${escapeHtml(chip).replace(/'/g, "\\'")}')" class="px-2 py-0.5 rounded-lg bg-white border border-line/80 hover:bg-navy hover:text-white hover:border-navy text-[10px] font-medium text-navy transition cursor-pointer">
+                        <button type="button" data-chat-prompt="${escapeHtml(chip)}" class="px-2 py-0.5 rounded-lg bg-white border border-line/80 hover:bg-navy hover:text-white hover:border-navy text-[10px] font-medium text-navy transition cursor-pointer">
                             ${escapeHtml(chip)}
                         </button>
                     `).join('')}
@@ -1027,7 +1042,7 @@
         if (!container || !Array.isArray(chips) || !chips.length) return;
 
         container.innerHTML = chips.map(chip => `
-            <button type="button" onclick="sendChatPrompt('${escapeHtml(chip).replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
+            <button type="button" data-chat-prompt="${escapeHtml(chip)}" class="px-2.5 py-1 rounded-lg bg-navy/5 hover:bg-navy hover:text-white text-[10px] font-medium text-navy transition cursor-pointer">
                 ${escapeHtml(chip)}
             </button>
         `).join('');

@@ -90,8 +90,9 @@
             toast.className = `fade-up ${isSuccess ? 'bg-navy' : 'bg-red-900'} text-white text-sm rounded-2xl px-4 py-3 shadow-xl flex items-center gap-3 pointer-events-auto border border-line/20`;
             toast.innerHTML = `
                 <i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-5 h-5 ${isSuccess ? 'text-emerald-400' : 'text-red-400'} shrink-0"></i>
-                <span class="flex-1">${message}</span>
+                <span class="flex-1 toast-msg"></span>
             `;
+            toast.querySelector('.toast-msg').textContent = String(message ?? '');
             container.appendChild(toast);
             lucide.createIcons({ root: toast });
 
