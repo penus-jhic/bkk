@@ -45,4 +45,9 @@ return [
         'dev_role' => env('AUTH_DEV_ROLE', 'ADMIN'),
     ],
 
+    'ai_service' => [
+        'base_url' => env('AI_SERVICE_URL', 'http://localhost:3000'),
+        'timeout' => (int) env('AI_SERVICE_TIMEOUT', 15),
+    ],
+
 ];

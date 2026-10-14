@@ -4,7 +4,9 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <meta name="csrf-token" content="{{ csrf_token() }}"/>
-<link rel="icon" href="{{ asset('images/logosmkpenus.png') }}">
+<link rel="icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+<link rel="shortcut icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('images/logo-penus.png') }}">
 
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>

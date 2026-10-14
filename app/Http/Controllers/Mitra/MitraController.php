@@ -379,7 +379,9 @@ class MitraController extends Controller
 
         // Siapkan CV Markdown dari snapshot cv_resumes atau profil_siswa
         $cvMarkdown = '';
-        if ($applicant->cvResume && !empty($applicant->cvResume->konten_markdown)) {
+        if ($applicant->cvResume && !empty($applicant->cvResume->raw_markdown)) {
+            $cvMarkdown = $applicant->cvResume->raw_markdown;
+        } elseif ($applicant->cvResume && !empty($applicant->cvResume->konten_markdown)) {
             $cvMarkdown = $applicant->cvResume->konten_markdown;
         } else {
             $siswa = $applicant->profilSiswa;

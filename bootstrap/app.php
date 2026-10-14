@@ -15,6 +15,21 @@ return Application::configure(basePath: dirname(__DIR__))
             'access_token',
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'bkk/api/*',
+            'bkk/me/*',
+            'me/*',
+            'bkk/admin/*',
+            'admin/*',
+            'bkk/dashboard/*',
+            'dashboard/*',
+            'bkk/kerja-sama',
+            'kerja-sama',
+            'bkk/logout',
+            'logout',
+        ]);
+
         $middleware->alias([
             'verify.auth' => \App\Http\Middleware\VerifyAuthToken::class,
             'mitra.auth'  => \App\Http\Middleware\EnsureMitraAuthenticated::class,

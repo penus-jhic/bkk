@@ -14,7 +14,7 @@
 
     <!-- Brandmark Logo / Image Placeholder -->
     <a href="{{ route('bkk.me.index') }}" class="flex items-center hover:opacity-90 transition-opacity" title="Portal Siswa & Alumni">
-        <img src="{{ asset('images/logo-penus.png') }}" alt="Logo" class="h-9 w-auto max-h-9 object-contain rounded-lg" />
+        <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-9 sm:h-10 w-auto max-w-[190px] object-contain" />
     </a>
 
     <!-- Center Search Bar -->

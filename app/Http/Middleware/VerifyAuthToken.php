@@ -42,12 +42,17 @@ class VerifyAuthToken
         }
 
         // 5. Merge metadata user ke dalam Request agar dapat diakses via $request->auth_user atau $request->input('auth_user')
+        $token = $this->extractToken($request);
         $request->merge([
             'auth_user' => $userData,
+            'auth_token' => $token,
         ]);
 
         // Simpan juga ke request attributes & user resolver bawaan Laravel
         $request->attributes->set('auth_user', $userData);
+        if ($token) {
+            $request->attributes->set('auth_token', $token);
+        }
         $request->setUserResolver(fn () => (object) $userData);
 
         return $next($request);
@@ -102,9 +107,11 @@ class VerifyAuthToken
      */
     protected function unauthenticated(Request $request, string $message): Response
     {
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->is('api/*') || $request->is('bkk/api/*')) {
             return response()->json([
                 'success' => false,
+                'status_code' => Response::HTTP_UNAUTHORIZED,
+                'error_code' => 'UNAUTHORIZED',
                 'message' => $message,
             ], Response::HTTP_UNAUTHORIZED);
         }
@@ -117,9 +124,17 @@ class VerifyAuthToken
      */
     protected function errorResponse(Request $request, string $message, int $status): Response
     {
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->is('api/*') || $request->is('bkk/api/*')) {
+            $errorCode = match ($status) {
+                Response::HTTP_FORBIDDEN => 'FORBIDDEN',
+                Response::HTTP_UNAUTHORIZED => 'UNAUTHORIZED',
+                Response::HTTP_SERVICE_UNAVAILABLE => 'AI_SERVICE_UNAVAILABLE',
+                default => 'ERROR',
+            };
             return response()->json([
                 'success' => false,
+                'status_code' => $status,
+                'error_code' => $errorCode,
                 'message' => $message,
             ], $status);
         }

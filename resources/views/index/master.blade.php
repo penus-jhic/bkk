@@ -5,6 +5,9 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <meta content="web_standard" name="shell-type"/>
     <title>@yield('title', 'BKK Penus - Bursa Kerja Khusus SMK Plus Pelita Nusantara')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-penus.png') }}">
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>

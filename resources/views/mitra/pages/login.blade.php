@@ -19,11 +19,10 @@
 
     <!-- Bar atas -->
     <header class="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur border-b border-brand-ink/10 flex items-center gap-2 px-4 sm:px-6">
-        <a href="{{ route('bkk.index') }}" class="flex items-center gap-2.5 group shrink-0" title="Beranda BKK">
-            <img src="{{ asset('images/logosmkpenus.png') }}" alt="Logo SMK Plus Pelita Nusantara" class="w-9 h-9 object-contain group-hover:scale-105 transition-transform" />
-            <span class="flex flex-col">
-                <span class="font-display text-[15px] font-bold uppercase tracking-wide text-brand-ink leading-tight group-hover:text-brand-darkred transition-colors">BKK Pelita Nusantara</span>
-                <span class="text-[10px] uppercase font-semibold tracking-wider text-brand-darkred mt-0.5">Portal Mitra IDUKA</span>
+        <a href="{{ route('bkk.index') }}" class="flex items-center gap-3 group shrink-0" title="Beranda BKK">
+            <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-9 sm:h-10 w-auto max-w-[190px] object-contain group-hover:scale-105 transition-transform" />
+            <span class="hidden sm:inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-brand-darkred bg-brand-darkred/10 px-2.5 py-1 rounded-full">
+                Portal Mitra IDUKA
             </span>
         </a>
         <a href="{{ route('bkk.index') }}" class="ml-auto inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold text-brand-ink bg-white border border-brand-ink/15 hover:bg-brand-softmist transition-colors">

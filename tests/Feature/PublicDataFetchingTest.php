@@ -304,7 +304,7 @@ class PublicDataFetchingTest extends TestCase
 
         // Akses slug tidak ditemukan
         $resNotFound = $this->get('/bkk/lowongan/lowongan-palsu-tidak-ada');
-        $resNotFound->assertStatus(200);
+        $resNotFound->assertStatus(404);
         $resNotFound->assertSee('Tidak Ditemukan');
         $resNotFound->assertSee('Lowongan yang Anda cari sudah ditutup');
     }

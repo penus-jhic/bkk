@@ -1,11 +1,9 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
     <div class="h-20 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-6">
         <!-- Logo & School Brand -->
-        <a href="{{ url('/bkk') }}" class="flex items-center gap-4 shrink-0 hover:opacity-90 transition-opacity">
-            <div class="flex flex-col">
-                <span class="font-title-md text-title-md tracking-tight text-on-surface leading-none">Bursa Kerja Khusus</span>
-                <span class="font-label-dense text-label-dense text-on-surface-variant">SMK Plus Pelita Nusantara</span>
-            </div>
+        <a href="{{ url('/bkk') }}" class="flex items-center gap-3 shrink-0 hover:opacity-90 transition-opacity">
+            <img src="{{ asset('images/logo-penus.png') }}" alt="SMK Plus Pelita Nusantara" class="h-10 sm:h-11 w-auto max-w-[200px] object-contain" />
+            <span class="hidden sm:inline-flex items-center text-[11px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">Bursa Kerja Khusus</span>
         </a>
 
         <!-- Main Navigation Bar -->

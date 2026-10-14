@@ -6,6 +6,9 @@
     <meta content="web_standard" name="shell-type"/>
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     <title>@yield('title', 'Portal Siswa & Alumni - BKK SMK Plus Pelita Nusantara')</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo-penus.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo-penus.png') }}">
 
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
