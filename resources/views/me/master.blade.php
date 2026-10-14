@@ -143,6 +143,16 @@
     <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] space-y-2 w-[min(92vw,420px)] pointer-events-none"></div>
 
     <script>
+        // Global HTML Escape Helper
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Global Toast Notification Helper
         function showToast(msg, duration = 3000) {
             const container = document.getElementById('toast-container');
@@ -152,8 +162,9 @@
             toast.className = 'fade-up bg-navy text-white text-sm rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 pointer-events-auto border border-line/20';
             toast.innerHTML = `
                 <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                <span class="flex-1">${msg}</span>
+                <span class="flex-1 toast-msg"></span>
             `;
+            toast.querySelector('.toast-msg').textContent = String(msg ?? '');
             container.appendChild(toast);
             lucide.createIcons({ root: toast });
 

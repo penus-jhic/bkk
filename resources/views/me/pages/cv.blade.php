@@ -4,6 +4,7 @@
 
 @push('styles')
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
 <style>
     @media print {
         body * { visibility: hidden; }
@@ -329,17 +330,9 @@
     function renderCvMarkdown(md) {
         const container = document.getElementById('cvRenderedContent');
         if (container && typeof marked !== 'undefined') {
-            container.innerHTML = marked.parse(md);
+            const parsed = marked.parse(md);
+            container.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
         }
-    }
-
-    function escapeHtml(str) {
-        return String(str ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
     }
 
     async function reanalyzeCv() {

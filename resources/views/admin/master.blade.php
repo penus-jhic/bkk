@@ -221,8 +221,9 @@
             toast.className = 'fade-up bg-navy text-white text-sm rounded-xl px-4 py-3 shadow-xl flex items-center gap-3 pointer-events-auto border border-line/20';
             toast.innerHTML = `
                 <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-                <span class="flex-1">${msg}</span>
+                <span class="flex-1 toast-msg"></span>
             `;
+            toast.querySelector('.toast-msg').textContent = String(msg ?? '');
             container.appendChild(toast);
             if (window.lucide) {
                 lucide.createIcons({ root: toast });

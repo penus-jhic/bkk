@@ -298,7 +298,7 @@
                             <button onclick="showToast('Lowongan disimpan ke bookmark')" class="text-xs text-muted hover:text-navy font-medium cursor-pointer transition-colors">
                                 Simpan
                             </button>
-                            <button id="btn-apply-{{ $v['id'] }}" onclick="applyVacancy('{{ $v['id'] }}', '{{ $v['title'] }}')" class="h-8 px-4 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer">
+                            <button id="btn-apply-{{ $v['id'] }}" onclick="applyVacancy(@js($v['id']), @js($v['title']))" class="h-8 px-4 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer">
                                 Lamar Sekarang
                             </button>
                         </div>
@@ -399,10 +399,10 @@
                     <div class="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none"></div>
                     <div class="text-[11px] uppercase tracking-wider text-white/80 font-bold">Jadwal Interview & Wawancara</div>
                     <div class="mt-3 space-y-2 text-xs relative">
-                        <div class="flex items-center gap-2.5"><i data-lucide="calendar" class="w-4 h-4 text-white/70"></i><span>${app.interview.date}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="clock" class="w-4 h-4 text-white/70"></i><span>${app.interview.time}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="map-pin" class="w-4 h-4 text-white/70"></i><span>${app.interview.mode} — ${app.interview.place}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="user" class="w-4 h-4 text-white/70"></i><span>PIC: ${app.interview.pic}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="calendar" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.date)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="clock" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.time)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="map-pin" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.mode)} — ${escapeHtml(app.interview.place)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="user" class="w-4 h-4 text-white/70"></i><span>PIC: ${escapeHtml(app.interview.pic)}</span></div>
                     </div>
                     <div class="flex gap-2 mt-4 relative">
                         <button onclick="showToast('Kehadiran interview berhasil dikonfirmasi')" class="h-8 px-4 rounded-full bg-white text-maroon text-xs font-bold hover:bg-canvas cursor-pointer shadow-sm">Konfirmasi Hadir</button>
@@ -418,24 +418,27 @@
                     <span class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-white grid place-items-center">
                         <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-navy' : 'text-line'}"></i>
                     </span>
-                    <div class="text-xs font-semibold ${t.done ? 'text-navy' : 'text-muted'}">${t.title}</div>
-                    <div class="text-[11px] text-muted leading-relaxed">${t.desc}</div>
-                    ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${t.date}</div>` : ''}
+                    <div class="text-xs font-semibold ${t.done ? 'text-navy' : 'text-muted'}">${escapeHtml(t.title)}</div>
+                    <div class="text-[11px] text-muted leading-relaxed">${escapeHtml(t.desc)}</div>
+                    ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${escapeHtml(t.date)}</div>` : ''}
                 </li>
             `).join('');
         }
 
+        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#0f172a';
+        const companyShort = escapeHtml(String(app.company || '').substring(0, 2).toUpperCase());
+
         body.innerHTML = `
             <div class="flex gap-4 items-center">
-                <div class="w-13 h-13 rounded-2xl grid place-items-center text-white font-bold text-base shrink-0 shadow-sm" style="width: 52px; height: 52px; background: ${app.color}">
-                    ${app.company.substring(0, 2).toUpperCase()}
+                <div class="w-13 h-13 rounded-2xl grid place-items-center text-white font-bold text-base shrink-0 shadow-sm" style="width: 52px; height: 52px; background: ${validColor}">
+                    ${companyShort}
                 </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-base text-navy leading-snug">${app.position}</h3>
-                    <div class="text-xs text-muted mt-0.5">${app.company} · ${app.location}</div>
+                    <h3 class="font-bold text-base text-navy leading-snug">${escapeHtml(app.position)}</h3>
+                    <div class="text-xs text-muted mt-0.5">${escapeHtml(app.company)} · ${escapeHtml(app.location)}</div>
                     <div class="flex flex-wrap gap-2 mt-2">
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${app.status}</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f1f3f4] text-muted">${app.type}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${escapeHtml(app.status)}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f1f3f4] text-muted">${escapeHtml(app.type)}</span>
                     </div>
                 </div>
             </div>

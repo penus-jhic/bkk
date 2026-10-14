@@ -256,14 +256,15 @@
             card.innerHTML = `
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <div class="text-xs text-muted font-medium">${dateStr} · <span class="text-navy font-semibold">${selectedDuration} jam</span></div>
-                        <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">${activity}</div>
+                        <div class="text-xs text-muted font-medium">${escapeHtml(dateStr)} · <span class="text-navy font-semibold">${escapeHtml(selectedDuration)} jam</span></div>
+                        <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium jurnal-entry-activity"></div>
                     </div>
                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap bg-amber-100 text-amber-800">
                         Menunggu
                     </span>
                 </div>
             `;
+            card.querySelector('.jurnal-entry-activity').textContent = activity;
 
             list.insertBefore(card, list.firstChild);
             textarea.value = '';
