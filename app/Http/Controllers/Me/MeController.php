@@ -65,7 +65,9 @@ class MeController extends Controller
                     $primaryCv = $dbSiswa->primaryResume;
                 }
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $resolvedCv = $this->resolveActiveCvAndScore($userId, $role, $profile, $primaryCv);
         $cvScore = $resolvedCv['score'];
@@ -157,7 +159,9 @@ class MeController extends Controller
                     $activeCv = CvResume::find($activeHeader->id);
                 }
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $resolved = $this->resolveActiveCvAndScore($userId, $role, $profile, $activeCv);
         $cvScore = $resolved['score'];
@@ -229,7 +233,9 @@ class MeController extends Controller
                     }
                 }
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
         $cvFeedback = ($activeCv && is_array($activeCv->feedback) && !empty($activeCv->feedback))
@@ -285,7 +291,9 @@ class MeController extends Controller
                     ->where('id', $id)
                     ->first();
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         if (!$targetCv) {
             if ($request->wantsJson()) {
@@ -309,7 +317,9 @@ class MeController extends Controller
                     ->latest('id')
                     ->get();
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $checksum = $targetCv->checksum ?? CvResume::generateChecksum($cvMarkdown);
         $cvFeedback = is_array($targetCv->feedback) && !empty($targetCv->feedback)
@@ -1112,7 +1122,9 @@ class MeController extends Controller
                     $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
                 }
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         if (empty($profile['jurusan']) || $profile['jurusan'] === '-' || $profile['jurusan'] === 'Belum diisi') {
             $profile['jurusan'] = ($profile['role'] ?? 'SISWA') === 'SISWA'
@@ -1151,7 +1163,9 @@ class MeController extends Controller
                     ]
                 );
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return null;
     }
