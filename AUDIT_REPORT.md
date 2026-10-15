@@ -28,8 +28,8 @@
 | S5 | SQL | Low | **[FIXED]** CV version list loads full markdown/JSON for every version |
 | S6 | SQL | Low | **[FIXED]** `LIKE '%q%'` search; `views_count` written on every GET |
 | D1 | Stale data | **High** | **[FIXED]** Dashboard CV score reads old columns, falls back to dummy values |
-| D2 | Stale data | Medium | CV editor shows dummy parameter scores; dummy suggestions in the API |
-| D3 | Stale data | Medium | Application timeline hard-coded; `lamaran_riwayat_status` ignored |
+| D2 | Stale data | Medium | **[FIXED]** CV editor shows dummy parameter scores; dummy suggestions in the API |
+| D3 | Stale data | Medium | **[FIXED]** Application timeline hard-coded; `lamaran_riwayat_status` ignored |
 | D4 | Stale data | Medium | Fixed match scores and skills shown to students and mitra |
 | D5 | Stale data | Low | **[FIXED]** Public stats intentional marketing copy retained as verified with user |
 | D6 | Stale data | Env | **[FIXED]** Pending `cv_resumes` migrations executed, error logging (`report($e)`) added to `catch` blocks |
@@ -274,14 +274,17 @@ AI scoring (`AiCvService::evaluateAndStoreScore`) now writes `cv_resumes.score` 
 - Updated legacy accessor `CvResume::getSkorTotalAiAttribute()` to return `?int` without hardcoded dummy fallbacks (`88`).
 - Added feature tests in `tests/Feature/MeCvScoreParityTest.php` verifying score and parameter parity across evaluated and unevaluated CV states.
 
-### D2: Dummy CV scores and suggestions (Medium)
+### D2: Dummy CV scores and suggestions (Medium) — **[FIXED]**
 
 - `cvEdit()` and `cvEditVersion()` start from `MeDataService::getCvScore()` (L222, L308) and only overwrite the total when feedback exists. A CV that has never been scored shows made-up parameter scores.
 - `cv()` passes `MeDataService::getCvSuggestions()` (hard-coded, `MeDataService.php:89-155`) to the view and returns it in the JSON API as `suggestions` (L138, L187), although the real endpoint `/api/ai/cv/suggestions` exists.
 
-**Fix:** with no feedback, show an empty "not analyzed yet" state; take suggestions from `feedback` or the AI endpoint.
+**Resolution:**
+- Unified `cvEdit()` and `cvEditVersion()` in `MeController` to resolve active CV data, score, and parameters using `resolveActiveCvAndScore()`, eliminating mock dummy score calls from `MeDataService::getCvScore()`.
+- Replaced hard-coded `MeDataService::getCvSuggestions()` in `cv()` with dynamic contextual suggestions: pulls from real `feedback['suggestions']` when evaluated by upstream AI, or dynamically computes tailored contextual suggestions (`AiCvService::computeContextualSuggestions()`) from the actual Markdown resume content.
+- Added comprehensive parity tests in `tests/Feature/MeAuditD2D3RemediationTest.php` asserting that unevaluated and evaluated CVs return consistent scores and contextual suggestions without mock dummy data.
 
-### D3: Application timeline hard-coded (Medium)
+### D3: Application timeline hard-coded (Medium) — **[FIXED]**
 
 **Location:** `MeController.php:894-899`
 
@@ -293,7 +296,11 @@ The four timeline steps and their descriptions are fixed strings, with only the 
 
 Students never see the mitra's notes or the real dates.
 
-**Fix:** eager-load `riwayatStatus` in `getMappedApplications()` and map it to `timeline`.
+**Resolution:**
+- Eager-loaded `riwayatStatus` on `Lamaran::with(['lowongan.mitra', 'interview', 'riwayatStatus'])` in `MeController::getMappedApplications()`.
+- Built dynamic audit timeline mapping each `LamaranRiwayatStatus` entry sorted chronologically (`sortBy('created_at')`) into `timeline` with real timestamps (`d M Y, H:i`), stage titles (`judul_tahapan`), and mitra review notes (`deskripsi`).
+- Implemented graceful fallback to the 4 baseline milestones if an application has no status history records (legacy data).
+- Verified via `tests/Feature/MeAuditD2D3RemediationTest.php` with real selection audit entries.
 
 ### D4: Fixed match scores and skills (Medium)
 

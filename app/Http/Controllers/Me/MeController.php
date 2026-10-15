@@ -141,7 +141,6 @@ class MeController extends Controller
         $role = $authUser['role'];
 
         $profile = $this->enrichProfileFromDatabase($this->dataService->getProfile($authUser), $userId);
-        $suggestions = $this->dataService->getCvSuggestions($role, $userId);
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
         $activeCv = null;
         $cvVersions = collect();
@@ -169,6 +168,10 @@ class MeController extends Controller
         $cvMarkdown = $resolved['markdown'];
         $checksum = $resolved['checksum'];
         $activeCv = $resolved['activeCv'];
+
+        $suggestions = (!empty($cvFeedback['suggestions']) && is_array($cvFeedback['suggestions']))
+            ? $cvFeedback['suggestions']
+            : $this->aiCvService->computeContextualSuggestions($cvMarkdown);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -211,8 +214,6 @@ class MeController extends Controller
         $role = $authUser['role'];
 
         $profile = $this->enrichProfileFromDatabase($this->dataService->getProfile($authUser), $userId);
-        $cvScore = $this->dataService->getCvScore($role, $userId);
-        $cvMarkdown = $this->dataService->getCvMarkdown($role, $profile, $userId);
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
         $activeCv = null;
         $cvVersions = collect();
@@ -228,28 +229,24 @@ class MeController extends Controller
                 $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
                 if ($activeHeader) {
                     $activeCv = CvResume::find($activeHeader->id);
-                    if ($activeCv && !empty($activeCv->raw_markdown)) {
-                        $cvMarkdown = $activeCv->raw_markdown;
-                    }
                 }
             }
         } catch (\Throwable $e) {
             report($e);
         }
 
-        $checksum = $activeCv?->checksum ?? CvResume::generateChecksum($cvMarkdown);
-        $cvFeedback = ($activeCv && is_array($activeCv->feedback) && !empty($activeCv->feedback))
-            ? $activeCv->feedback
-            : null;
-
-        if ($cvFeedback && isset($cvFeedback['total_score'])) {
-            $cvScore['total'] = (int) $cvFeedback['total_score'];
-        }
+        $resolved = $this->resolveActiveCvAndScore($userId, $role, $profile, $activeCv);
+        $cvScore = $resolved['score'];
+        $cvFeedback = $resolved['feedback'];
+        $cvMarkdown = $resolved['markdown'];
+        $checksum = $resolved['checksum'];
+        $activeCv = $resolved['activeCv'];
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'data' => [
+                    'score' => $cvScore,
                     'markdown' => $cvMarkdown,
                     'raw_markdown' => $cvMarkdown,
                     'checksum' => $checksum,
@@ -303,10 +300,7 @@ class MeController extends Controller
         }
 
         $profile = $this->enrichProfileFromDatabase($this->dataService->getProfile($authUser), $userId);
-        $cvScore = $this->dataService->getCvScore($role, $userId);
-        $cvMarkdown = $targetCv->raw_markdown ?? '';
         $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
-        $activeCv = $targetCv;
         $cvVersions = collect();
 
         try {
@@ -321,16 +315,19 @@ class MeController extends Controller
             report($e);
         }
 
-        $checksum = $targetCv->checksum ?? CvResume::generateChecksum($cvMarkdown);
-        $cvFeedback = is_array($targetCv->feedback) && !empty($targetCv->feedback)
-            ? $targetCv->feedback
-            : null;
+        $resolved = $this->resolveActiveCvAndScore($userId, $role, $profile, $targetCv);
+        $cvScore = $resolved['score'];
+        $cvFeedback = $resolved['feedback'];
+        $cvMarkdown = $resolved['markdown'];
+        $checksum = $resolved['checksum'];
+        $activeCv = $resolved['activeCv'] ?? $targetCv;
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => $targetCv->id,
+                    'score' => $cvScore,
                     'markdown' => $cvMarkdown,
                     'raw_markdown' => $cvMarkdown,
                     'checksum' => $checksum,
@@ -863,7 +860,7 @@ class MeController extends Controller
     {
         try {
             if (Schema::hasTable('lamaran')) {
-                $dbLamarans = Lamaran::with(['lowongan.mitra', 'interview'])
+                $dbLamarans = Lamaran::with(['lowongan.mitra', 'interview', 'riwayatStatus'])
                     ->where('siswa_id', $userId)
                     ->latest('tanggal_melamar')
                     ->get();
@@ -874,6 +871,25 @@ class MeController extends Controller
                         $mitra = $lowongan?->mitra;
                         $interview = $l->interview;
                         $tgl = $l->tanggal_melamar ? $l->tanggal_melamar->format('d M Y') : ($l->created_at ? $l->created_at->format('d M Y') : date('d M Y'));
+
+                        $timeline = [];
+                        if ($l->relationLoaded('riwayatStatus') && $l->riwayatStatus->isNotEmpty()) {
+                            $timeline = $l->riwayatStatus->sortBy('created_at')->map(function ($r) {
+                                return [
+                                    'date' => $r->created_at ? $r->created_at->format('d M Y, H:i') : '',
+                                    'title' => $r->judul_tahapan,
+                                    'desc' => $r->deskripsi ?? '',
+                                    'done' => true,
+                                ];
+                            })->values()->all();
+                        } else {
+                            $timeline = [
+                                ['date' => $tgl, 'title' => 'Lamaran Dikirim', 'desc' => 'Berkas dan CV diajukan ke sistem BKK.', 'done' => true],
+                                ['date' => '', 'title' => 'Verifikasi Berkas BKK', 'desc' => 'BKK Penus memvalidasi kualifikasi.', 'done' => in_array($l->status, ['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])],
+                                ['date' => '', 'title' => 'Tahap Seleksi & Interview', 'desc' => 'Ulasan oleh mitra industri atau pemanggilan interview.', 'done' => in_array($l->status, ['Dipanggil Interview', 'Diterima'])],
+                                ['date' => '', 'title' => 'Pengumuman Hasil', 'desc' => 'Status akhir penerimaan.', 'done' => in_array($l->status, ['Diterima', 'Ditolak'])],
+                            ];
+                        }
 
                         return [
                             'id' => $l->kode_lamaran,
@@ -890,12 +906,7 @@ class MeController extends Controller
                             'color' => '#1b283b',
                             'step' => $l->step_tahapan ?: 1,
                             'match_score' => $l->skor_match_ai ?: 92,
-                            'timeline' => [
-                                ['date' => $tgl, 'title' => 'Lamaran Dikirim', 'desc' => 'Berkas dan CV diajukan ke sistem BKK.', 'done' => true],
-                                ['date' => '', 'title' => 'Verifikasi Berkas BKK', 'desc' => 'BKK Penus memvalidasi kualifikasi.', 'done' => in_array($l->status, ['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])],
-                                ['date' => '', 'title' => 'Tahap Seleksi & Interview', 'desc' => 'Ulasan oleh mitra industri atau pemanggilan interview.', 'done' => in_array($l->status, ['Dipanggil Interview', 'Diterima'])],
-                                ['date' => '', 'title' => 'Pengumuman Hasil', 'desc' => 'Status akhir penerimaan.', 'done' => in_array($l->status, ['Diterima', 'Ditolak'])],
-                            ],
+                            'timeline' => $timeline,
                             'interview' => $interview ? [
                                 'date' => $interview->tanggal_interview ? $interview->tanggal_interview->format('l, d M Y') : '',
                                 'time' => $interview->waktu_interview ?? '09:00 WIB',
