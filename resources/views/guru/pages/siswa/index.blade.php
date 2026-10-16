@@ -31,7 +31,7 @@
                     type="search"
                     name="q"
                     value="{{ $search }}"
-                    placeholder="Cari siswa berdasarkan NIS, NISN, jurusan, atau kelas…"
+                    placeholder="Cari siswa berdasarkan nama, NIS, NISN, jurusan, atau kelas…"
                     class="w-full h-10 pl-10 pr-4 rounded-full bg-canvas border border-brand-ink/15 text-xs text-navy focus:outline-none focus:border-emerald-600 focus:bg-white transition-all"
                 />
             </div>
@@ -59,17 +59,32 @@
                     <option value="BELUM_PKL" {{ $statusPkl === 'BELUM_PKL' ? 'selected' : '' }}>Belum Penempatan</option>
                 </select>
 
+                @if($canAssignGuru)
+                    <select name="pembimbing" onchange="this.form.submit()" class="h-10 px-3.5 rounded-full bg-canvas border border-brand-ink/15 text-xs font-medium text-navy focus:outline-none focus:border-emerald-600 cursor-pointer">
+                        <option value="">Semua Pembimbing</option>
+                        <option value="none" {{ $pembimbing === 'none' ? 'selected' : '' }}>Belum Ada Pembimbing</option>
+                        @foreach($daftarGuru as $g)
+                            <option value="{{ $g->user_id }}" {{ $pembimbing === $g->user_id ? 'selected' : '' }}>{{ $g->nama_lengkap ?: $g->user_id }}</option>
+                        @endforeach
+                    </select>
+                @endif
+
                 <button type="submit" class="h-10 px-5 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer">
                     Cari
                 </button>
 
-                @if(!empty($search) || !empty($jurusan) || !empty($statusCv) || !empty($statusPkl))
+                @if(!empty($search) || !empty($jurusan) || !empty($statusCv) || !empty($statusPkl) || !empty($pembimbing))
                     <a href="{{ route('bkk.guru.siswa.index') }}" class="h-10 px-3.5 rounded-full border border-brand-ink/15 hover:bg-brand-paper text-xs text-muted font-medium inline-flex items-center transition-colors">
                         Reset
                     </a>
                 @endif
             </div>
         </form>
+        @if($canAssignGuru)
+            <p class="mt-3 text-[11px] text-muted">
+                Guru muncul di pilihan pembimbing setelah membuka Portal Guru minimal sekali. Siswa tanpa pembimbing hanya terlihat oleh admin.
+            </p>
+        @endif
     </div>
 
     <!-- Tabel Daftar Siswa & CV -->
@@ -80,6 +95,7 @@
                     <tr class="border-b border-brand-ink/10 bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3.5 px-5">Siswa / Identitas</th>
                         <th class="py-3.5 px-5">Jurusan & Kelas</th>
+                        <th class="py-3.5 px-5">Guru Pembimbing</th>
                         <th class="py-3.5 px-5">Berkas & Format CV</th>
                         <th class="py-3.5 px-5 text-center">Review Guru</th>
                         <th class="py-3.5 px-5 text-center">Status PKL</th>
@@ -108,8 +124,10 @@
                         <tr class="hover:bg-canvas/50 transition-colors">
                             <!-- Siswa / Identitas -->
                             <td class="py-4 px-5">
-                                <div class="font-bold text-navy text-sm">{{ $s->nis ?? '-' }}</div>
+                                <div class="font-bold text-navy text-sm">{{ $s->nama_lengkap ?: 'NIS ' . ($s->nis ?? '-') }}</div>
                                 <div class="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
+                                    <span>NIS: {{ $s->nis ?? '-' }}</span>
+                                    <span>·</span>
                                     <span>NISN: {{ $s->nisn ?? '-' }}</span>
                                     <span>·</span>
                                     <span>Angkatan {{ $s->angkatan ?? '-' }}</span>
@@ -119,7 +137,27 @@
                             <!-- Jurusan & Kelas -->
                             <td class="py-4 px-5">
                                 <div class="font-semibold text-navy">{{ $s->jurusan ?? 'Jurusan' }}</div>
-                                <div class="text-[11px] text-muted mt-0.5">{{ $s->kelas ?? 'Kelas XII' }}</div>
+                                <div class="text-[11px] text-muted mt-0.5">{{ $s->kelas ?? '-' }}</div>
+                            </td>
+
+                            <!-- Guru Pembimbing (admin dapat menetapkan / mengganti) -->
+                            <td class="py-4 px-5">
+                                @if($canAssignGuru)
+                                    <form method="POST" action="{{ route('bkk.guru.siswa.pembimbing', $s->user_id) }}">
+                                        @csrf
+                                        <select name="guru_pembimbing_id" onchange="this.form.submit()" aria-label="Guru pembimbing {{ $s->nama_lengkap ?: $s->nis }}" class="h-8 max-w-[180px] px-2.5 rounded-full bg-canvas border border-brand-ink/15 text-[11px] font-medium text-navy focus:outline-none focus:border-emerald-600 cursor-pointer">
+                                            <option value="">Belum ditetapkan</option>
+                                            @foreach($daftarGuru as $g)
+                                                <option value="{{ $g->user_id }}" {{ $s->guru_pembimbing_id === $g->user_id ? 'selected' : '' }}>{{ $g->nama_lengkap ?: $g->user_id }}</option>
+                                            @endforeach
+                                            @if($s->guru_pembimbing_id && !$daftarGuru->contains('user_id', $s->guru_pembimbing_id))
+                                                <option value="{{ $s->guru_pembimbing_id }}" selected disabled>{{ $s->guru_pembimbing_id }} (belum login)</option>
+                                            @endif
+                                        </select>
+                                    </form>
+                                @else
+                                    <span class="text-[11px] text-navy font-medium">{{ $s->guruPembimbing?->nama_lengkap ?? 'Anda' }}</span>
+                                @endif
                             </td>
 
                             <!-- Berkas & Format CV -->
@@ -138,7 +176,7 @@
                                                 <span>ATS Markdown Saja</span>
                                             </span>
                                         @endif
-                                        <div class="text-[10px] text-muted">Skor ATS: <strong>{{ $cv->score ?? 85 }}/100</strong></div>
+                                        <div class="text-[10px] text-muted">Skor ATS: <strong>{{ $cv->score !== null ? $cv->score . '/100' : 'belum dinilai' }}</strong></div>
                                     </div>
                                 @else
                                     <span class="text-muted text-[11px] italic">Belum membuat CV</span>
@@ -200,7 +238,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-8 text-center text-xs text-muted">
+                            <td colspan="7" class="p-8 text-center text-xs text-muted">
                                 Tidak ada data siswa yang cocok dengan kriteria pencarian.
                             </td>
                         </tr>

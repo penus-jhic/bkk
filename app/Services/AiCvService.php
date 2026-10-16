@@ -166,7 +166,7 @@ class AiCvService
                 'request_id' => $reqId,
                 'timestamp' => now()->toIso8601ZuluString(),
                 'execution_time_ms' => $execMs,
-                'model_used' => 'gemini-2.5-flash',
+                'model_used' => 'heuristic-fallback',
                 'cached' => false,
                 'cache_key' => $cacheKey,
             ],
@@ -270,7 +270,7 @@ class AiCvService
                 'request_id' => $reqId,
                 'timestamp' => now()->toIso8601ZuluString(),
                 'execution_time_ms' => $execMs,
-                'model_used' => 'gemini-2.5-flash',
+                'model_used' => 'heuristic-fallback',
                 'cached' => false,
             ],
         ];
@@ -344,7 +344,7 @@ class AiCvService
                     'request_id' => $reqId,
                     'timestamp' => now()->toIso8601ZuluString(),
                     'execution_time_ms' => $execMs,
-                    'model_used' => 'gemini-2.5-flash',
+                    'model_used' => 'heuristic-fallback',
                     'tokens_used' => [
                         'prompt_tokens' => 210,
                         'completion_tokens' => 115,

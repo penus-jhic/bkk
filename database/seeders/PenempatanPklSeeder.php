@@ -20,7 +20,7 @@ class PenempatanPklSeeder extends Seeder
             $penempatan = PenempatanPkl::updateOrCreate(
                 ['siswa_id' => $siswa->user_id, 'mitra_id' => $mitra->id],
                 [
-                    'guru_pembimbing_id' => 'guru-siti-001',
+                    'guru_pembimbing_id' => 'usr-guru-001',
                     'pembimbing_industri_nama' => 'Cindy Claudia, S.Kom.',
                     'unit_kerja_divisi' => 'Web & Application Development Unit',
                     'tanggal_mulai' => '2025-07-01',
@@ -77,7 +77,7 @@ class PenempatanPklSeeder extends Seeder
                         'durasi_jam' => $j['durasi'],
                         'status' => $j['status'],
                         'catatan_revisi' => $j['catatan'],
-                        'divalidasi_oleh' => ($j['status'] === 'Disetujui') ? 'guru-siti-001' : null,
+                        'divalidasi_oleh' => ($j['status'] === 'Disetujui') ? 'usr-guru-001' : null,
                         'divalidasi_pada' => ($j['status'] === 'Disetujui') ? now() : null,
                     ]
                 );
@@ -105,7 +105,7 @@ class PenempatanPklSeeder extends Seeder
                         'status' => $b['status'],
                         'catatan_pembimbing' => $b['catatan'],
                         'terakhir_diperbarui' => now()->toDateString(),
-                        'divalidasi_oleh' => ($b['status'] === 'Disetujui') ? 'guru-siti-001' : null,
+                        'divalidasi_oleh' => ($b['status'] === 'Disetujui') ? 'usr-guru-001' : null,
                     ]
                 );
             }

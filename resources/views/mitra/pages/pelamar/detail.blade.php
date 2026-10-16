@@ -41,7 +41,7 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-xl font-headline font-bold text-brand-ink">{{ $applicant['nama'] }}</h2>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <i data-lucide="sparkles" class="w-3 h-3 mr-1 text-emerald-600"></i> AI Match: {{ $applicant['cv_score'] }}%
+                            <i data-lucide="sparkles" class="w-3 h-3 mr-1 text-emerald-600"></i> Kecocokan: {{ $applicant['cv_score'] }}%
                         </span>
                     </div>
                     <div class="text-xs text-muted mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">

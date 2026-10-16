@@ -145,6 +145,7 @@ Route::prefix('bkk')->group(function () {
         Route::get('/siswa', [GuruPklController::class, 'siswaIndex'])->name('siswa.index');
         Route::get('/siswa/{user_id}/cv', [GuruPklController::class, 'siswaCv'])->name('siswa.cv');
         Route::post('/siswa/{user_id}/cv/feedback', [GuruPklController::class, 'storeCvFeedback'])->name('siswa.cv.feedback');
+        Route::post('/siswa/{user_id}/pembimbing', [GuruPklController::class, 'assignPembimbing'])->name('siswa.pembimbing');
 
         Route::get('/pengajuan', [GuruPklController::class, 'pengajuanIndex'])->name('pengajuan.index');
         Route::post('/pengajuan/{id}/accept', [GuruPklController::class, 'acceptPengajuan'])->name('pengajuan.accept');

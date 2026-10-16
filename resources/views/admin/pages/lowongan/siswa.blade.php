@@ -77,7 +77,7 @@
                         <th class="py-3 px-4">Nama Siswa / Pelamar</th>
                         <th class="py-3 px-4">Jurusan & Kelas</th>
                         <th class="py-3 px-4">Kode Lamaran</th>
-                        <th class="py-3 px-4 text-center">Skor AI Match</th>
+                        <th class="py-3 px-4 text-center">Skor Kecocokan</th>
                         <th class="py-3 px-4 text-center">Status Konfirmasi</th>
                         <th class="py-3 px-4 text-right">Tanggal Diterima</th>
                     </tr>
@@ -121,7 +121,7 @@
                             <td class="py-3.5 px-4 text-center">
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
                                     <i data-lucide="sparkles" class="w-3 h-3 text-emerald-600"></i>
-                                    <span>{{ $item->skor_match_ai ?? 85 }}%</span>
+                                    <span>{{ (int) $item->skor_match_ai }}%</span>
                                 </span>
                             </td>
 

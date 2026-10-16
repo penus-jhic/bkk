@@ -53,7 +53,7 @@ class Lamaran extends Model
 
     public function getNamaAttribute(): string
     {
-        return $this->siswa?->nama_lengkap ?? 'Pelamar BKK';
+        return $this->siswa?->nama_lengkap ?: 'Pelamar BKK';
     }
 
     public function getStatusPendidikanAttribute(): string
@@ -63,7 +63,7 @@ class Lamaran extends Model
 
     public function getCvScoreAttribute(): int
     {
-        return $this->skor_match_ai ?: 85;
+        return (int) $this->skor_match_ai;
     }
 
     public function getLowonganTitleAttribute(): string
@@ -83,17 +83,17 @@ class Lamaran extends Model
 
     public function getEmailAttribute(): string
     {
-        return $this->siswa?->email ?? '-';
+        return $this->siswa?->email ?: '-';
     }
 
     public function getNoHpAttribute(): string
     {
-        return $this->siswa?->telepon ?? '-';
+        return $this->siswa?->no_hp ?: '-';
     }
 
     public function getLokasiAttribute(): string
     {
-        return $this->siswa?->kota ?? 'Bogor';
+        return $this->siswa?->kota ?: '-';
     }
 
     public function getPortfolioUrlAttribute(): string

@@ -48,6 +48,8 @@ class GuruPortalAndCvUploadTest extends TestCase
                 'jurusan' => 'Rekayasa Perangkat Lunak',
                 'angkatan' => '2023',
                 'status_kelulusan' => 'SISWA_AKTIF',
+                // Dibimbing persona GURU (DevAuth) supaya tampil di Portal Guru
+                'guru_pembimbing_id' => 'usr-guru-001',
             ]
         );
     }

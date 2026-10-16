@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -21,6 +22,11 @@ class ProfilSiswa extends Model
     protected $casts = [
         'kelengkapan_profil' => 'integer',
     ];
+
+    public function guruPembimbing(): BelongsTo
+    {
+        return $this->belongsTo(GuruPembimbing::class, 'guru_pembimbing_id', 'user_id');
+    }
 
     public function resumes(): HasMany
     {
