@@ -14,6 +14,20 @@ class MitraAlertsComposer
 {
     private ?array $alerts = null;
 
+    /**
+     * Cache hitungan yang sudah dihitung controller dalam request yang sama (S3).
+     */
+    private array $providedCounts = [];
+
+    /**
+     * Terima hitungan metrik yang sudah dihitung controller agar tidak query ulang (S3).
+     */
+    public function provideCounts(array $counts): void
+    {
+        $this->providedCounts = array_merge($this->providedCounts, $counts);
+        $this->alerts = null;
+    }
+
     public function compose(View $view): void
     {
         $mitra = $view->getData()['currentMitra'] ?? null;
@@ -27,12 +41,14 @@ class MitraAlertsComposer
             return ['items' => [], 'total' => 0, 'by_key' => []];
         }
 
-        $lowonganIds = $mitra->lowongans()->pluck('id');
+        $pelamarCount = isset($this->providedCounts['pelamar'])
+            ? (int) $this->providedCounts['pelamar']
+            : Lamaran::whereIn('lowongan_id', $mitra->lowongans()->pluck('id'))->where('status', 'Terkirim')->count();
 
         $items = [
             [
                 'key' => 'pelamar',
-                'count' => Lamaran::whereIn('lowongan_id', $lowonganIds)->where('status', 'Terkirim')->count(),
+                'count' => $pelamarCount,
                 'title' => 'Lamaran baru belum ditinjau',
                 'desc' => 'Berkas CV siswa & alumni menunggu review.',
                 'href' => route('bkk.mitra.lowongan.index'),

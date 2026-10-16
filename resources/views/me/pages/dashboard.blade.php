@@ -128,7 +128,7 @@
         <div class="xl:col-span-2 space-y-4">
             <div class="flex items-end justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-navy">Tracker Lamaran</h2>
+                    <h2 class="text-lg font-bold text-brand-ink">Tracker Lamaran</h2>
                     <p class="text-xs text-muted">3 lamaran terbaru yang Anda kirimkan</p>
                 </div>
                 <a href="{{ route('bkk.me.lamaran') }}" class="text-xs font-semibold text-maroon inline-flex items-center gap-1 hover:underline">
@@ -141,12 +141,12 @@
                 @forelse(array_slice($applications, 0, 3) as $app)
                     @php
                         $statusBadgeClass = match($app['status']) {
-                            'Terkirim' => 'border border-navy text-navy bg-white',
+                            'Terkirim' => 'border border-navy text-brand-ink bg-white',
                             'Sedang Ditinjau' => 'bg-amber-100 text-amber-800 border border-amber-200',
                             'Dipanggil Interview' => 'bg-maroon text-white border border-maroon',
                             'Diterima' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
                             'Ditolak' => 'bg-gray-100 text-muted border border-gray-200',
-                            default => 'bg-gray-100 text-navy'
+                            default => 'bg-gray-100 text-brand-ink'
                         };
                     @endphp
                     <div class="p-4 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow cursor-pointer" onclick='openDetailModal(@json($app))'>
@@ -157,7 +157,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="min-w-0">
-                                        <div class="font-semibold text-sm text-navy truncate">{{ $app['position'] }}</div>
+                                        <div class="font-semibold text-sm text-brand-ink truncate">{{ $app['position'] }}</div>
                                         <div class="text-xs text-muted mt-0.5">{{ $app['company'] }} · {{ $app['date'] }}</div>
                                     </div>
                                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap {{ $statusBadgeClass }}">
@@ -197,7 +197,7 @@
                                                     {{ $idx + 1 }}
                                                 @endif
                                             </div>
-                                            <span class="text-[10px] {{ $isDone ? 'text-navy font-semibold' : 'text-muted' }}">{{ $st }}</span>
+                                            <span class="text-[10px] {{ $isDone ? 'text-brand-ink font-semibold' : 'text-muted' }}">{{ $st }}</span>
                                         </div>
                                         @if(!$isLast)
                                             <div class="flex-1 h-0.5 mx-1 -mt-4 {{ $idx < $currentStep - 1 ? 'bg-navy' : 'bg-line' }}"></div>
@@ -212,7 +212,7 @@
                         <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
                             <i data-lucide="inbox" class="w-5 h-5"></i>
                         </div>
-                        <div class="font-bold text-sm text-navy">Belum Ada Lamaran Aktif</div>
+                        <div class="font-bold text-sm text-brand-ink">Belum Ada Lamaran Aktif</div>
                         <p class="text-xs text-muted max-w-xs mx-auto">Anda belum mengajukan lamaran atau pendaftaran PKL. Silakan jelajahi lowongan yang tersedia untuk mulai mendaftar.</p>
                     </div>
                 @endforelse
@@ -223,7 +223,7 @@
         <div class="xl:col-span-3 space-y-4">
             <div class="flex items-end justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-navy">
+                    <h2 class="text-lg font-bold text-brand-ink">
                         {{ $isSiswa ? 'Rekomendasi PKL & Lowongan' : 'Lowongan Direkomendasikan' }}
                     </h2>
                     <p class="text-xs text-muted">Dikurasi AI berdasarkan jurusan & kata kunci CV Anda</p>
@@ -243,10 +243,10 @@
                                     {{ strtoupper(substr($v['company'], 0, 2)) }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-sm text-navy leading-snug truncate">{{ $v['title'] }}</div>
+                                    <div class="font-bold text-sm text-brand-ink leading-snug truncate">{{ $v['title'] }}</div>
                                     <div class="text-xs text-muted mt-0.5">{{ $v['company'] }}</div>
                                 </div>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $v['match'] >= 90 ? 'bg-maroon text-white' : 'bg-navy/10 text-navy' }}">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $v['match'] >= 90 ? 'bg-maroon text-white' : 'bg-brand-ink/10 text-brand-ink' }}">
                                     {{ $v['match'] }}%
                                 </span>
                             </div>
@@ -266,13 +266,13 @@
                             <div class="flex flex-wrap gap-1.5 mt-3">
                                 <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">{{ $v['type'] }}</span>
                                 @foreach($v['tags'] as $tg)
-                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#EEF2F6] text-muted">{{ $tg }}</span>
+                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-brand-softmist text-muted">{{ $tg }}</span>
                                 @endforeach
                             </div>
                         </div>
 
                         <div class="mt-5 pt-3 border-t border-line flex items-center justify-between gap-2">
-                            <button onclick="showToast('Lowongan disimpan ke bookmark')" class="text-xs text-muted hover:text-navy font-medium cursor-pointer transition-colors">
+                            <button onclick="showToast('Lowongan disimpan ke bookmark')" class="text-xs text-muted hover:text-brand-ink font-medium cursor-pointer transition-colors">
                                 Simpan
                             </button>
                             <button id="btn-apply-{{ $v['id'] }}" onclick="applyVacancy(@js($v['id']), @js($v['title']))" class="h-8 px-4 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer">
@@ -285,7 +285,7 @@
                         <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
                             <i data-lucide="briefcase" class="w-5 h-5"></i>
                         </div>
-                        <div class="font-bold text-sm text-navy">Belum Ada Lowongan Aktif</div>
+                        <div class="font-bold text-sm text-brand-ink">Belum Ada Lowongan Aktif</div>
                         <p class="text-xs text-muted max-w-xs mx-auto">Saat ini belum ada lowongan atau posisi PKL aktif yang tersedia.</p>
                     </div>
                 @endforelse
@@ -295,11 +295,11 @@
 </div>
 
 <!-- Slide-in Detail Drawer for Application Status -->
-<div id="detailDrawerBackdrop" class="fixed inset-0 bg-navy/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
+<div id="detailDrawerBackdrop" class="fixed inset-0 bg-brand-ink/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
 
 <aside id="detailDrawer" class="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] bg-white shadow-2xl flex flex-col z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden">
     <div class="flex items-center justify-between px-5 h-16 border-b border-line shrink-0">
-        <span class="font-bold text-navy text-base">Detail Seleksi & Timeline</span>
+        <span class="font-bold text-brand-ink text-base">Detail Seleksi & Timeline</span>
         <button onclick="closeDetailModal()" class="w-9 h-9 rounded-full grid place-items-center hover:bg-canvas cursor-pointer text-muted" aria-label="Tutup">
             <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -310,7 +310,7 @@
     </div>
 
     <div class="p-4 border-t border-line flex gap-2 justify-end bg-canvas">
-        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-navy bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
+        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-brand-ink bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Unduh Bukti</span>
         </button>
@@ -393,16 +393,16 @@
             timelineItemsHtml = app.timeline.map((t, idx) => `
                 <li class="pl-6 relative">
                     <span class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-white grid place-items-center">
-                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-navy' : 'text-line'}"></i>
+                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-brand-ink' : 'text-line'}"></i>
                     </span>
-                    <div class="text-xs font-semibold ${t.done ? 'text-navy' : 'text-muted'}">${escapeHtml(t.title)}</div>
+                    <div class="text-xs font-semibold ${t.done ? 'text-brand-ink' : 'text-muted'}">${escapeHtml(t.title)}</div>
                     <div class="text-[11px] text-muted leading-relaxed">${escapeHtml(t.desc)}</div>
                     ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${escapeHtml(t.date)}</div>` : ''}
                 </li>
             `).join('');
         }
 
-        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#0f172a';
+        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#241012';
         const companyShort = escapeHtml(String(app.company || '').substring(0, 2).toUpperCase());
 
         body.innerHTML = `
@@ -411,11 +411,11 @@
                     ${companyShort}
                 </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-base text-navy leading-snug">${escapeHtml(app.position)}</h3>
+                    <h3 class="font-bold text-base text-brand-ink leading-snug">${escapeHtml(app.position)}</h3>
                     <div class="text-xs text-muted mt-0.5">${escapeHtml(app.company)} · ${escapeHtml(app.location)}</div>
                     <div class="flex flex-wrap gap-2 mt-2">
                         <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${escapeHtml(app.status)}</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#EEF2F6] text-muted">${escapeHtml(app.type)}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-brand-softmist text-muted">${escapeHtml(app.type)}</span>
                     </div>
                 </div>
             </div>
@@ -429,8 +429,8 @@
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-[#F5F7FA] border border-line p-4 text-xs">
-                <div class="font-semibold text-navy mb-1 flex items-center gap-1.5">
+            <div class="rounded-2xl bg-brand-paper border border-line p-4 text-xs">
+                <div class="font-semibold text-brand-ink mb-1 flex items-center gap-1.5">
                     <i data-lucide="message-square" class="w-3.5 h-3.5 text-muted"></i>
                     <span>Catatan BKK Penus</span>
                 </div>

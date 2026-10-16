@@ -7,8 +7,9 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-line">
         <div>
+            <p class="dash-eyebrow">Portal Mitra IDUKA · Akun</p>
             <div class="flex items-center gap-2">
-                <h1 class="text-xl sm:text-2xl font-headline font-bold text-navy">Pengaturan Akun Mitra</h1>
+                <h1 class="dash-title font-display text-brand-ink">Pengaturan <x-sketch.underline>Akun Mitra</x-sketch.underline></h1>
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $mitra->is_verified ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200' }}">
                     {{ $mitra->is_verified ? 'Terverifikasi' : 'Pending' }}
                 </span>
@@ -18,7 +19,7 @@
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('bkk.mitra.dashboard') }}" class="px-3.5 py-2 rounded-full border border-line hover:bg-canvas text-xs font-semibold text-navy transition-all flex items-center gap-1.5">
+            <a href="{{ route('bkk.mitra.dashboard') }}" class="px-3.5 py-2 rounded-full border border-line hover:bg-canvas text-xs font-semibold text-brand-ink transition-all flex items-center gap-1.5">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 <span>Kembali ke Dashboard</span>
             </a>
@@ -41,11 +42,11 @@
             <!-- Card 1: Ubah Logo Perusahaan -->
             <div class="bg-white rounded-3xl border border-line p-5 shadow-xs">
                 <div class="flex items-center gap-2.5 pb-3 border-b border-line mb-4">
-                    <div class="w-8 h-8 rounded-xl bg-navy/5 text-navy flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-xl bg-brand-ink/5 text-brand-ink flex items-center justify-center">
                         <i data-lucide="image" class="w-4 h-4 text-maroon"></i>
                     </div>
                     <div>
-                        <h2 class="text-sm font-bold text-navy">Logo Perusahaan</h2>
+                        <h2 class="text-sm font-bold text-brand-ink">Logo Perusahaan</h2>
                         <p class="text-[11px] text-muted">Format: PNG, JPG, ICO (Maks. 5 MB)</p>
                     </div>
                 </div>
@@ -70,14 +71,14 @@
                             {{ $mitra->singkatan ?: substr($mitra->nama_perusahaan, 0, 3) }}
                         </div>
                     @endif
-                    <div class="text-xs font-semibold text-navy">{{ $mitra->nama_perusahaan }}</div>
+                    <div class="text-xs font-semibold text-brand-ink">{{ $mitra->nama_perusahaan }}</div>
                     <div class="text-[10px] text-muted mt-0.5">NPWP: {{ $mitra->npwp }}</div>
                 </div>
 
                 <form action="{{ route('bkk.mitra.pengaturan.logo') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                     @csrf
                     <div>
-                        <label for="logo" class="block text-xs font-medium text-navy mb-1">Pilih File Logo Baru</label>
+                        <label for="logo" class="block text-xs font-medium text-brand-ink mb-1">Pilih File Logo Baru</label>
                         <input
                             type="file"
                             id="logo"
@@ -97,11 +98,11 @@
             <!-- Card 2: Ubah Kata Sandi -->
             <div class="bg-white rounded-3xl border border-line p-5 shadow-xs">
                 <div class="flex items-center gap-2.5 pb-3 border-b border-line mb-4">
-                    <div class="w-8 h-8 rounded-xl bg-navy/5 text-navy flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-xl bg-brand-ink/5 text-brand-ink flex items-center justify-center">
                         <i data-lucide="key-round" class="w-4 h-4 text-maroon"></i>
                     </div>
                     <div>
-                        <h2 class="text-sm font-bold text-navy">Keamanan Kata Sandi</h2>
+                        <h2 class="text-sm font-bold text-brand-ink">Keamanan Kata Sandi</h2>
                         <p class="text-[11px] text-muted">Perbarui kata sandi akun mitra</p>
                     </div>
                 </div>
@@ -121,14 +122,14 @@
                 <form action="{{ route('bkk.mitra.pengaturan.password') }}" method="POST" class="space-y-3">
                     @csrf
                     <div>
-                        <label for="current_password" class="block text-xs font-medium text-navy mb-1">Kata Sandi Saat Ini</label>
+                        <label for="current_password" class="block text-xs font-medium text-brand-ink mb-1">Kata Sandi Saat Ini</label>
                         <input
                             type="password"
                             id="current_password"
                             name="current_password"
                             required
                             placeholder="Password lama Anda"
-                            class="w-full bg-canvas text-navy text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                            class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
                         />
                         @error('current_password')
                             <p class="text-[11px] text-rose-600 mt-0.5">{{ $message }}</p>
@@ -136,14 +137,14 @@
                     </div>
 
                     <div>
-                        <label for="password" class="block text-xs font-medium text-navy mb-1">Kata Sandi Baru (Min. 8 Karakter)</label>
+                        <label for="password" class="block text-xs font-medium text-brand-ink mb-1">Kata Sandi Baru (Min. 8 Karakter)</label>
                         <input
                             type="password"
                             id="password"
                             name="password"
                             required
                             placeholder="Password baru"
-                            class="w-full bg-canvas text-navy text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                            class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
                         />
                         @error('password')
                             <p class="text-[11px] text-rose-600 mt-0.5">{{ $message }}</p>
@@ -151,14 +152,14 @@
                     </div>
 
                     <div>
-                        <label for="password_confirmation" class="block text-xs font-medium text-navy mb-1">Ulangi Kata Sandi Baru</label>
+                        <label for="password_confirmation" class="block text-xs font-medium text-brand-ink mb-1">Ulangi Kata Sandi Baru</label>
                         <input
                             type="password"
                             id="password_confirmation"
                             name="password_confirmation"
                             required
                             placeholder="Konfirmasi password baru"
-                            class="w-full bg-canvas text-navy text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                            class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3 py-2 border border-line focus:bg-white focus:border-navy focus:outline-none"
                         />
                     </div>
 
@@ -176,7 +177,7 @@
                         <i data-lucide="log-out" class="w-4 h-4 text-maroon"></i>
                     </div>
                     <div>
-                        <h2 class="text-sm font-bold text-navy">Sesi & Keluar Akun</h2>
+                        <h2 class="text-sm font-bold text-brand-ink">Sesi & Keluar Akun</h2>
                         <p class="text-[11px] text-muted">Hapus cookie autentikasi perangkat</p>
                     </div>
                 </div>
@@ -200,7 +201,7 @@
             <div class="bg-white rounded-3xl border border-line p-6 shadow-xs">
                 <div class="flex items-center justify-between pb-4 border-b border-line mb-5">
                     <div>
-                        <h2 class="text-base font-bold text-navy">Informasi Perusahaan & PIC</h2>
+                        <h2 class="text-base font-bold text-brand-ink">Informasi Perusahaan & PIC</h2>
                         <p class="text-xs text-muted">Data ini ditampilkan pada katalog mitra dan pengajuan lowongan.</p>
                     </div>
                     <span class="text-[11px] text-muted font-mono bg-canvas px-2.5 py-1 rounded-full border border-line">
@@ -221,20 +222,20 @@
                     <!-- Row 1: Nama Perusahaan & Singkatan -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Nama Perusahaan (Kredensial Login)
                             </label>
                             <input
                                 type="text"
                                 value="{{ $mitra->nama_perusahaan }}"
                                 disabled
-                                class="w-full bg-[#EEF2F6] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line cursor-not-allowed"
+                                class="w-full bg-brand-softmist text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line cursor-not-allowed"
                                 title="Nama perusahaan dikelola oleh Admin BKK"
                             />
                             <p class="text-[10px] text-muted mt-0.5">Untuk pengubahan nama resmi entitas perusahaan, hubungi Admin BKK Penus.</p>
                         </div>
                         <div>
-                            <label for="singkatan" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="singkatan" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Singkatan / Alias
                             </label>
                             <input
@@ -243,7 +244,7 @@
                                 name="singkatan"
                                 value="{{ old('singkatan', $mitra->singkatan) }}"
                                 placeholder="Misal: STN"
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                     </div>
@@ -251,18 +252,18 @@
                     <!-- Row 2: NPWP & Sektor Industri -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Nomor NPWP Perusahaan
                             </label>
                             <input
                                 type="text"
                                 value="{{ $mitra->npwp }}"
                                 disabled
-                                class="w-full bg-[#EEF2F6] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line font-mono cursor-not-allowed"
+                                class="w-full bg-brand-softmist text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line font-mono cursor-not-allowed"
                             />
                         </div>
                         <div>
-                            <label for="sektor_industri" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="sektor_industri" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Sektor Industri <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -272,7 +273,7 @@
                                 value="{{ old('sektor_industri', $mitra->sektor_industri) }}"
                                 required
                                 placeholder="Contoh: Teknologi Informasi & Jaringan"
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                     </div>
@@ -280,7 +281,7 @@
                     <!-- Row 3: Kota & Website -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="kota" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="kota" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Kota Domisili Kantor <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -290,11 +291,11 @@
                                 value="{{ old('kota', $mitra->kota) }}"
                                 required
                                 placeholder="Contoh: Kota Bogor"
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                         <div>
-                            <label for="website" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="website" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Website Perusahaan
                             </label>
                             <input
@@ -303,14 +304,14 @@
                                 name="website"
                                 value="{{ old('website', $mitra->website) }}"
                                 placeholder="https://perusahaan.co.id"
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                     </div>
 
                     <!-- Row 4: Alamat Kantor -->
                     <div>
-                        <label for="alamat_kantor" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                        <label for="alamat_kantor" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                             Alamat Kantor Lengkap <span class="text-maroon">*</span>
                         </label>
                         <textarea
@@ -318,13 +319,13 @@
                             name="alamat_kantor"
                             rows="2"
                             required
-                            class="w-full bg-canvas text-navy text-xs rounded-xl p-3 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                            class="w-full bg-canvas text-brand-ink text-xs rounded-xl p-3 border border-line focus:bg-white focus:border-navy focus:outline-none"
                         >{{ old('alamat_kantor', $mitra->alamat_kantor) }}</textarea>
                     </div>
 
                     <!-- Section Divider: PIC Contacts -->
                     <div class="pt-4 pb-2 border-t border-line">
-                        <div class="text-xs font-bold text-navy uppercase tracking-wider">
+                        <div class="text-xs font-bold text-brand-ink uppercase tracking-wider">
                             Person-in-Charge (PIC HRD / Hubin)
                         </div>
                         <p class="text-[11px] text-muted">Kontak ini dihubungi sekolah terkait penempatan PKL dan administrasi lamaran.</p>
@@ -332,7 +333,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="pic_name" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="pic_name" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Nama PIC <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -341,11 +342,11 @@
                                 name="pic_name"
                                 value="{{ old('pic_name', $mitra->pic_name) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                         <div>
-                            <label for="pic_role" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="pic_role" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Jabatan PIC <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -354,11 +355,11 @@
                                 name="pic_role"
                                 value="{{ old('pic_role', $mitra->pic_role) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                         <div>
-                            <label for="pic_email" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="pic_email" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Email PIC <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -367,11 +368,11 @@
                                 name="pic_email"
                                 value="{{ old('pic_email', $mitra->pic_email) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                         <div>
-                            <label for="pic_phone" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="pic_phone" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 No. WhatsApp / Telepon PIC <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -380,7 +381,7 @@
                                 name="pic_phone"
                                 value="{{ old('pic_phone', $mitra->pic_phone) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                     </div>
@@ -388,7 +389,7 @@
                     <!-- Row 5: Kontak Kantor -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="email_perusahaan" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="email_perusahaan" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 Email Resmi Kantor <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -397,11 +398,11 @@
                                 name="email_perusahaan"
                                 value="{{ old('email_perusahaan', $mitra->email_perusahaan) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                         <div>
-                            <label for="no_telp_perusahaan" class="block text-xs font-semibold text-navy uppercase tracking-wider mb-1">
+                            <label for="no_telp_perusahaan" class="block text-xs font-semibold text-brand-ink uppercase tracking-wider mb-1">
                                 No. Telepon Kantor <span class="text-maroon">*</span>
                             </label>
                             <input
@@ -410,7 +411,7 @@
                                 name="no_telp_perusahaan"
                                 value="{{ old('no_telp_perusahaan', $mitra->no_telp_perusahaan) }}"
                                 required
-                                class="w-full bg-canvas text-navy text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
+                                class="w-full bg-canvas text-brand-ink text-xs rounded-xl px-3.5 py-2.5 border border-line focus:bg-white focus:border-navy focus:outline-none"
                             />
                         </div>
                     </div>

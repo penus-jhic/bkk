@@ -47,14 +47,10 @@
                     @php $isActive = request()->routeIs(...$item['active']); @endphp
                     <a href="{{ route($item['route']) }}"
                        @if($isActive) aria-current="page" @endif
-                       class="group flex items-center justify-between gap-2 h-10 px-3 rounded-xl text-[13px] transition-colors {{ $isActive ? 'bg-brand-paper text-brand-darkred font-bold' : 'text-brand-ink font-medium hover:bg-brand-paper' }}">
+                       class="group flex items-center justify-between gap-2 h-10 px-3 rounded-xl text-[13px] transition-colors {{ $isActive ? 'bg-navy text-white font-semibold shadow-sm' : 'text-brand-ink font-medium hover:bg-brand-paper' }}">
                         <span class="flex items-center gap-3 min-w-0">
-                            <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0 {{ $isActive ? 'text-brand-darkred' : 'text-muted group-hover:text-brand-ink' }}"></i>
-                            @if($isActive)
-                                <x-sketch.underline size="sm" class="truncate">{{ $item['label'] }}</x-sketch.underline>
-                            @else
-                                <span class="truncate">{{ $item['label'] }}</span>
-                            @endif
+                            <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0 {{ $isActive ? 'text-white' : 'text-muted group-hover:text-brand-ink' }}"></i>
+                            <span class="truncate">{{ $item['label'] }}</span>
                         </span>
                         @if(!empty($item['tag']))
                             <span class="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-brand-darkred text-white text-[10px] font-bold shrink-0">
@@ -82,7 +78,7 @@
 
     <!-- Kaki sidebar: status PKL / karier -->
     <div class="p-3 border-t border-brand-ink/10">
-        <div class="rounded-card bg-brand-ink text-white p-4">
+        <div class="rounded-card bg-gradient-to-br from-brand-darkred to-brand-deepred text-white shadow-softpill p-4">
             <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#F5C2C7]">
                 <span class="w-1.5 h-1.5 rounded-full {{ $isSiswa ? 'bg-emerald-400' : 'bg-amber-400' }}"></span>
                 {{ $isSiswa ? 'Status PKL' : 'Status Karier' }}

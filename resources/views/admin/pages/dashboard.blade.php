@@ -35,7 +35,7 @@
     $statusBadge = [
         'Terkirim' => 'bg-brand-softmist text-brand-ink',
         'Sedang Ditinjau' => 'bg-amber-50 text-amber-800 border border-amber-200',
-        'Dipanggil Interview' => 'bg-blue-50 text-blue-800 border border-blue-200',
+        'Dipanggil Interview' => 'bg-navy/5 text-navy border border-navy/20',
         'Diterima' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
         'Ditolak' => 'bg-brand-darkred/5 text-brand-darkred border border-brand-darkred/20',
     ];
@@ -264,7 +264,7 @@
                 @forelse($recentLowongans as $low)
                     <li>
                         <a href="{{ route('bkk.admin.lowongan.edit', $low->id) }}" class="flex items-center gap-3 p-3 rounded-xl border border-brand-ink/10 hover:border-brand-darkred/30 hover:bg-brand-paper/50 transition-colors">
-                            <span class="w-11 h-11 rounded-xl grid place-items-center font-display text-xs uppercase shrink-0 {{ $low->tipe === 'PKL' ? 'bg-brand-darkred text-white' : 'bg-brand-ink text-white' }}">{{ $low->tipe }}</span>
+                            <span class="w-11 h-11 rounded-xl grid place-items-center font-display text-xs uppercase shrink-0 {{ $low->tipe === 'PKL' ? 'bg-brand-darkred text-white' : 'bg-navy text-white' }}">{{ $low->tipe }}</span>
                             <span class="min-w-0 flex-1">
                                 <span class="block text-sm font-semibold text-brand-ink truncate">{{ $low->judul }}</span>
                                 <span class="block text-xs text-brand-ink/60 truncate">{{ $low->mitra?->nama_perusahaan ?? 'Mitra' }} · {{ $low->deadline ? 'tutup ' . $low->deadline->translatedFormat('d M') : 'tanpa batas' }}</span>
@@ -380,7 +380,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('bkk.admin.berita.index') }}" class="h-9 px-4 rounded-full border border-brand-ink/15 text-xs font-semibold text-brand-ink hover:bg-brand-softmist inline-flex items-center transition-colors">Kelola Berita</a>
-                <a href="{{ route('bkk.admin.berita.create') }}" class="h-9 px-4 rounded-full bg-brand-ink text-white text-xs font-semibold hover:bg-brand-darkred inline-flex items-center gap-1.5 transition-colors"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tulis</a>
+                <a href="{{ route('bkk.admin.berita.create') }}" class="h-9 px-4 rounded-full bg-navy text-white text-xs font-semibold hover:bg-brand-darkred inline-flex items-center gap-1.5 transition-colors"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tulis</a>
             </div>
         </div>
         <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -7,14 +7,12 @@
     <!-- Page Header & Action -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-muted mb-1">
-                <a href="{{ route('bkk.admin.index') }}" class="hover:text-navy">Dashboard</a>
+            <div class="dash-eyebrow">
+                <a href="{{ route('bkk.admin.index') }}" class="hover:text-brand-ink">Dashboard</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-navy font-semibold">Mitra IDUKA</span>
+                <span class="text-brand-ink font-semibold">Mitra IDUKA</span>
             </div>
-            <h1 class="text-2xl font-bold font-headline text-navy">
-                Kelola Mitra Industri (IDUKA)
-            </h1>
+            <h1 class="dash-title font-display text-brand-ink">Kelola <x-sketch.underline>Mitra Industri</x-sketch.underline> (IDUKA)</h1>
             <p class="text-xs text-muted mt-1">
                 Daftar seluruh perusahaan rekanan SMK Plus Pelita Nusantara, verifikasi kemitraan, dan publikasi lowongan.
             </p>
@@ -38,28 +36,31 @@
 
     <!-- Quick Stats Cards (Google Style) -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-muted uppercase tracking-wider">Total Mitra Terdaftar</div>
-            <div class="text-2xl font-headline font-bold text-navy mt-1">{{ $stats['total_mitra'] ?? 0 }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Perusahaan aktif di sistem</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60">Total Mitra Terdaftar</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $stats['total_mitra'] ?? 0 }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Perusahaan aktif di sistem</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Terverifikasi</div>
-            <div class="text-2xl font-headline font-bold text-emerald-700 mt-1">{{ $stats['verified'] ?? 0 }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Dapat login & pasang lowongan</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Terverifikasi</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $stats['verified'] ?? 0 }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Dapat login & pasang lowongan</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Pending / Nonaktif</div>
-            <div class="text-2xl font-headline font-bold text-amber-700 mt-1">{{ $stats['pending_verifikasi'] ?? 0 }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Menunggu peninjauan admin</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Pending / Nonaktif</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $stats['pending_verifikasi'] ?? 0 }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Menunggu peninjauan admin</div>
         </div>
 
-        <a href="{{ route('bkk.admin.mitra.permohonan.index') }}" class="block p-4 rounded-2xl bg-white border border-line shadow-xs hover:border-purple-300 transition-colors">
-            <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wider">Permohonan Baru</div>
-            <div class="text-2xl font-headline font-bold text-purple-700 mt-1">{{ $stats['permohonan_masuk'] ?? 0 }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Pengajuan kerja sama via web &rarr; Lihat</div>
+        <a href="{{ route('bkk.admin.mitra.permohonan.index') }}" class="group block p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-brand-darkred"></span>Permohonan Baru</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-darkred">{{ $stats['permohonan_masuk'] ?? 0 }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 flex items-center justify-between text-xs text-brand-ink/60">
+                Pengajuan kerja sama via web
+                <x-sketch.arrow class="w-6 h-3 text-brand-darkred transition-transform group-hover:translate-x-1" />
+            </div>
         </a>
     </div>
 
@@ -73,12 +74,12 @@
                     name="q"
                     value="{{ $search ?? request('q') }}"
                     placeholder="Cari nama perusahaan, kota, sektor, atau NPWP..."
-                    class="w-full pl-10 pr-4 py-2 bg-canvas text-navy text-xs rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full pl-10 pr-4 py-2 bg-canvas text-brand-ink text-xs rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 />
             </div>
 
             <div class="flex items-center gap-2 w-full sm:w-auto">
-                <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-navy rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
+                <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-brand-ink rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
                     <option value="">Semua Status Verifikasi</option>
                     <option value="verified" {{ ($filterVerifikasi ?? request('status')) === 'verified' ? 'selected' : '' }}>Terverifikasi</option>
                     <option value="pending" {{ ($filterVerifikasi ?? request('status')) === 'pending' ? 'selected' : '' }}>Pending / Nonaktif</option>
@@ -89,7 +90,7 @@
                 </button>
 
                 @if(!empty($search) || !empty($filterVerifikasi))
-                    <a href="{{ route('bkk.admin.mitra.index') }}" class="px-3 py-2 text-muted hover:text-navy text-xs font-medium shrink-0">
+                    <a href="{{ route('bkk.admin.mitra.index') }}" class="px-3 py-2 text-muted hover:text-brand-ink text-xs font-medium shrink-0">
                         Reset
                     </a>
                 @endif
@@ -130,14 +131,14 @@
                                         </div>
                                     @endif
                                     <div class="min-w-0">
-                                        <div class="font-headline font-bold text-navy text-sm truncate">
+                                        <div class="font-headline font-bold text-brand-ink text-sm truncate">
                                             <a href="{{ route('bkk.admin.mitra.edit', $item->id) }}" class="hover:text-maroon">
                                                 {{ $item->nama_perusahaan }}
                                             </a>
                                         </div>
                                         <div class="text-[11px] text-muted flex items-center gap-2 mt-0.5">
                                             @if($item->singkatan)
-                                                <span class="font-semibold text-navy">{{ $item->singkatan }}</span>
+                                                <span class="font-semibold text-brand-ink">{{ $item->singkatan }}</span>
                                                 <span>•</span>
                                             @endif
                                             <span class="font-mono">NPWP: {{ $item->npwp }}</span>
@@ -148,7 +149,7 @@
 
                             <!-- Sektor & Domisili -->
                             <td class="py-4 px-4">
-                                <div class="font-medium text-navy truncate max-w-[180px]">{{ $item->sektor_industri }}</div>
+                                <div class="font-medium text-brand-ink truncate max-w-[180px]">{{ $item->sektor_industri }}</div>
                                 <div class="text-[11px] text-muted flex items-center gap-1 mt-0.5">
                                     <i data-lucide="map-pin" class="w-3 h-3 text-muted"></i>
                                     <span>{{ $item->kota }}</span>
@@ -157,7 +158,7 @@
 
                             <!-- PIC -->
                             <td class="py-4 px-4">
-                                <div class="font-semibold text-navy">{{ $item->pic_name }}</div>
+                                <div class="font-semibold text-brand-ink">{{ $item->pic_name }}</div>
                                 <div class="text-[11px] text-muted truncate max-w-[180px]">{{ $item->pic_role }}</div>
                                 <div class="text-[11px] text-maroon font-mono mt-0.5 flex items-center gap-1">
                                     <i data-lucide="phone" class="w-3 h-3"></i>
@@ -170,7 +171,7 @@
                             <!-- Aktivitas -->
                             <td class="py-4 px-4 text-center">
                                 <div class="inline-flex flex-col items-center gap-0.5">
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-navy/5 text-navy border border-navy/20">
                                         <i data-lucide="briefcase" class="w-3 h-3"></i>
                                         <span>{{ $item->lowongans_count ?? 0 }} Lowongan</span>
                                     </span>
@@ -197,7 +198,7 @@
                             <td class="py-4 px-5 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <a href="{{ route('bkk.admin.mitra.edit', $item->id) }}" 
-                                       class="p-1.5 rounded-full hover:bg-canvas text-navy border border-line transition-colors" 
+                                       class="p-1.5 rounded-full hover:bg-canvas text-brand-ink border border-line transition-colors" 
                                        title="Edit Data Mitra">
                                         <i data-lucide="edit-3" class="w-4 h-4"></i>
                                     </a>
@@ -218,7 +219,7 @@
                         <tr>
                             <td colspan="7" class="py-12 text-center text-muted">
                                 <i data-lucide="building" class="w-10 h-10 mx-auto text-muted/40 mb-2"></i>
-                                <h3 class="text-sm font-bold text-navy">Belum ada Mitra IDUKA</h3>
+                                <h3 class="text-sm font-bold text-brand-ink">Belum ada Mitra IDUKA</h3>
                                 <p class="text-xs text-muted mt-1">Tidak ada data mitra yang cocok dengan filter atau kata kunci pencarian.</p>
                                 <a href="{{ route('bkk.admin.mitra.create') }}" class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-navy text-white text-xs font-semibold hover:bg-maroon transition-all">
                                     <i data-lucide="plus-circle" class="w-4 h-4"></i>

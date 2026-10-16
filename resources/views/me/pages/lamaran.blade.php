@@ -7,7 +7,8 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-navy tracking-tight">Riwayat Lamaran</h1>
+            <p class="dash-eyebrow">Portal Siswa · Lamaran Kerja &amp; PKL</p>
+            <h1 class="dash-title font-display text-brand-ink">Riwayat <x-sketch.underline>Lamaran</x-sketch.underline></h1>
             <p class="text-xs sm:text-sm text-muted">Pantau seluruh progres dan riwayat berkas lamaran kerja & PKL Anda.</p>
         </div>
 
@@ -20,7 +21,7 @@
                     id="lamaranSearch"
                     placeholder="Cari posisi / perusahaan…"
                     oninput="filterApplications()"
-                    class="flex-1 outline-none text-xs sm:text-sm bg-transparent text-navy"
+                    class="flex-1 outline-none text-xs sm:text-sm bg-transparent text-brand-ink"
                 />
             </label>
 
@@ -29,7 +30,7 @@
                 <button id="btnViewTable" onclick="switchView('table')" class="w-9 h-9 rounded-full grid place-items-center bg-navy text-white cursor-pointer transition-colors" title="Tampilan Tabel">
                     <i data-lucide="list" class="w-4 h-4"></i>
                 </button>
-                <button id="btnViewGrid" onclick="switchView('grid')" class="w-9 h-9 rounded-full grid place-items-center text-muted hover:text-navy cursor-pointer transition-colors" title="Tampilan Grid">
+                <button id="btnViewGrid" onclick="switchView('grid')" class="w-9 h-9 rounded-full grid place-items-center text-muted hover:text-brand-ink cursor-pointer transition-colors" title="Tampilan Grid">
                     <i data-lucide="layout-grid" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -54,10 +55,10 @@
             <button
                 onclick="setFilter('{{ $f }}')"
                 data-filter="{{ $f }}"
-                class="filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer {{ $loop->first ? 'bg-navy text-white border-navy active' : 'bg-white text-navy border-line hover:bg-canvas' }}"
+                class="filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer {{ $loop->first ? 'bg-navy text-white border-navy active' : 'bg-white text-brand-ink border-line hover:bg-canvas' }}"
             >
                 <span>{{ $f }}</span>
-                <span class="count-pill text-[10px] rounded-full px-1.5 min-w-5 {{ $loop->first ? 'bg-white/20 text-white' : 'bg-[#EEF2F6] text-muted' }}">
+                <span class="count-pill text-[10px] rounded-full px-1.5 min-w-5 {{ $loop->first ? 'bg-white/20 text-white' : 'bg-brand-softmist text-muted' }}">
                     {{ $counts[$f] ?? 0 }}
                 </span>
             </button>
@@ -69,9 +70,9 @@
         <div class="w-14 h-14 rounded-full bg-line/40 grid place-items-center mx-auto text-muted mb-3">
             <i data-lucide="inbox" class="w-7 h-7"></i>
         </div>
-        <div class="font-bold text-navy text-base">Tidak ada lamaran ditemukan</div>
+        <div class="font-bold text-brand-ink text-base">Tidak ada lamaran ditemukan</div>
         <div class="text-xs text-muted mt-1">Anda belum memiliki riwayat lamaran atau belum ada lamaran yang cocok dengan filter saat ini.</div>
-        <button onclick="resetFilters()" class="mt-4 h-9 px-5 rounded-full border border-line bg-white text-navy text-xs font-semibold hover:bg-canvas cursor-pointer shadow-sm">
+        <button onclick="resetFilters()" class="mt-4 h-9 px-5 rounded-full border border-line bg-white text-brand-ink text-xs font-semibold hover:bg-canvas cursor-pointer shadow-sm">
             Reset Filter
         </button>
     </div>
@@ -80,7 +81,7 @@
     <div id="tableViewContainer" class="{{ empty($applications) ? 'hidden' : '' }} bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
-                <thead class="bg-[#F5F7FA] border-b border-line text-muted text-[11px] uppercase tracking-wider font-semibold">
+                <thead class="bg-brand-paper border-b border-line text-muted text-[11px] uppercase tracking-wider font-semibold">
                     <tr>
                         <th class="px-5 py-3.5">Posisi & Perusahaan</th>
                         <th class="px-5 py-3.5 hidden sm:table-cell">Kategori Mitra</th>
@@ -93,12 +94,12 @@
                     @foreach($applications as $app)
                         @php
                             $statusBadgeClass = match($app['status']) {
-                                'Terkirim' => 'border border-navy text-navy bg-white',
+                                'Terkirim' => 'border border-navy text-brand-ink bg-white',
                                 'Sedang Ditinjau' => 'bg-amber-100 text-amber-800 border border-amber-200',
                                 'Dipanggil Interview' => 'bg-maroon text-white border border-maroon',
                                 'Diterima' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
                                 'Ditolak' => 'bg-gray-100 text-muted border border-gray-200',
-                                default => 'bg-gray-100 text-navy'
+                                default => 'bg-gray-100 text-brand-ink'
                             };
                         @endphp
                         <tr class="app-row hover:bg-canvas/80 transition-colors"
@@ -110,8 +111,8 @@
                                         {{ strtoupper(substr($app['company'], 0, 2)) }}
                                     </div>
                                     <div>
-                                        <div class="font-semibold text-navy text-sm">{{ $app['position'] }}</div>
-                                        <div class="text-xs text-muted mt-0.5">{{ $app['company'] }} · {{ $app['location'] }} · <span class="font-medium text-navy/70">{{ $app['type'] }}</span></div>
+                                        <div class="font-semibold text-brand-ink text-sm">{{ $app['position'] }}</div>
+                                        <div class="text-xs text-muted mt-0.5">{{ $app['company'] }} · {{ $app['location'] }} · <span class="font-medium text-brand-ink/70">{{ $app['type'] }}</span></div>
                                     </div>
                                 </div>
                             </td>
@@ -123,7 +124,7 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-right whitespace-nowrap">
-                                <button onclick='openDetailModal(@json($app))' class="h-8 px-4 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold transition-colors shadow-sm cursor-pointer">
+                                <button onclick='openDetailModal(@json($app))' class="h-8 px-4 rounded-full border border-line bg-white hover:bg-canvas text-brand-ink text-xs font-semibold transition-colors shadow-sm cursor-pointer">
                                     Detail Seleksi
                                 </button>
                             </td>
@@ -139,12 +140,12 @@
         @foreach($applications as $app)
             @php
                 $statusBadgeClass = match($app['status']) {
-                    'Terkirim' => 'border border-navy text-navy bg-white',
+                    'Terkirim' => 'border border-navy text-brand-ink bg-white',
                     'Sedang Ditinjau' => 'bg-amber-100 text-amber-800 border border-amber-200',
                     'Dipanggil Interview' => 'bg-maroon text-white border border-maroon',
                     'Diterima' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
                     'Ditolak' => 'bg-gray-100 text-muted border border-gray-200',
-                    default => 'bg-gray-100 text-navy'
+                    default => 'bg-gray-100 text-brand-ink'
                 };
             @endphp
             <div class="app-card p-5 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow flex flex-col justify-between"
@@ -161,7 +162,7 @@
                     </div>
 
                     <div class="mt-3">
-                        <h3 class="font-bold text-sm text-navy leading-snug">{{ $app['position'] }}</h3>
+                        <h3 class="font-bold text-sm text-brand-ink leading-snug">{{ $app['position'] }}</h3>
                         <div class="text-xs text-muted mt-1">{{ $app['company'] }} · {{ $app['location'] }}</div>
                         <div class="text-[11px] text-muted/80 mt-0.5">{{ $app['mitra'] }}</div>
                     </div>
@@ -179,11 +180,11 @@
 </div>
 
 <!-- Slide-in Detail Drawer for Application Status -->
-<div id="detailDrawerBackdrop" class="fixed inset-0 bg-navy/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
+<div id="detailDrawerBackdrop" class="fixed inset-0 bg-brand-ink/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
 
 <aside id="detailDrawer" class="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] bg-white shadow-2xl flex flex-col z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden">
     <div class="flex items-center justify-between px-5 h-16 border-b border-line shrink-0">
-        <span class="font-bold text-navy text-base">Detail Seleksi & Timeline</span>
+        <span class="font-bold text-brand-ink text-base">Detail Seleksi & Timeline</span>
         <button onclick="closeDetailModal()" class="w-9 h-9 rounded-full grid place-items-center hover:bg-canvas cursor-pointer text-muted" aria-label="Tutup">
             <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -194,7 +195,7 @@
     </div>
 
     <div class="p-4 border-t border-line flex gap-2 justify-end bg-canvas">
-        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-navy bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
+        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-brand-ink bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Unduh Bukti</span>
         </button>
@@ -219,12 +220,12 @@
             tableView.classList.remove('hidden');
             gridView.classList.add('hidden');
             btnTable.className = "w-9 h-9 rounded-full grid place-items-center bg-navy text-white cursor-pointer transition-colors";
-            btnGrid.className = "w-9 h-9 rounded-full grid place-items-center text-muted hover:text-navy cursor-pointer transition-colors";
+            btnGrid.className = "w-9 h-9 rounded-full grid place-items-center text-muted hover:text-brand-ink cursor-pointer transition-colors";
         } else {
             tableView.classList.add('hidden');
             gridView.classList.remove('hidden');
             btnGrid.className = "w-9 h-9 rounded-full grid place-items-center bg-navy text-white cursor-pointer transition-colors";
-            btnTable.className = "w-9 h-9 rounded-full grid place-items-center text-muted hover:text-navy cursor-pointer transition-colors";
+            btnTable.className = "w-9 h-9 rounded-full grid place-items-center text-muted hover:text-brand-ink cursor-pointer transition-colors";
         }
     }
 
@@ -236,8 +237,8 @@
                 btn.className = "filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer bg-navy text-white border-navy active";
                 btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-white/20 text-white";
             } else {
-                btn.className = "filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer bg-white text-navy border-line hover:bg-canvas";
-                btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-[#EEF2F6] text-muted";
+                btn.className = "filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer bg-white text-brand-ink border-line hover:bg-canvas";
+                btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-brand-softmist text-muted";
             }
         });
         filterApplications();
@@ -318,16 +319,16 @@
             timelineItemsHtml = app.timeline.map((t, idx) => `
                 <li class="pl-6 relative">
                     <span class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-white grid place-items-center">
-                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-navy' : 'text-line'}"></i>
+                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-brand-ink' : 'text-line'}"></i>
                     </span>
-                    <div class="text-xs font-semibold ${t.done ? 'text-navy' : 'text-muted'}">${escapeHtml(t.title)}</div>
+                    <div class="text-xs font-semibold ${t.done ? 'text-brand-ink' : 'text-muted'}">${escapeHtml(t.title)}</div>
                     <div class="text-[11px] text-muted leading-relaxed">${escapeHtml(t.desc)}</div>
                     ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${escapeHtml(t.date)}</div>` : ''}
                 </li>
             `).join('');
         }
 
-        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#0f172a';
+        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#241012';
         const companyShort = escapeHtml(String(app.company || '').substring(0, 2).toUpperCase());
 
         body.innerHTML = `
@@ -336,11 +337,11 @@
                     ${companyShort}
                 </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-base text-navy leading-snug">${escapeHtml(app.position)}</h3>
+                    <h3 class="font-bold text-base text-brand-ink leading-snug">${escapeHtml(app.position)}</h3>
                     <div class="text-xs text-muted mt-0.5">${escapeHtml(app.company)} · ${escapeHtml(app.location)}</div>
                     <div class="flex flex-wrap gap-2 mt-2">
                         <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${escapeHtml(app.status)}</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#EEF2F6] text-muted">${escapeHtml(app.type)}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-brand-softmist text-muted">${escapeHtml(app.type)}</span>
                     </div>
                 </div>
             </div>
@@ -354,8 +355,8 @@
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-[#F5F7FA] border border-line p-4 text-xs">
-                <div class="font-semibold text-navy mb-1 flex items-center gap-1.5">
+            <div class="rounded-2xl bg-brand-paper border border-line p-4 text-xs">
+                <div class="font-semibold text-brand-ink mb-1 flex items-center gap-1.5">
                     <i data-lucide="message-square" class="w-3.5 h-3.5 text-muted"></i>
                     <span>Catatan BKK Penus</span>
                 </div>

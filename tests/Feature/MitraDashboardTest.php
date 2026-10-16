@@ -114,7 +114,7 @@ class MitraDashboardTest extends TestCase
             ->get('/bkk/dashboard/lowongan');
 
         $response->assertStatus(200)
-            ->assertSee('Kelola Lowongan IDUKA');
+            ->assertSeeText('Kelola Lowongan IDUKA');
     }
 
     /**
@@ -152,7 +152,7 @@ class MitraDashboardTest extends TestCase
             ->get('/bkk/dashboard/pengaturan');
 
         $response->assertStatus(200)
-            ->assertSee('Pengaturan Akun Mitra')
+            ->assertSeeText('Pengaturan Akun Mitra')
             ->assertSee('Keamanan Kata Sandi')
             ->assertSee('Logo Perusahaan')
             ->assertSee('Keluar dari Akun (Logout)');
@@ -221,7 +221,7 @@ class MitraDashboardTest extends TestCase
             ->get('/bkk/admin/mitra');
 
         $response->assertStatus(200)
-            ->assertSee('Kelola Mitra Industri (IDUKA)')
+            ->assertSeeText('Kelola Mitra Industri (IDUKA)')
             ->assertSee('Tambah Mitra Baru')
             ->assertSee($this->mitra->nama_perusahaan);
     }
@@ -237,7 +237,7 @@ class MitraDashboardTest extends TestCase
             ->get('/bkk/admin/mitra/new');
 
         $response->assertStatus(200)
-            ->assertSee('Tambah Mitra Industri (IDUKA) Baru')
+            ->assertSeeText('Tambah Mitra Industri (IDUKA) Baru')
             ->assertSee('Nama Resmi Perusahaan')
             ->assertSee('Nomor NPWP Perusahaan');
     }
@@ -288,7 +288,7 @@ class MitraDashboardTest extends TestCase
             ->get("/bkk/admin/mitra/{$this->mitra->id}");
 
         $response->assertStatus(200)
-            ->assertSee('Edit:')
+            ->assertSeeText('Edit:')
             ->assertSee($this->mitra->nama_perusahaan);
     }
 

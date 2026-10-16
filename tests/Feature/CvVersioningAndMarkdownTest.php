@@ -202,4 +202,75 @@ class CvVersioningAndMarkdownTest extends TestCase
 
         $res->assertStatus(404);
     }
+
+    /**
+     * 8. DELETE /bkk/me/cv/{id} menghapus versi arsip milik siswa yang belum dipakai melamar.
+     */
+    public function test_cv_destroy_deletes_unused_archive_version(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->fakeAuth('SISWA', 'usr-siswa-001');
+
+        // Versi baru otomatis jadi CV Utama, jadi CV Utama lama diaktifkan lagi supaya versi baru menjadi arsip
+        $originalMain = CvResume::where('user_id', 'usr-siswa-001')->where('is_main', true)->firstOrFail();
+        $archive = CvResume::saveVersion('usr-siswa-001', "# Ahmad Rizky Pratama\n\n## Ringkasan\nVersi khusus lowongan desain.");
+        $originalMain->setAsMain();
+        $this->assertFalse((bool) $archive->fresh()->is_main);
+        // Model $originalMain basi (is_main di memori masih true), setAsMain tetap harus menulisnya ke database
+        $this->assertTrue((bool) $originalMain->fresh()->is_main);
+
+        $res = $this->withHeader('Authorization', 'Bearer valid')
+            ->deleteJson(route('bkk.me.cv.destroy', $archive->id));
+
+        $res->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertDatabaseMissing('cv_resumes', ['id' => $archive->id]);
+    }
+
+    /**
+     * 9. CV Utama dan versi yang sudah dipakai melamar tidak boleh dihapus (lamaran.cv_id cascadeOnDelete).
+     */
+    public function test_cv_destroy_refuses_main_and_versions_used_in_lamaran(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->fakeAuth('SISWA', 'usr-siswa-001');
+
+        $main = CvResume::where('user_id', 'usr-siswa-001')->where('is_main', true)->firstOrFail();
+        $this->withHeader('Authorization', 'Bearer valid')
+            ->deleteJson(route('bkk.me.cv.destroy', $main->id))
+            ->assertStatus(422)
+            ->assertJson(['success' => false]);
+        $this->assertDatabaseHas('cv_resumes', ['id' => $main->id]);
+
+        // Versi arsip yang dipakai sebuah lamaran: salin lamaran seeder dan arahkan ke versi arsip baru
+        $used = CvResume::saveVersion('usr-siswa-001', "# Ahmad Rizky Pratama\n\n## Ringkasan\nVersi yang dipakai melamar.");
+        $main->setAsMain();
+        $lamaran = \App\Models\Lamaran::firstOrFail()->replicate();
+        $lamaran->kode_lamaran = 'LMR-TEST-CV-DESTROY';
+        $lamaran->cv_id = $used->id;
+        $lamaran->save();
+        $lamaranCount = $used->lamarans()->count();
+        $this->assertSame(1, $lamaranCount);
+        $this->withHeader('Authorization', 'Bearer valid')
+            ->deleteJson(route('bkk.me.cv.destroy', $used->id))
+            ->assertStatus(422)
+            ->assertJson(['success' => false]);
+        $this->assertDatabaseHas('cv_resumes', ['id' => $used->id]);
+        $this->assertSame($lamaranCount, $used->lamarans()->count());
+    }
+
+    /**
+     * 10. Siswa tidak bisa menghapus CV milik pengguna lain.
+     */
+    public function test_cv_destroy_rejects_unowned_version(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->fakeAuth('SISWA', 'usr-siswa-001');
+
+        $other = CvResume::where('user_id', '!=', 'usr-siswa-001')->where('temp', false)->firstOrFail();
+
+        $this->withHeader('Authorization', 'Bearer valid')
+            ->deleteJson(route('bkk.me.cv.destroy', $other->id))
+            ->assertStatus(404);
+        $this->assertDatabaseHas('cv_resumes', ['id' => $other->id]);
+    }
 }
