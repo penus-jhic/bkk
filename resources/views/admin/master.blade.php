@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
     @stack('styles')
 </head>
-<body class="bg-canvas text-navy font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-white text-brand-ink font-sans antialiased min-h-screen flex flex-col">
     <!-- Top Bar Navigation -->
     @include('admin.partials.header')
 

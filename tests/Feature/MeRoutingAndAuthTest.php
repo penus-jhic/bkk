@@ -186,7 +186,7 @@ class MeRoutingAndAuthTest extends TestCase
             ->get('/bkk/me/cv');
 
         $response->assertStatus(200)
-            ->assertSee('CV & AI Scoring Hub');
+            ->assertSeeText('CV & AI Scoring Hub');
     }
 
     /**
@@ -210,7 +210,7 @@ class MeRoutingAndAuthTest extends TestCase
             ->get('/bkk/me/cv/edit');
 
         $response->assertStatus(200)
-            ->assertSee('Editor CV ATS');
+            ->assertSeeText('Editor CV ATS');
     }
 
     /**
@@ -234,7 +234,7 @@ class MeRoutingAndAuthTest extends TestCase
             ->get('/bkk/me/jurnal');
 
         $response->assertStatus(200)
-            ->assertSee('Jurnal PKL Harian')
+            ->assertSeeText('Jurnal PKL Harian')
             ->assertSee('Log Cepat Hari Ini');
     }
 
@@ -259,7 +259,7 @@ class MeRoutingAndAuthTest extends TestCase
             ->get('/bkk/me/laporan');
 
         $response->assertStatus(200)
-            ->assertSee('Laporan Akhir PKL')
+            ->assertSeeText('Laporan Akhir PKL')
             ->assertSee('Progres Persetujuan Laporan');
     }
 }

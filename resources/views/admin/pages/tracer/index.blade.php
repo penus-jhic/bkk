@@ -7,14 +7,12 @@
     <!-- Header & Action -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-muted mb-1">
-                <a href="{{ route('bkk.admin.index') }}" class="hover:text-navy">Dashboard</a>
+            <div class="dash-eyebrow">
+                <a href="{{ route('bkk.admin.index') }}" class="hover:text-brand-ink">Dashboard</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-navy font-semibold">Tracer Study</span>
+                <span class="text-brand-ink font-semibold">Tracer Study</span>
             </div>
-            <h1 class="text-2xl font-bold font-headline text-navy">
-                Rekapitulasi Tracer Study Alumni
-            </h1>
+            <h1 class="dash-title font-display text-brand-ink">Rekapitulasi <x-sketch.underline>Tracer Study</x-sketch.underline> Alumni</h1>
             <p class="text-xs text-muted mt-1">
                 Pantau penelusuran tamatan alumni, agregasi pilar BMW (Bekerja, Melanjutkan, Wirausaha), keselarasan kurikulum kejuruan, dan instrumen kuesioner.
             </p>
@@ -51,28 +49,28 @@
     @endphp
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-muted uppercase tracking-wider">Total Responden</div>
-            <div class="text-2xl font-headline font-bold text-navy mt-1">{{ number_format($totalRespon) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Alumni telah mengisi survei</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60">Total Responden</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($totalRespon) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Alumni telah mengisi survei</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Tingkat Keterserapan</div>
-            <div class="text-2xl font-headline font-bold text-emerald-700 mt-1">{{ $terserapRate }}%</div>
-            <div class="text-[10px] text-muted mt-0.5">Bekerja, Melanjutkan, Wirausaha</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Tingkat Keterserapan</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $terserapRate }}%</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Bekerja, Melanjutkan, Wirausaha</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Keselarasan Jurusan</div>
-            <div class="text-2xl font-headline font-bold text-blue-700 mt-1">{{ $selarasRate }}%</div>
-            <div class="text-[10px] text-muted mt-0.5">Sangat Selaras & Selaras</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-brand-darkred"></span>Keselarasan Jurusan</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $selarasRate }}%</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Sangat Selaras & Selaras</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wider">Rata-rata Waktu Tunggu</div>
-            <div class="text-2xl font-headline font-bold text-purple-700 mt-1">{{ $stats['rata_rata_waktu_tunggu_bulan'] ?? 0 }} <span class="text-xs font-normal text-muted">Bulan</span></div>
-            <div class="text-[10px] text-muted mt-0.5">Hingga diterima kerja pertama</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-brand-darkred"></span>Rata-rata Waktu Tunggu</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ $stats['rata_rata_waktu_tunggu_bulan'] ?? 0 }} <span class="text-xs font-normal text-muted">Bulan</span></div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Hingga diterima kerja pertama</div>
         </div>
     </div>
 
@@ -82,7 +80,7 @@
         <div class="bg-white rounded-3xl border border-line p-5 shadow-xs">
             <div class="flex items-center justify-between mb-4 pb-2 border-b border-line">
                 <div>
-                    <h3 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
                         <i data-lucide="pie-chart" class="w-4 h-4 text-maroon"></i>
                         <span>Distribusi Pilar BMW Kemendikbud</span>
                     </h3>
@@ -93,9 +91,9 @@
             <div class="space-y-4">
                 @php
                     $bmwItems = [
-                        ['label' => 'Bekerja di Industri', 'count' => $bekerjaCount, 'color' => 'bg-navy', 'text' => 'text-navy'],
-                        ['label' => 'Melanjutkan Pendidikan (Kuliah)', 'count' => $melanjutkanCount, 'color' => 'bg-blue-600', 'text' => 'text-blue-600'],
-                        ['label' => 'Wirausaha Mandiri', 'count' => $wirausahaCount, 'color' => 'bg-purple-600', 'text' => 'text-purple-600'],
+                        ['label' => 'Bekerja di Industri', 'count' => $bekerjaCount, 'color' => 'bg-navy', 'text' => 'text-brand-ink'],
+                        ['label' => 'Melanjutkan Pendidikan (Kuliah)', 'count' => $melanjutkanCount, 'color' => 'bg-navy', 'text' => 'text-navy'],
+                        ['label' => 'Wirausaha Mandiri', 'count' => $wirausahaCount, 'color' => 'bg-brand-rose', 'text' => 'text-brand-rosedeep'],
                         ['label' => 'Sedang Mencari Kerja', 'count' => $mencariKerjaCount, 'color' => 'bg-amber-600', 'text' => 'text-amber-600'],
                     ];
                 @endphp
@@ -106,11 +104,11 @@
                     @endphp
                     <div>
                         <div class="flex items-center justify-between text-xs mb-1.5 font-medium">
-                            <span class="text-navy flex items-center gap-2">
+                            <span class="text-brand-ink flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full {{ $item['color'] }}"></span>
                                 <span>{{ $item['label'] }}</span>
                             </span>
-                            <span class="font-bold text-navy">{{ $item['count'] }} orang ({{ $pct }}%)</span>
+                            <span class="font-bold text-brand-ink">{{ $item['count'] }} orang ({{ $pct }}%)</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div class="h-full rounded-full transition-all duration-500 {{ $item['color'] }}" style="width: {{ $pct }}%"></div>
@@ -124,7 +122,7 @@
         <div class="bg-white rounded-3xl border border-line p-5 shadow-xs">
             <div class="flex items-center justify-between mb-4 pb-2 border-b border-line">
                 <div>
-                    <h3 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
                         <i data-lucide="award" class="w-4 h-4 text-emerald-600"></i>
                         <span>Relevansi Kurikulum & Kejuruan</span>
                     </h3>
@@ -136,7 +134,7 @@
                 @php
                     $relevansiItems = [
                         ['label' => 'Sangat Selaras (Relevan Tinggi)', 'key' => 'sangat_selaras', 'badge' => 'bg-emerald-100 text-emerald-800', 'bar' => 'bg-emerald-600'],
-                        ['label' => 'Selaras (Cukup Relevan)', 'key' => 'selaras', 'badge' => 'bg-blue-100 text-blue-800', 'bar' => 'bg-blue-600'],
+                        ['label' => 'Selaras (Cukup Relevan)', 'key' => 'selaras', 'badge' => 'bg-navy/10 text-navy', 'bar' => 'bg-navy'],
                         ['label' => 'Kurang Selaras', 'key' => 'kurang_selaras', 'badge' => 'bg-amber-100 text-amber-800', 'bar' => 'bg-amber-600'],
                         ['label' => 'Tidak Selaras (Lintas Bidang)', 'key' => 'tidak_selaras', 'badge' => 'bg-rose-100 text-rose-800', 'bar' => 'bg-rose-600'],
                     ];
@@ -149,11 +147,11 @@
                     @endphp
                     <div>
                         <div class="flex items-center justify-between text-xs mb-1.5 font-medium">
-                            <span class="text-navy flex items-center gap-2">
+                            <span class="text-brand-ink flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full {{ $rel['bar'] }}"></span>
                                 <span>{{ $rel['label'] }}</span>
                             </span>
-                            <span class="font-bold text-navy">{{ $cnt }} responden ({{ $pct }}%)</span>
+                            <span class="font-bold text-brand-ink">{{ $cnt }} responden ({{ $pct }}%)</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div class="h-full rounded-full transition-all duration-500 {{ $rel['bar'] }}" style="width: {{ $pct }}%"></div>
@@ -168,13 +166,13 @@
     <div class="bg-white rounded-2xl border border-line shadow-xs overflow-hidden">
         <div class="p-4 border-b border-line flex items-center justify-between">
             <div>
-                <h2 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
+                <h2 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
                     <i data-lucide="clipboard-list" class="w-4 h-4 text-maroon"></i>
                     <span>Instrumen Kuesioner Tracer Study</span>
                 </h2>
                 <p class="text-xs text-muted mt-0.5">Daftar bank survei evaluasi berkala untuk sasaran angkatan alumni.</p>
             </div>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-navy/5 text-navy">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-ink/5 text-brand-ink">
                 {{ $kuesioners->count() }} Survei Diterbitkan
             </span>
         </div>
@@ -182,7 +180,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <tr class="border-b border-line bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3 px-4">Nama Survei Kuesioner</th>
                         <th class="py-3 px-4">Target Angkatan</th>
                         <th class="py-3 px-4">Periode Pengisian</th>
@@ -195,7 +193,7 @@
                     @forelse($kuesioners as $k)
                         <tr class="hover:bg-canvas/50 transition-colors">
                             <td class="py-3.5 px-4">
-                                <div class="font-bold text-navy">
+                                <div class="font-bold text-brand-ink">
                                     {{ $k->judul }}
                                 </div>
                                 <div class="text-[11px] text-muted mt-0.5">
@@ -214,7 +212,7 @@
                                 {{ $k->tanggal_selesai ? \Carbon\Carbon::parse($k->tanggal_selesai)->format('d M Y') : '-' }}
                             </td>
 
-                            <td class="py-3.5 px-4 text-center font-bold text-navy">
+                            <td class="py-3.5 px-4 text-center font-bold text-brand-ink">
                                 {{ $k->pertanyaans_count ?? 0 }} Butir
                             </td>
 
@@ -252,8 +250,8 @@
     <div class="bg-white rounded-2xl border border-line shadow-xs overflow-hidden">
         <div class="p-4 border-b border-line flex items-center justify-between">
             <div>
-                <h2 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
-                    <i data-lucide="history" class="w-4 h-4 text-navy"></i>
+                <h2 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="history" class="w-4 h-4 text-brand-ink"></i>
                     <span>Riwayat Respon Pengisian Alumni Terkini</span>
                 </h2>
                 <p class="text-xs text-muted mt-0.5">Daftar entri data tracer study yang masuk dari portal siswa/alumni.</p>
@@ -266,7 +264,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <tr class="border-b border-line bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3 px-4">Alumni & Jurusan</th>
                         <th class="py-3 px-4">Status Keterserapan (BMW)</th>
                         <th class="py-3 px-4">Instansi / Perusahaan / Kampus</th>
@@ -281,14 +279,14 @@
                             $siswa = $res->profilSiswa;
                             $bmwBadge = match($res->status_keterserapan) {
                                 'Bekerja' => 'bg-navy text-white',
-                                'Melanjutkan Pendidikan' => 'bg-blue-100 text-blue-800',
-                                'Wirausaha' => 'bg-purple-100 text-purple-800',
+                                'Melanjutkan Pendidikan' => 'bg-navy/10 text-navy',
+                                'Wirausaha' => 'bg-brand-rose/15 text-brand-rosedeep',
                                 default => 'bg-amber-100 text-amber-800',
                             };
                         @endphp
                         <tr class="hover:bg-canvas/50 transition-colors">
                             <td class="py-3.5 px-4">
-                                <div class="font-bold text-navy">
+                                <div class="font-bold text-brand-ink">
                                     {{ $siswa->nis ?? 'Alumni Penus' }}
                                 </div>
                                 <div class="text-[11px] text-muted">
@@ -303,7 +301,7 @@
                             </td>
 
                             <td class="py-3.5 px-4">
-                                <div class="font-semibold text-navy">
+                                <div class="font-semibold text-brand-ink">
                                     {{ $res->nama_instansi_atau_usaha ?? '-' }}
                                 </div>
                                 <div class="text-[11px] text-muted">
@@ -312,13 +310,13 @@
                             </td>
 
                             <td class="py-3.5 px-4">
-                                <span class="font-medium text-navy">
+                                <span class="font-medium text-brand-ink">
                                     {{ $res->keselarasan_jurusan ?? '-' }}
                                 </span>
                             </td>
 
                             <td class="py-3.5 px-4">
-                                <span class="font-semibold text-navy">
+                                <span class="font-semibold text-brand-ink">
                                     {{ $res->waktu_tunggu_bulan !== null ? $res->waktu_tunggu_bulan . ' Bulan' : '-' }}
                                 </span>
                             </td>
@@ -349,7 +347,7 @@
 <!-- Modal Buat Kuesioner Baru -->
 <div id="kuesionerModal" class="fixed inset-0 bg-black/40 z-50 hidden place-items-center p-4">
     <div class="bg-white rounded-3xl border border-line max-w-lg w-full p-6 shadow-xl relative">
-        <h3 class="text-sm font-bold text-navy mb-1 flex items-center gap-2">
+        <h3 class="text-sm font-bold text-brand-ink mb-1 flex items-center gap-2">
             <i data-lucide="plus-circle" class="w-4 h-4 text-maroon"></i>
             <span>Terbitkan Instrumen Kuesioner Tracer Study Baru</span>
         </h3>
@@ -358,7 +356,7 @@
         <form method="POST" action="{{ route('bkk.admin.tracer.kuesioner.store') }}" class="space-y-4">
             @csrf
             <div>
-                <label for="judul" class="block text-xs font-semibold text-navy mb-1">
+                <label for="judul" class="block text-xs font-semibold text-brand-ink mb-1">
                     Nama / Judul Kuesioner <span class="text-red-500">*</span>
                 </label>
                 <input
@@ -367,12 +365,12 @@
                     name="judul"
                     required
                     placeholder="Contoh: Tracer Study 1 Tahun Lulusan 2024"
-                    class="w-full px-3.5 py-2 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full px-3.5 py-2 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 />
             </div>
 
             <div>
-                <label for="tahun_sasaran_lulusan" class="block text-xs font-semibold text-navy mb-1">
+                <label for="tahun_sasaran_lulusan" class="block text-xs font-semibold text-brand-ink mb-1">
                     Tahun Sasaran Lulusan <span class="text-red-500">*</span>
                 </label>
                 <input
@@ -381,13 +379,13 @@
                     name="tahun_sasaran_lulusan"
                     required
                     placeholder="Contoh: 2024"
-                    class="w-full px-3.5 py-2 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full px-3.5 py-2 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label for="tanggal_mulai" class="block text-xs font-semibold text-navy mb-1">
+                    <label for="tanggal_mulai" class="block text-xs font-semibold text-brand-ink mb-1">
                         Tanggal Mulai <span class="text-red-500">*</span>
                     </label>
                     <input
@@ -396,11 +394,11 @@
                         name="tanggal_mulai"
                         required
                         value="{{ date('Y-m-d') }}"
-                        class="w-full px-3.5 py-2 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                        class="w-full px-3.5 py-2 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                     />
                 </div>
                 <div>
-                    <label for="tanggal_selesai" class="block text-xs font-semibold text-navy mb-1">
+                    <label for="tanggal_selesai" class="block text-xs font-semibold text-brand-ink mb-1">
                         Tanggal Selesai <span class="text-red-500">*</span>
                     </label>
                     <input
@@ -409,13 +407,13 @@
                         name="tanggal_selesai"
                         required
                         value="{{ date('Y-m-d', strtotime('+3 months')) }}"
-                        class="w-full px-3.5 py-2 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                        class="w-full px-3.5 py-2 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                     />
                 </div>
             </div>
 
             <div>
-                <label for="deskripsi" class="block text-xs font-semibold text-navy mb-1">
+                <label for="deskripsi" class="block text-xs font-semibold text-brand-ink mb-1">
                     Deskripsi & Petunjuk Pengisian
                 </label>
                 <textarea
@@ -423,12 +421,12 @@
                     name="deskripsi"
                     rows="3"
                     placeholder="Tuliskan tujuan survei atau imbauan bagi alumni..."
-                    class="w-full p-3 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full p-3 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 ></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-line">
-                <button type="button" onclick="closeKuesionerModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-navy">
+                <button type="button" onclick="closeKuesionerModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-brand-ink">
                     Batal
                 </button>
                 <button type="submit" class="px-5 py-2 rounded-full bg-navy hover:bg-maroon text-white font-semibold text-xs cursor-pointer shadow-xs transition-colors">

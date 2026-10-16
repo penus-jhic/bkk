@@ -150,6 +150,7 @@ class MeController extends Controller
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
                     ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                    ->withCount('lamarans')
                     ->latest('id')
                     ->get();
 
@@ -223,6 +224,7 @@ class MeController extends Controller
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
                     ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                    ->withCount('lamarans')
                     ->latest('id')
                     ->get();
 
@@ -308,6 +310,7 @@ class MeController extends Controller
                 $cvVersions = CvResume::where('user_id', $userId)
                     ->where('temp', false)
                     ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                    ->withCount('lamarans')
                     ->latest('id')
                     ->get();
             }
@@ -483,6 +486,36 @@ class MeController extends Controller
         }
 
         return back()->with('success', 'Versi CV berhasil diaktifkan sebagai CV Utama!');
+    }
+
+    /**
+     * Hapus versi CV arsip milik siswa (DELETE /bkk/me/cv/{id}).
+     * CV Utama tidak boleh dihapus supaya siswa selalu punya CV aktif, dan versi yang sudah dipakai melamar juga
+     * ditolak karena lamaran.cv_id bersifat cascadeOnDelete (lamarannya ikut terhapus).
+     */
+    public function cvDestroy(Request $request, int|string $id): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $cv = CvResume::where('user_id', $authUser['id'])->where('temp', false)->findOrFail($id);
+
+        $refusal = match (true) {
+            (bool) $cv->is_main => 'CV Utama tidak bisa dihapus. Jadikan versi lain sebagai CV Utama terlebih dahulu.',
+            $cv->lamarans()->exists() => 'Versi CV ini sudah dipakai untuk melamar, jadi tidak bisa dihapus.',
+            default => null,
+        };
+
+        if ($refusal) {
+            return $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => $refusal], 422)
+                : back()->with('error', $refusal);
+        }
+
+        $cv->delete();
+        $message = "Versi CV #{$id} berhasil dihapus.";
+
+        return $request->wantsJson()
+            ? response()->json(['success' => true, 'message' => $message])
+            : redirect()->route('bkk.me.cv')->with('success', $message);
     }
 
     /**

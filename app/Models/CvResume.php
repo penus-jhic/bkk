@@ -270,10 +270,14 @@ class CvResume extends Model
                 ->where('id', '!=', $this->id)
                 ->update([$mainCol => false]);
 
-            $this->update([
+            // Lewat query langsung, bukan $this->update(): kalau model ini basi (is_main di memori masih true),
+            // Eloquent menganggap tidak ada perubahan dan melewati UPDATE, sehingga tidak ada CV Utama sama sekali
+            self::whereKey($this->getKey())->update([
                 $mainCol => true,
                 'temp' => false,
             ]);
+            // Pemanggil (mis. cvSetMain) membaca atribut model ini setelahnya, jadi samakan juga yang di memori
+            $this->forceFill([$mainCol => true, 'temp' => false])->syncOriginal();
             return $this->fresh();
         });
     }

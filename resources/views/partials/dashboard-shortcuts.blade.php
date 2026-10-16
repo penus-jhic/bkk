@@ -16,7 +16,7 @@
     </div>
     @foreach($dashboardShortcuts as $key => $item)
         @if($key === $current)
-            <a href="{{ $currentHref }}" aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-xl bg-brand-ink text-white shadow-sm">
+            <a href="{{ $currentHref }}" aria-current="page" class="flex items-center gap-3 px-2.5 py-2 rounded-xl bg-navy text-white shadow-sm">
                 <span class="w-8 h-8 rounded-lg bg-white/10 grid place-items-center shrink-0"><i data-lucide="{{ $item['icon'] }}" class="w-4 h-4"></i></span>
                 <span class="min-w-0 flex-1 leading-tight">
                     <span class="block text-[13px] font-semibold truncate">{{ $item['label'] }}</span>

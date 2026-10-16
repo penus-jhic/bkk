@@ -17,12 +17,12 @@
 <div class="flex flex-col gap-6">
     <!-- Page Header -->
     <div>
-        <div class="flex items-center gap-2 text-xs text-muted mb-1">
-            <a href="{{ route('bkk.admin.index') }}" class="hover:text-navy">Dashboard</a>
+        <div class="dash-eyebrow">
+            <a href="{{ route('bkk.admin.index') }}" class="hover:text-brand-ink">Dashboard</a>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-            <span class="text-navy font-semibold">Profil Saya</span>
+            <span class="text-brand-ink font-semibold">Profil Saya</span>
         </div>
-        <h1 class="text-2xl font-bold font-headline text-navy">Profil Saya</h1>
+        <h1 class="dash-title font-display text-brand-ink">Profil <x-sketch.underline>Saya</x-sketch.underline></h1>
         <p class="text-xs text-muted mt-1">
             Data akun berasal dari layanan otentikasi sekolah. Perubahan data dilakukan melalui administrator sistem.
         </p>
@@ -34,8 +34,8 @@
                 {{ collect(preg_split('/\s+/', trim($name)))->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('') }}
             </div>
             <div class="min-w-0">
-                <div class="font-headline font-bold text-navy text-lg truncate">{{ $name }}</div>
-                <span class="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-navy/10 text-navy">
+                <div class="font-headline font-bold text-brand-ink text-lg truncate">{{ $name }}</div>
+                <span class="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-brand-ink/10 text-brand-ink">
                     <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
                     {{ strtoupper($authUser['role'] ?? 'ADMIN') }}
                 </span>
@@ -46,7 +46,7 @@
             @foreach($fields as $field)
                 <div>
                     <dt class="text-[11px] font-semibold text-muted uppercase tracking-wider">{{ $field['label'] }}</dt>
-                    <dd class="text-sm text-navy font-medium mt-0.5 break-words">{{ $field['value'] }}</dd>
+                    <dd class="text-sm text-brand-ink font-medium mt-0.5 break-words">{{ $field['value'] }}</dd>
                 </div>
             @endforeach
         </dl>

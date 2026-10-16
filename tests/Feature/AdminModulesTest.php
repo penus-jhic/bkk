@@ -53,7 +53,7 @@ class AdminModulesTest extends TestCase
             ->get('/bkk/admin/lowongan');
 
         $response->assertStatus(200);
-        $response->assertSee('Katalog & Moderasi Lowongan', false);
+        $response->assertSeeText('Katalog & Moderasi Lowongan');
         $response->assertSee('Total Lowongan');
         $response->assertSee('Tayang (Aktif)');
         $response->assertDontSee('$recentBeritas');
@@ -72,7 +72,7 @@ class AdminModulesTest extends TestCase
             ->get("/bkk/admin/lowongan/{$lowongan->id}");
 
         $response->assertStatus(200);
-        $response->assertSee('Edit Informasi Lowongan');
+        $response->assertSeeText('Edit Informasi Lowongan');
         $response->assertSee($lowongan->judul);
     }
 
@@ -118,7 +118,7 @@ class AdminModulesTest extends TestCase
             ->get("/bkk/admin/lowongan/{$lowongan->id}/siswa");
 
         $response->assertStatus(200);
-        $response->assertSee('Siswa Diterima & Terkonfirmasi PKL', false);
+        $response->assertSeeText('Siswa Diterima & Terkonfirmasi PKL');
     }
 
     /**
@@ -132,7 +132,7 @@ class AdminModulesTest extends TestCase
             ->get('/bkk/admin/pkl/monitoring');
 
         $response->assertStatus(200);
-        $response->assertSee('Monitoring PKL & Validasi Laporan', false);
+        $response->assertSeeText('Monitoring PKL & Validasi Laporan');
         $response->assertSee('Total Penempatan');
         $response->assertSee('Penempatan Siswa Aktif');
         $response->assertDontSee('$recentBeritas');
@@ -163,7 +163,7 @@ class AdminModulesTest extends TestCase
             ->get('/bkk/admin/tracer-study');
 
         $response->assertStatus(200);
-        $response->assertSee('Rekapitulasi Tracer Study Alumni');
+        $response->assertSeeText('Rekapitulasi Tracer Study Alumni');
         $response->assertSee('Distribusi Pilar BMW Kemendikbud');
         $response->assertSee('Instrumen Kuesioner Tracer Study');
         $response->assertDontSee('$recentBeritas');

@@ -7,20 +7,18 @@
     <!-- Header & Action -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-muted mb-1">
-                <a href="{{ route('bkk.admin.index') }}" class="hover:text-navy">Dashboard</a>
+            <div class="dash-eyebrow">
+                <a href="{{ route('bkk.admin.index') }}" class="hover:text-brand-ink">Dashboard</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-navy font-semibold">Monitoring PKL</span>
+                <span class="text-brand-ink font-semibold">Monitoring PKL</span>
             </div>
-            <h1 class="text-2xl font-bold font-headline text-navy">
-                Monitoring PKL & Validasi Laporan
-            </h1>
+            <h1 class="dash-title font-display text-brand-ink">Monitoring PKL &amp; <x-sketch.underline>Validasi Laporan</x-sketch.underline></h1>
             <p class="text-xs text-muted mt-1">
                 Pantau seluruh siswa aktif di industri mitra, verifikasi log jurnal harian, dan validasi draf naskah laporan akhir.
             </p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-            <span class="px-3.5 py-1.5 rounded-full bg-navy/5 text-navy font-semibold text-xs border border-line flex items-center gap-2">
+            <span class="px-3.5 py-1.5 rounded-full bg-brand-ink/5 text-brand-ink font-semibold text-xs border border-line flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>Standar Target PKL: 640 Jam</span>
             </span>
@@ -37,41 +35,41 @@
 
     <!-- Quick Stats Cards (Google Style) -->
     <div class="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-muted uppercase tracking-wider">Total Penempatan</div>
-            <div class="text-2xl font-headline font-bold text-navy mt-1">{{ number_format($stats['total_penempatan'] ?? 0) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Siswa terdaftar PKL</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60">Total Penempatan</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($stats['total_penempatan'] ?? 0) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Siswa terdaftar PKL</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider">Sedang Aktif</div>
-            <div class="text-2xl font-headline font-bold text-emerald-700 mt-1">{{ number_format($stats['berjalan'] ?? 0) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Berjalan di industri</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sedang Aktif</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($stats['berjalan'] ?? 0) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Berjalan di industri</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">Telah Selesai</div>
-            <div class="text-2xl font-headline font-bold text-blue-700 mt-1">{{ number_format($stats['selesai'] ?? 0) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Menuntaskan target jam</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-brand-darkred"></span>Telah Selesai</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($stats['selesai'] ?? 0) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Menuntaskan target jam</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Jurnal Menunggu</div>
-            <div class="text-2xl font-headline font-bold text-amber-700 mt-1">{{ number_format($stats['jurnal_menunggu'] ?? 0) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Perlu validasi harian</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Jurnal Menunggu</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($stats['jurnal_menunggu'] ?? 0) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Perlu validasi harian</div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-line shadow-xs">
-            <div class="text-[11px] font-semibold text-purple-700 uppercase tracking-wider">Laporan Ditinjau</div>
-            <div class="text-2xl font-headline font-bold text-purple-700 mt-1">{{ number_format($stats['laporan_ditinjau'] ?? 0) }}</div>
-            <div class="text-[10px] text-muted mt-0.5">Draf bab akhir</div>
+        <div class="p-5 rounded-card bg-white border border-brand-ink/10 shadow-card hover:border-brand-darkred/25 hover:shadow-softpill transition-all">
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand-ink/60"><span class="w-1.5 h-1.5 rounded-full bg-brand-darkred"></span>Laporan Ditinjau</div>
+            <div class="mt-3 font-display text-4xl font-bold leading-none text-brand-ink">{{ number_format($stats['laporan_ditinjau'] ?? 0) }}</div>
+            <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60">Draf bab akhir</div>
         </div>
     </div>
 
     <!-- Navigation Tabs (Google Style) -->
     <div class="flex items-center gap-2 border-b border-line pb-px overflow-x-auto">
         <a href="{{ route('bkk.admin.pkl.monitoring', ['tab' => 'penempatan']) }}" 
-           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'penempatan' ? 'border-navy text-navy' : 'border-transparent text-muted hover:text-navy' }}">
+           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'penempatan' ? 'border-navy text-brand-ink' : 'border-transparent text-muted hover:text-brand-ink' }}">
             <i data-lucide="users" class="w-4 h-4"></i>
             <span>Penempatan Siswa Aktif</span>
             <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 text-slate-700">
@@ -80,7 +78,7 @@
         </a>
 
         <a href="{{ route('bkk.admin.pkl.monitoring', ['tab' => 'jurnal']) }}" 
-           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'jurnal' ? 'border-navy text-navy' : 'border-transparent text-muted hover:text-navy' }}">
+           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'jurnal' ? 'border-navy text-brand-ink' : 'border-transparent text-muted hover:text-brand-ink' }}">
             <i data-lucide="book-open" class="w-4 h-4"></i>
             <span>Validasi Log Jurnal</span>
             @if(($stats['jurnal_menunggu'] ?? 0) > 0)
@@ -91,11 +89,11 @@
         </a>
 
         <a href="{{ route('bkk.admin.pkl.monitoring', ['tab' => 'laporan']) }}" 
-           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'laporan' ? 'border-navy text-navy' : 'border-transparent text-muted hover:text-navy' }}">
+           class="px-5 py-3 text-xs font-bold transition-all border-b-2 flex items-center gap-2 whitespace-nowrap {{ $activeTab === 'laporan' ? 'border-navy text-brand-ink' : 'border-transparent text-muted hover:text-brand-ink' }}">
             <i data-lucide="file-check" class="w-4 h-4"></i>
             <span>Review Naskah Laporan</span>
             @if(($stats['laporan_ditinjau'] ?? 0) > 0)
-                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-purple-100 text-purple-800">
+                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-brand-rose/15 text-brand-rosedeep">
                     {{ $stats['laporan_ditinjau'] }}
                 </span>
             @endif
@@ -115,12 +113,12 @@
                         name="q"
                         value="{{ $search ?? request('q') }}"
                         placeholder="Cari nama siswa, NIS, jurusan, mitra, atau pembimbing..."
-                        class="w-full pl-10 pr-4 py-2 bg-canvas text-navy text-xs rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                        class="w-full pl-10 pr-4 py-2 bg-canvas text-brand-ink text-xs rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                     />
                 </div>
 
                 <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-navy rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
+                    <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-brand-ink rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
                         <option value="">Semua Status PKL</option>
                         <option value="BERJALAN" {{ ($status ?? request('status')) === 'BERJALAN' ? 'selected' : '' }}>Sedang Berjalan</option>
                         <option value="SELESAI" {{ ($status ?? request('status')) === 'SELESAI' ? 'selected' : '' }}>Selesai</option>
@@ -132,7 +130,7 @@
                     </button>
 
                     @if(!empty($search) || !empty($status))
-                        <a href="{{ route('bkk.admin.pkl.monitoring', ['tab' => 'penempatan']) }}" class="px-3 py-2 text-muted hover:text-navy text-xs font-medium shrink-0">
+                        <a href="{{ route('bkk.admin.pkl.monitoring', ['tab' => 'penempatan']) }}" class="px-3 py-2 text-muted hover:text-brand-ink text-xs font-medium shrink-0">
                             Reset
                         </a>
                     @endif
@@ -145,7 +143,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Siswa & Jurusan</th>
                             <th class="py-3 px-4">Mitra IDUKA & Penempatan</th>
                             <th class="py-3 px-4">Periode Tanggal</th>
@@ -162,13 +160,13 @@
                                 $percent = min(100, (int) round(($achieved / $target) * 100));
                                 $statusBadge = match($row->status) {
                                     'BERJALAN' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
-                                    'SELESAI' => 'bg-blue-100 text-blue-800 border-blue-200',
+                                    'SELESAI' => 'bg-navy/10 text-navy border-navy/20',
                                     default => 'bg-amber-100 text-amber-800 border-amber-200',
                                 };
                             @endphp
                             <tr class="hover:bg-canvas/50 transition-colors">
                                 <td class="py-3.5 px-4">
-                                    <div class="font-bold text-navy">
+                                    <div class="font-bold text-brand-ink">
                                         {{ $siswa->nis ?? 'Siswa PKL' }} - {{ $siswa->jurusan ?? 'Jurusan' }}
                                     </div>
                                     <div class="text-[11px] text-muted mt-0.5">
@@ -177,7 +175,7 @@
                                 </td>
 
                                 <td class="py-3.5 px-4">
-                                    <div class="font-semibold text-navy">
+                                    <div class="font-semibold text-brand-ink">
                                         {{ $row->mitra->nama_perusahaan ?? 'Mitra Industri' }}
                                     </div>
                                     <div class="text-[11px] text-muted flex items-center gap-1.5 mt-0.5">
@@ -187,7 +185,7 @@
                                 </td>
 
                                 <td class="py-3.5 px-4">
-                                    <div class="text-navy font-medium">
+                                    <div class="text-brand-ink font-medium">
                                         {{ $row->tanggal_mulai ? $row->tanggal_mulai->format('d M Y') : '-' }} s/d
                                     </div>
                                     <div class="text-[11px] text-muted">
@@ -197,7 +195,7 @@
 
                                 <td class="py-3.5 px-4 w-48">
                                     <div class="flex items-center justify-between text-[11px] mb-1">
-                                        <span class="font-bold text-navy">{{ $achieved }} Jam</span>
+                                        <span class="font-bold text-brand-ink">{{ $achieved }} Jam</span>
                                         <span class="text-muted">{{ $percent }}%</span>
                                     </div>
                                     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -218,7 +216,7 @@
                                     <div class="w-12 h-12 rounded-full bg-slate-100 mx-auto grid place-items-center mb-3">
                                         <i data-lucide="activity" class="w-6 h-6 text-muted"></i>
                                     </div>
-                                    <div class="font-semibold text-navy text-sm">Tidak ada data penempatan PKL</div>
+                                    <div class="font-semibold text-brand-ink text-sm">Tidak ada data penempatan PKL</div>
                                     <p class="text-xs text-muted mt-1">Gunakan kata kunci pencarian lain atau sesuaikan filter status.</p>
                                 </td>
                             </tr>
@@ -240,7 +238,7 @@
         <div class="bg-white rounded-2xl border border-line shadow-xs overflow-hidden">
             <div class="p-4 border-b border-line flex items-center justify-between">
                 <div>
-                    <h2 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
+                    <h2 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
                         <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
                         <span>Antrean Log Jurnal Menunggu Validasi</span>
                     </h2>
@@ -254,7 +252,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Tanggal & Durasi</th>
                             <th class="py-3 px-4">Siswa & Mitra IDUKA</th>
                             <th class="py-3 px-4">Rincian Aktivitas Harian</th>
@@ -265,7 +263,7 @@
                         @forelse($jurnalsPending as $jurnal)
                             <tr class="hover:bg-canvas/50 transition-colors">
                                 <td class="py-3.5 px-4 w-40">
-                                    <div class="font-bold text-navy">
+                                    <div class="font-bold text-brand-ink">
                                         {{ $jurnal->tanggal ? $jurnal->tanggal->format('d M Y') : '-' }}
                                     </div>
                                     <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
@@ -274,7 +272,7 @@
                                 </td>
 
                                 <td class="py-3.5 px-4 w-60">
-                                    <div class="font-semibold text-navy">
+                                    <div class="font-semibold text-brand-ink">
                                         {{ $jurnal->penempatan->siswa->nis ?? 'Siswa' }} ({{ $jurnal->penempatan->siswa->jurusan ?? '-' }})
                                     </div>
                                     <div class="text-[11px] text-muted flex items-center gap-1 mt-0.5">
@@ -284,7 +282,7 @@
                                 </td>
 
                                 <td class="py-3.5 px-4">
-                                    <p class="text-navy font-normal leading-relaxed">
+                                    <p class="text-brand-ink font-normal leading-relaxed">
                                         {{ $jurnal->aktivitas }}
                                     </p>
                                     @if($jurnal->foto_dokumentasi_url)
@@ -319,7 +317,7 @@
                                     <div class="w-12 h-12 rounded-full bg-emerald-50 mx-auto grid place-items-center mb-3">
                                         <i data-lucide="check-check" class="w-6 h-6 text-emerald-600"></i>
                                     </div>
-                                    <div class="font-semibold text-navy text-sm">Semua Jurnal Telah Divalidasi</div>
+                                    <div class="font-semibold text-brand-ink text-sm">Semua Jurnal Telah Divalidasi</div>
                                     <p class="text-xs text-muted mt-1">Tidak ada antrean log aktivitas harian siswa yang pending.</p>
                                 </td>
                             </tr>
@@ -341,13 +339,13 @@
         <div class="bg-white rounded-2xl border border-line shadow-xs overflow-hidden">
             <div class="p-4 border-b border-line flex items-center justify-between">
                 <div>
-                    <h2 class="text-sm font-bold text-navy uppercase tracking-wider flex items-center gap-2">
-                        <i data-lucide="file-text" class="w-4 h-4 text-purple-600"></i>
+                    <h2 class="text-sm font-bold text-brand-ink uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-4 h-4 text-brand-rosedeep"></i>
                         <span>Antrean Naskah Laporan Akhir Ditinjau</span>
                     </h2>
                     <p class="text-xs text-muted mt-0.5">Pengumpulan draf naskah laporan pertanggungjawaban PKL per Bab.</p>
                 </div>
-                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-800">
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-rose/15 text-brand-rosedeep">
                     {{ $laporansPending->total() }} Ditinjau
                 </span>
             </div>
@@ -355,7 +353,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-brand-paper text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Bab & Judul Laporan</th>
                             <th class="py-3 px-4">Siswa & Mitra IDUKA</th>
                             <th class="py-3 px-4">File Naskah</th>
@@ -366,7 +364,7 @@
                         @forelse($laporansPending as $laporan)
                             <tr class="hover:bg-canvas/50 transition-colors">
                                 <td class="py-3.5 px-4">
-                                    <div class="font-bold text-navy">
+                                    <div class="font-bold text-brand-ink">
                                         BAB {{ $laporan->nomor_bab }}: {{ $laporan->judul_bab }}
                                     </div>
                                     <div class="text-[11px] text-muted mt-0.5">
@@ -375,7 +373,7 @@
                                 </td>
 
                                 <td class="py-3.5 px-4">
-                                    <div class="font-semibold text-navy">
+                                    <div class="font-semibold text-brand-ink">
                                         {{ $laporan->penempatan->siswa->nis ?? 'Siswa' }} ({{ $laporan->penempatan->siswa->jurusan ?? '-' }})
                                     </div>
                                     <div class="text-[11px] text-muted mt-0.5">
@@ -385,7 +383,7 @@
 
                                 <td class="py-3.5 px-4">
                                     @if($laporan->file_draft_url)
-                                        <a href="{{ $laporan->file_draft_url }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-navy font-semibold text-[11px] transition-colors">
+                                        <a href="{{ $laporan->file_draft_url }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-brand-ink font-semibold text-[11px] transition-colors">
                                             <i data-lucide="download" class="w-3.5 h-3.5"></i>
                                             <span>Unduh Dokumen Draf</span>
                                         </a>
@@ -418,7 +416,7 @@
                                     <div class="w-12 h-12 rounded-full bg-emerald-50 mx-auto grid place-items-center mb-3">
                                         <i data-lucide="check-check" class="w-6 h-6 text-emerald-600"></i>
                                     </div>
-                                    <div class="font-semibold text-navy text-sm">Semua Bab Laporan Telah Selesai Ditinjau</div>
+                                    <div class="font-semibold text-brand-ink text-sm">Semua Bab Laporan Telah Selesai Ditinjau</div>
                                     <p class="text-xs text-muted mt-1">Belum ada bab laporan akhir baru yang dikirimkan oleh siswa.</p>
                                 </td>
                             </tr>
@@ -439,7 +437,7 @@
 <!-- Modal Revisi Jurnal Harian -->
 <div id="revisiJurnalModal" class="fixed inset-0 bg-black/40 z-50 hidden place-items-center p-4">
     <div class="bg-white rounded-3xl border border-line max-w-md w-full p-6 shadow-xl relative">
-        <h3 class="text-sm font-bold text-navy mb-1 flex items-center gap-2">
+        <h3 class="text-sm font-bold text-brand-ink mb-1 flex items-center gap-2">
             <i data-lucide="message-square" class="w-4 h-4 text-amber-600"></i>
             <span>Catatan Revisi Log Jurnal</span>
         </h3>
@@ -449,18 +447,18 @@
             @csrf
             <input type="hidden" name="status" value="Revisi">
             <div>
-                <label for="catatan_revisi" class="block text-xs font-semibold text-navy mb-1">Catatan Pembimbing</label>
+                <label for="catatan_revisi" class="block text-xs font-semibold text-brand-ink mb-1">Catatan Pembimbing</label>
                 <textarea
                     id="catatan_revisi"
                     name="catatan_revisi"
                     rows="3"
                     required
                     placeholder="Contoh: Tolong lengkapi dokumentasi foto saat perakitan kabel..."
-                    class="w-full p-3 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full p-3 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 ></textarea>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2">
-                <button type="button" onclick="closeRevisiJurnalModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-navy">
+                <button type="button" onclick="closeRevisiJurnalModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-brand-ink">
                     Batal
                 </button>
                 <button type="submit" class="px-5 py-2 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs cursor-pointer shadow-xs">
@@ -474,7 +472,7 @@
 <!-- Modal Revisi Laporan Akhir -->
 <div id="revisiLaporanModal" class="fixed inset-0 bg-black/40 z-50 hidden place-items-center p-4">
     <div class="bg-white rounded-3xl border border-line max-w-md w-full p-6 shadow-xl relative">
-        <h3 class="text-sm font-bold text-navy mb-1 flex items-center gap-2">
+        <h3 class="text-sm font-bold text-brand-ink mb-1 flex items-center gap-2">
             <i data-lucide="edit" class="w-4 h-4 text-amber-600"></i>
             <span>Catatan Revisi Naskah Bab Laporan</span>
         </h3>
@@ -484,18 +482,18 @@
             @csrf
             <input type="hidden" name="status" value="Revisi">
             <div>
-                <label for="catatan_pembimbing" class="block text-xs font-semibold text-navy mb-1">Catatan Koreksi</label>
+                <label for="catatan_pembimbing" class="block text-xs font-semibold text-brand-ink mb-1">Catatan Koreksi</label>
                 <textarea
                     id="catatan_pembimbing"
                     name="catatan_pembimbing"
                     rows="3"
                     required
                     placeholder="Contoh: Perbaiki format penulisan tujuan PKL pada sub-bab 1.2..."
-                    class="w-full p-3 bg-canvas text-navy text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full p-3 bg-canvas text-brand-ink text-xs rounded-xl border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 ></textarea>
             </div>
             <div class="flex items-center justify-end gap-2 pt-2">
-                <button type="button" onclick="closeRevisiLaporanModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-navy">
+                <button type="button" onclick="closeRevisiLaporanModal()" class="px-4 py-2 rounded-full text-xs font-semibold text-muted hover:text-brand-ink">
                     Batal
                 </button>
                 <button type="submit" class="px-5 py-2 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs cursor-pointer shadow-xs">

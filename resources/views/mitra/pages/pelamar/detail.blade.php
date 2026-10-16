@@ -7,25 +7,23 @@
     <!-- Breadcrumb & Top Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-muted mb-1">
-                <a href="{{ route('bkk.mitra.dashboard') }}" class="hover:text-navy">Dashboard</a>
+            <div class="dash-eyebrow">
+                <a href="{{ route('bkk.mitra.dashboard') }}" class="hover:text-brand-ink">Dashboard</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="hover:text-navy">Lowongan</a>
+                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="hover:text-brand-ink">Lowongan</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="hover:text-navy truncate max-w-[150px] sm:max-w-none">Pelamar: {{ $vacancy['title'] }}</a>
+                <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="hover:text-brand-ink truncate max-w-[150px] sm:max-w-none">Pelamar: {{ $vacancy['title'] }}</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-navy font-semibold">{{ $applicant['nama'] }}</span>
+                <span class="text-brand-ink font-semibold">{{ $applicant['nama'] }}</span>
             </div>
-            <h1 class="text-2xl font-headline font-bold text-navy truncate">
-                Tinjauan CV & Rekam Jejak Pelamar
-            </h1>
+            <h1 class="dash-title font-display text-brand-ink">Tinjauan CV &amp; <x-sketch.underline>Rekam Jejak</x-sketch.underline> Pelamar</h1>
             <p class="text-xs text-muted mt-0.5">
-                Posisi: <strong class="text-navy">{{ $vacancy['title'] }}</strong> ({{ $vacancy['tipe_badge'] }})
+                Posisi: <strong class="text-brand-ink">{{ $vacancy['title'] }}</strong> ({{ $vacancy['tipe_badge'] }})
             </p>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="px-4 py-2 rounded-full border border-line hover:bg-canvas text-navy text-xs font-semibold transition-colors flex items-center gap-1.5">
+            <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="px-4 py-2 rounded-full border border-line hover:bg-canvas text-brand-ink text-xs font-semibold transition-colors flex items-center gap-1.5">
                 <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
                 <span>Kembali ke Daftar Pelamar</span>
             </a>
@@ -41,7 +39,7 @@
                 </div>
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-xl font-headline font-bold text-navy">{{ $applicant['nama'] }}</h2>
+                        <h2 class="text-xl font-headline font-bold text-brand-ink">{{ $applicant['nama'] }}</h2>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                             <i data-lucide="sparkles" class="w-3 h-3 mr-1 text-emerald-600"></i> AI Match: {{ $applicant['cv_score'] }}%
                         </span>
@@ -49,9 +47,9 @@
                     <div class="text-xs text-muted mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span>{{ $applicant['status_pendidikan'] }}</span>
                         <span>•</span>
-                        <span>Jurusan: <strong class="text-navy font-semibold">{{ $applicant['jurusan'] }}</strong></span>
+                        <span>Jurusan: <strong class="text-brand-ink font-semibold">{{ $applicant['jurusan'] }}</strong></span>
                         <span>•</span>
-                        <span>NIS: <strong class="text-navy font-semibold">{{ $applicant['nis_nisn'] }}</strong></span>
+                        <span>NIS: <strong class="text-brand-ink font-semibold">{{ $applicant['nis_nisn'] }}</strong></span>
                     </div>
                 </div>
             </div>
@@ -62,7 +60,7 @@
                 @php
                     $badgeColor = match($applicant['status']) {
                         'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-300',
-                        'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-300',
+                        'Sedang Ditinjau' => 'bg-navy/5 text-navy border-navy/20',
                         'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-300',
                         'Ditolak' => 'bg-red-50 text-red-800 border-red-300',
                         default => 'bg-gray-100 text-gray-800 border-gray-300',
@@ -84,16 +82,16 @@
             <div class="google-card p-6 sm:p-8 bg-white shadow-xs">
                 <div class="flex items-center justify-between pb-4 mb-4 border-b border-line">
                     <div class="flex items-center gap-2">
-                        <i data-lucide="file-check" class="w-5 h-5 text-navy"></i>
-                        <span class="font-headline font-bold text-navy text-sm uppercase tracking-wider">Berkas CV Siswa Terverifikasi BKK</span>
+                        <i data-lucide="file-check" class="w-5 h-5 text-brand-ink"></i>
+                        <span class="font-headline font-bold text-brand-ink text-sm uppercase tracking-wider">Berkas CV Siswa Terverifikasi BKK</span>
                     </div>
-                    <button onclick="window.print()" class="text-xs text-muted hover:text-navy font-semibold flex items-center gap-1">
+                    <button onclick="window.print()" class="text-xs text-muted hover:text-brand-ink font-semibold flex items-center gap-1">
                         <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak / Simpan PDF
                     </button>
                 </div>
 
                 <!-- Markdown Content Container Styled as Professional Resume -->
-                <div class="md-cv prose max-w-none text-navy">
+                <div class="md-cv prose max-w-none text-brand-ink">
                     {!! \Illuminate\Support\Str::markdown($cvMarkdown, [
                         'html_input' => 'strip',
                         'allow_unsafe_links' => false,
@@ -102,12 +100,12 @@
 
                 <!-- Skill Tags Box -->
                 <div class="mt-8 pt-6 border-t border-line">
-                    <h4 class="text-xs font-bold text-navy uppercase tracking-wider mb-2.5">
+                    <h4 class="text-xs font-bold text-brand-ink uppercase tracking-wider mb-2.5">
                         Keahlian & Penguasaan Teknologi
                     </h4>
                     <div class="flex flex-wrap gap-2">
                         @foreach($applicant['skills'] as $skill)
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-canvas text-navy border border-line">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-canvas text-brand-ink border border-line">
                                 {{ $skill }}
                             </span>
                         @endforeach
@@ -120,7 +118,7 @@
         <div class="space-y-4">
             <!-- Card 1: Form Update Status Seleksi (According to Sitemap) -->
             <div class="google-card p-5">
-                <h3 class="font-headline font-bold text-navy text-base mb-1 flex items-center gap-2">
+                <h3 class="font-headline font-bold text-brand-ink text-base mb-1 flex items-center gap-2">
                     <i data-lucide="user-check" class="w-4 h-4 text-maroon"></i>
                     Update Status Seleksi
                 </h3>
@@ -133,16 +131,16 @@
                     <input type="hidden" name="nama" value="{{ $applicant['nama'] }}">
 
                     <div class="space-y-2">
-                        <label class="text-xs font-semibold text-navy">Pilih Status Seleksi:</label>
+                        <label class="text-xs font-semibold text-brand-ink">Pilih Status Seleksi:</label>
                         <div class="space-y-1.5">
                             @foreach(['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'] as $statusOption)
-                                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-line hover:bg-canvas cursor-pointer transition-colors text-xs font-medium text-navy {{ $applicant['status'] === $statusOption ? 'bg-navy/5 border-navy font-semibold' : '' }}">
+                                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-line hover:bg-canvas cursor-pointer transition-colors text-xs font-medium text-brand-ink {{ $applicant['status'] === $statusOption ? 'bg-brand-ink/5 border-navy font-semibold' : '' }}">
                                     <input
                                         type="radio"
                                         name="status"
                                         value="{{ $statusOption }}"
                                         {{ $applicant['status'] === $statusOption ? 'checked' : '' }}
-                                        class="text-navy focus:ring-navy"
+                                        class="text-brand-ink focus:ring-navy"
                                     />
                                     <span>{{ $statusOption }}</span>
                                 </label>
@@ -151,13 +149,13 @@
                     </div>
 
                     <div class="space-y-1.5">
-                        <label for="catatan_seleksi" class="text-xs font-semibold text-navy">Catatan Seleksi / Feedback HRD</label>
+                        <label for="catatan_seleksi" class="text-xs font-semibold text-brand-ink">Catatan Seleksi / Feedback HRD</label>
                         <textarea
                             name="catatan_seleksi"
                             id="catatan_seleksi"
                             rows="3"
                             placeholder="Tuliskan catatan teknis atau arahan sesi wawancara untuk siswa..."
-                            class="w-full px-3.5 py-2.5 rounded-xl border border-line bg-canvas text-navy text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-line bg-canvas text-brand-ink text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                         >{{ $applicant['catatan_seleksi'] ?? '' }}</textarea>
                     </div>
 
@@ -170,29 +168,29 @@
 
             <!-- Card 2: Informasi Kontak Kandidat -->
             <div class="google-card p-5 space-y-3">
-                <h4 class="font-headline font-bold text-navy text-sm flex items-center gap-2">
-                    <i data-lucide="contact" class="w-4 h-4 text-navy"></i>
+                <h4 class="font-headline font-bold text-brand-ink text-sm flex items-center gap-2">
+                    <i data-lucide="contact" class="w-4 h-4 text-brand-ink"></i>
                     Informasi Kontak Siswa
                 </h4>
                 <div class="space-y-2.5 text-xs">
                     <div class="flex items-center gap-2.5 text-muted">
-                        <i data-lucide="mail" class="w-4 h-4 text-navy shrink-0"></i>
-                        <a href="mailto:{{ $applicant['email'] }}" class="text-navy font-medium hover:underline truncate">
+                        <i data-lucide="mail" class="w-4 h-4 text-brand-ink shrink-0"></i>
+                        <a href="mailto:{{ $applicant['email'] }}" class="text-brand-ink font-medium hover:underline truncate">
                             {{ $applicant['email'] }}
                         </a>
                     </div>
                     <div class="flex items-center gap-2.5 text-muted">
-                        <i data-lucide="phone" class="w-4 h-4 text-navy shrink-0"></i>
-                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $applicant['no_hp']) }}" target="_blank" class="text-navy font-medium hover:underline">
+                        <i data-lucide="phone" class="w-4 h-4 text-brand-ink shrink-0"></i>
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $applicant['no_hp']) }}" target="_blank" class="text-brand-ink font-medium hover:underline">
                             {{ $applicant['no_hp'] }}
                         </a>
                     </div>
                     <div class="flex items-center gap-2.5 text-muted">
-                        <i data-lucide="map-pin" class="w-4 h-4 text-navy shrink-0"></i>
-                        <span class="text-navy font-medium">{{ $applicant['lokasi'] }}</span>
+                        <i data-lucide="map-pin" class="w-4 h-4 text-brand-ink shrink-0"></i>
+                        <span class="text-brand-ink font-medium">{{ $applicant['lokasi'] }}</span>
                     </div>
                     <div class="flex items-center gap-2.5 text-muted">
-                        <i data-lucide="globe" class="w-4 h-4 text-navy shrink-0"></i>
+                        <i data-lucide="globe" class="w-4 h-4 text-brand-ink shrink-0"></i>
                         <a href="{{ $applicant['portfolio_url'] }}" target="_blank" class="text-maroon font-semibold hover:underline truncate">
                             {{ $applicant['portfolio_url'] }}
                         </a>

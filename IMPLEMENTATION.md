@@ -64,7 +64,7 @@ Menu navigasi di `navbar.blade.php` mendeteksi URL aktif menggunakan helper Lara
 ```blade
 @php
     $navItems = [
-        ['label' => 'Beranda', 'url' => url('/bkk'), 'active' => request()->is('bkk')],
+        ['label' => 'Beranda', 'url' => url('/'), 'active' => request()->is('bkk')],
         ['label' => 'Lowongan PKL & Kerja', 'url' => url('/bkk/lowongan*'), 'active' => request()->is('bkk/lowongan*')],
         ['label' => 'Berita & Agenda', 'url' => url('/bkk/berita*'), 'active' => request()->is('bkk/berita*')],
         ['label' => 'Kerja Sama Mitra', 'url' => url('/bkk/kerja-sama*'), 'active' => request()->is('bkk/kerja-sama*')],

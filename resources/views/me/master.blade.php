@@ -11,20 +11,20 @@
 
     <style>
         /* Markdown rendering inside CV */
-        .md-cv h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .25rem; color: #1E293B; }
-        .md-cv h2 { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7A1018; border-bottom: 1px solid #E2E8F0; padding-bottom: .25rem; margin: 1rem 0 .5rem; }
-        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #1E293B; }
-        .md-cv p { font-size: .82rem; line-height: 1.55; color: #334155; margin: .25rem 0; }
+        .md-cv h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .25rem; color: #241012; }
+        .md-cv h2 { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7A1018; border-bottom: 1px solid #EAE4E3; padding-bottom: .25rem; margin: 1rem 0 .5rem; }
+        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #241012; }
+        .md-cv p { font-size: .82rem; line-height: 1.55; color: #463B3C; margin: .25rem 0; }
         .md-cv ul { list-style: disc; padding-left: 1.1rem; margin: .25rem 0; }
-        .md-cv li { font-size: .82rem; line-height: 1.5; color: #334155; }
-        .md-cv strong { color: #1E293B; }
-        .md-cv em { color: #64748B; }
+        .md-cv li { font-size: .82rem; line-height: 1.5; color: #463B3C; }
+        .md-cv strong { color: #241012; }
+        .md-cv em { color: #76696A; }
         .md-cv a { color: #7A1018; text-decoration: underline; }
-        .md-cv hr { border-color: #E2E8F0; margin: .75rem 0; }
+        .md-cv hr { border-color: #EAE4E3; margin: .75rem 0; }
     </style>
     @stack('styles')
 </head>
-<body class="bg-canvas text-navy font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-white text-brand-ink font-sans antialiased min-h-screen flex flex-col">
     <!-- Top Bar Navigation -->
     @include('me.partials.header')
 
