@@ -182,7 +182,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3 px-4">Nama Survei Kuesioner</th>
                         <th class="py-3 px-4">Target Angkatan</th>
                         <th class="py-3 px-4">Periode Pengisian</th>
@@ -266,7 +266,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3 px-4">Alumni & Jurusan</th>
                         <th class="py-3 px-4">Status Keterserapan (BMW)</th>
                         <th class="py-3 px-4">Instansi / Perusahaan / Kampus</th>

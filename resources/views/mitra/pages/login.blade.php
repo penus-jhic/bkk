@@ -36,7 +36,7 @@
     <main class="relative flex-1 overflow-hidden bg-white">
         <!-- Latar: kisi tipis & cahaya merah seperti hero landing page -->
         <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-            <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-[length:44px_44px] [mask-image:radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
+            <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(15_23_42/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(15_23_42/0.04)_1px,transparent_1px)] bg-[length:44px_44px] [mask-image:radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
             <div class="absolute -top-40 -right-32 w-[35rem] h-[35rem] rounded-full bg-brand-signal/10 blur-[120px]"></div>
         </div>
 

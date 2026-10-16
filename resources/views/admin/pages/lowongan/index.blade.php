@@ -109,7 +109,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                    <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                         <th class="py-3 px-4">Posisi & Mitra IDUKA</th>
                         <th class="py-3 px-4">Tipe & Jurusan</th>
                         <th class="py-3 px-4">Kuota & Deadline</th>

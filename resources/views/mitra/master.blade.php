@@ -5,27 +5,17 @@
     <title>@yield('title', 'Dashboard Mitra IDUKA - BKK SMK Plus Pelita Nusantara')</title>
 
     <style>
-        /* Judul halaman & section mitra memakai tipografi display landing page (Oswald kapital) */
-        #main-scroll h1,
-        #main-scroll h2 {
-            font-family: 'Oswald', ui-sans-serif, system-ui, sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
-            font-weight: 600;
-        }
-        #main-scroll h1 { font-weight: 700; }
-
         /* Markdown rendering inside CV */
-        .md-cv h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .25rem; color: #241012; }
-        .md-cv h2 { font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #7A1018; border-bottom: 1px solid #DDDDDD; padding-bottom: .25rem; margin: 1.25rem 0 .5rem; }
-        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #241012; }
-        .md-cv p { font-size: .84rem; line-height: 1.6; color: rgb(36 16 18 / 0.8); margin: .25rem 0; }
+        .md-cv h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .25rem; color: #1E293B; }
+        .md-cv h2 { font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #7A1018; border-bottom: 1px solid #E2E8F0; padding-bottom: .25rem; margin: 1.25rem 0 .5rem; }
+        .md-cv h3 { font-size: .95rem; font-weight: 600; margin-top: .5rem; color: #1E293B; }
+        .md-cv p { font-size: .84rem; line-height: 1.6; color: rgb(15 23 42 / 0.8); margin: .25rem 0; }
         .md-cv ul { list-style: disc; padding-left: 1.2rem; margin: .25rem 0; }
-        .md-cv li { font-size: .84rem; line-height: 1.55; color: rgb(36 16 18 / 0.8); margin-bottom: 0.2rem; }
-        .md-cv strong { color: #241012; }
-        .md-cv em { color: #6f5e60; }
+        .md-cv li { font-size: .84rem; line-height: 1.55; color: rgb(15 23 42 / 0.8); margin-bottom: 0.2rem; }
+        .md-cv strong { color: #1E293B; }
+        .md-cv em { color: #64748B; }
         .md-cv a { color: #7A1018; text-decoration: underline; }
-        .md-cv hr { border-color: #DDDDDD; margin: .75rem 0; }
+        .md-cv hr { border-color: #E2E8F0; margin: .75rem 0; }
     </style>
     @stack('styles')
 </head>

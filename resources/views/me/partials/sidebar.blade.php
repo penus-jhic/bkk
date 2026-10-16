@@ -1,100 +1,96 @@
 @php
     $role = strtoupper($authUser['role'] ?? 'SISWA');
     $isSiswa = ($role === 'SISWA');
+
+    // active = pola nama route yang menandai menu aktif
+    $navGroups = [
+        'Menu Utama' => [
+            ['label' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'bkk.me.index', 'active' => ['bkk.me.index']],
+            ['label' => 'Riwayat Lamaran', 'icon' => 'briefcase', 'route' => 'bkk.me.lamaran', 'active' => ['bkk.me.lamaran']],
+            ['label' => 'CV & AI Scoring', 'icon' => 'file-text', 'route' => 'bkk.me.cv', 'active' => ['bkk.me.cv']],
+            ['label' => 'Editor CV', 'icon' => 'file-pen-line', 'route' => 'bkk.me.cv.edit', 'active' => ['bkk.me.cv.edit'], 'tag' => 'AI'],
+        ],
+    ];
+
+    if ($isSiswa) {
+        $navGroups['Khusus Siswa PKL'] = [
+            ['label' => 'Jurnal PKL', 'icon' => 'notebook-pen', 'route' => 'bkk.me.jurnal', 'active' => ['bkk.me.jurnal']],
+            ['label' => 'Laporan Akhir', 'icon' => 'book-open', 'route' => 'bkk.me.laporan', 'active' => ['bkk.me.laporan']],
+        ];
+    }
+
+    $externalLinks = [
+        ['label' => 'Katalog Lowongan', 'icon' => 'search', 'href' => route('bkk.lowongan')],
+        ['label' => 'Berita & Agenda BKK', 'icon' => 'newspaper', 'href' => route('bkk.berita')],
+    ];
 @endphp
 
-<!-- Mobile Sidebar Backdrop -->
-<div id="meSidebarBackdrop" class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden" onclick="toggleMeSidebar()"></div>
+<!-- Backdrop sidebar mobile -->
+<div id="meSidebarBackdrop" class="fixed inset-0 bg-brand-ink/40 z-40 hidden lg:hidden" onclick="toggleMeSidebar()"></div>
 
-<!-- Main Aside Navigation: Fixed on mobile, Sticky on desktop locked to viewport height -->
-<aside id="meSidebar" class="w-[272px] shrink-0 fixed lg:sticky top-16 h-[calc(100vh-4rem)] left-0 z-40 bg-[#f8f9fa] border-r border-line flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
-    <!-- Top Scrollable Nav Area -->
-    <div class="flex-1 overflow-y-auto p-3 space-y-4">
-        <!-- Top Action Card: Optimalkan CV -->
-        <div class="px-1">
-            <a href="{{ route('bkk.me.cv.edit') }}" class="flex items-center gap-3 h-14 rounded-2xl bg-white border border-line shadow-sm hover:shadow-md transition-all px-4 group">
-                <div class="w-8 h-8 rounded-xl bg-maroon/10 grid place-items-center text-maroon group-hover:bg-maroon group-hover:text-white transition-colors">
-                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+<aside id="meSidebar" class="w-[264px] shrink-0 fixed lg:sticky top-16 h-[calc(100vh-4rem)] left-0 z-40 bg-white border-r border-brand-ink/10 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200" aria-label="Navigasi portal siswa">
+    <div class="flex-1 overflow-y-auto p-3 space-y-5">
+        <!-- Aksi utama -->
+        <a href="{{ route('bkk.me.cv.edit') }}" class="flex items-center gap-3 h-12 rounded-full bg-gradient-to-r from-brand-signal to-brand-darkred text-white px-4 shadow-[0_4px_14px_0_rgba(122,16,24,0.25)] hover:shadow-[0_6px_20px_0_rgba(122,16,24,0.35)] hover:-translate-y-px transition-all">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span class="text-sm font-semibold">Optimalkan CV dengan AI</span>
+        </a>
+
+        @foreach($navGroups as $groupLabel => $items)
+            <nav class="space-y-0.5">
+                <div class="px-3 pb-1.5 flex items-center gap-2">
+                    <span class="font-display text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-darkred">{{ $groupLabel }}</span>
+                    <span class="h-px flex-1 bg-brand-ink/10"></span>
                 </div>
-                <div class="flex flex-col">
-                    <span class="text-sm font-semibold text-navy leading-tight">Optimalkan CV</span>
-                    <span class="text-[11px] text-muted">Didukung kecerdasan AI</span>
-                </div>
-            </a>
-        </div>
-
-        <!-- Main Navigation Group -->
-        <nav class="space-y-1">
-            <div class="px-4 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-muted/80">
-                Menu Utama
-            </div>
-
-            <a href="{{ route('bkk.me.index') }}"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.index') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.index') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                <span class="truncate">Dashboard</span>
-            </a>
-
-            <a href="{{ route('bkk.me.lamaran') }}"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.lamaran') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                <i data-lucide="briefcase" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.lamaran') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                <span class="truncate">Riwayat Lamaran</span>
-            </a>
-
-            <a href="{{ route('bkk.me.cv') }}"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.cv') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                <i data-lucide="file-text" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.cv') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                <span class="truncate">CV & AI Scoring</span>
-            </a>
-
-            <a href="{{ route('bkk.me.cv.edit') }}"
-               class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.cv.edit') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                <i data-lucide="file-pen-line" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.cv.edit') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                <span class="truncate">Editor CV</span>
-                <span class="ml-auto text-[10px] font-bold rounded-full px-2 py-0.5 bg-maroon text-white flex items-center gap-0.5">
-                    <i data-lucide="sparkles" class="w-2.5 h-2.5"></i> AI
-                </span>
-            </a>
-        </nav>
-
-        <!-- Khusus Siswa PKL Navigation (Conditional Role SISWA) -->
-        @if($isSiswa)
-            <nav class="space-y-1 pt-2">
-                <div class="px-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-muted/80 flex items-center gap-2">
-                    <span>Khusus Siswa PKL</span>
-                    <span class="h-px flex-1 bg-line"></span>
-                </div>
-
-                <a href="{{ route('bkk.me.jurnal') }}"
-                   class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.jurnal') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                    <i data-lucide="notebook-pen" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.jurnal') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                    <span class="truncate">Jurnal PKL</span>
-                </a>
-
-                <a href="{{ route('bkk.me.laporan') }}"
-                   class="group flex items-center gap-3.5 h-11 px-4 rounded-full text-sm font-medium transition-colors {{ request()->routeIs('bkk.me.laporan') ? 'bg-navy text-white shadow-sm' : 'text-navy hover:bg-navy/5' }}">
-                    <i data-lucide="book-open" class="w-4 h-4 shrink-0 {{ request()->routeIs('bkk.me.laporan') ? 'text-white' : 'text-muted group-hover:text-navy' }}"></i>
-                    <span class="truncate">Laporan Akhir</span>
-                </a>
+                @foreach($items as $item)
+                    @php $isActive = request()->routeIs(...$item['active']); @endphp
+                    <a href="{{ route($item['route']) }}"
+                       @if($isActive) aria-current="page" @endif
+                       class="group flex items-center justify-between gap-2 h-10 px-3 rounded-xl text-[13px] transition-colors {{ $isActive ? 'bg-brand-paper text-brand-darkred font-bold' : 'text-brand-ink font-medium hover:bg-brand-paper' }}">
+                        <span class="flex items-center gap-3 min-w-0">
+                            <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0 {{ $isActive ? 'text-brand-darkred' : 'text-muted group-hover:text-brand-ink' }}"></i>
+                            @if($isActive)
+                                <x-sketch.underline size="sm" class="truncate">{{ $item['label'] }}</x-sketch.underline>
+                            @else
+                                <span class="truncate">{{ $item['label'] }}</span>
+                            @endif
+                        </span>
+                        @if(!empty($item['tag']))
+                            <span class="inline-flex items-center gap-0.5 h-5 px-1.5 rounded-full bg-brand-darkred text-white text-[10px] font-bold shrink-0">
+                                <i data-lucide="sparkles" class="w-2.5 h-2.5"></i>{{ $item['tag'] }}
+                            </span>
+                        @endif
+                    </a>
+                @endforeach
             </nav>
-        @endif
+        @endforeach
+
+        <nav class="space-y-0.5">
+            <div class="px-3 pb-1.5 flex items-center gap-2">
+                <span class="font-display text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-darkred">Layanan BKK</span>
+                <span class="h-px flex-1 bg-brand-ink/10"></span>
+            </div>
+            @foreach($externalLinks as $item)
+                <a href="{{ $item['href'] }}" target="_blank" rel="noopener" class="group flex items-center justify-between h-10 px-3 rounded-xl text-[13px] font-medium text-brand-ink hover:bg-brand-paper transition-colors">
+                    <span class="flex items-center gap-3"><i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 text-muted group-hover:text-brand-ink"></i>{{ $item['label'] }}</span>
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-muted group-hover:text-brand-darkred"></i>
+                </a>
+            @endforeach
+        </nav>
     </div>
 
-    <!-- Pinned Bottom Status Card: Selalu berada di bawah pada elemen Sidebar -->
-    <div class="p-3 pt-0 shrink-0">
-        <div class="p-4 rounded-2xl bg-navy text-white relative overflow-hidden shadow-sm">
-            <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-maroon/60 blur-sm pointer-events-none"></div>
-            <div class="relative">
-                <div class="text-xs text-white/70 font-medium">
-                    {{ $isSiswa ? 'Status PKL' : 'Status Karier' }}
-                </div>
-                <div class="text-sm font-semibold mt-0.5 leading-snug">
-                    {{ $profile['status'] ?? ($isSiswa ? 'PKL Aktif' : 'Pencari Kerja') }}
-                </div>
-                <div class="text-[11px] text-white/60 mt-2 font-mono">
-                    {{ $profile['kelas'] ?? ($isSiswa ? 'XII' : 'Alumni') }} · NIS {{ $profile['nis'] ?? '-' }}
-                </div>
-            </div>
+    <!-- Kaki sidebar: status PKL / karier -->
+    <div class="p-3 border-t border-brand-ink/10">
+        <div class="rounded-card bg-brand-ink text-white p-4">
+            <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#F5C2C7]">
+                <span class="w-1.5 h-1.5 rounded-full {{ $isSiswa ? 'bg-emerald-400' : 'bg-amber-400' }}"></span>
+                {{ $isSiswa ? 'Status PKL' : 'Status Karier' }}
+            </span>
+            <span class="mt-1 block font-display text-base uppercase tracking-wide truncate">{{ $profile['status'] ?? ($isSiswa ? 'PKL Aktif' : 'Pencari Kerja') }}</span>
+            <span class="mt-2 pt-2 border-t border-white/15 flex items-center justify-between gap-2 text-[11px] text-white/70">
+                <span class="truncate">{{ $profile['kelas'] ?? ($isSiswa ? 'XII' : 'Alumni') }}</span>
+                <span class="shrink-0 tabular-nums">NIS {{ $profile['nis'] ?? '-' }}</span>
+            </span>
         </div>
     </div>
 </aside>
@@ -105,13 +101,15 @@
         const backdrop = document.getElementById('meSidebarBackdrop');
         if (!sidebar || !backdrop) return;
 
-        const isHidden = sidebar.classList.contains('-translate-x-full');
-        if (isHidden) {
-            sidebar.classList.remove('-translate-x-full');
-            backdrop.classList.remove('hidden');
-        } else {
-            sidebar.classList.add('-translate-x-full');
-            backdrop.classList.add('hidden');
-        }
+        const willOpen = sidebar.classList.contains('-translate-x-full');
+        sidebar.classList.toggle('-translate-x-full', !willOpen);
+        backdrop.classList.toggle('hidden', !willOpen);
+        document.body.classList.toggle('overflow-hidden', willOpen);
     }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !document.getElementById('meSidebar')?.classList.contains('-translate-x-full')) {
+            toggleMeSidebar();
+        }
+    });
 </script>
