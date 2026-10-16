@@ -6,7 +6,6 @@ use App\Models\Lamaran;
 use App\Models\PermohonanKerjasama;
 use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 /**
@@ -17,6 +16,20 @@ class AdminAlertsComposer
 {
     private ?array $alerts = null;
 
+    /**
+     * Cache hitungan yang sudah dihitung controller dalam request yang sama (S3).
+     */
+    private array $providedCounts = [];
+
+    /**
+     * Terima hitungan metrik yang sudah dihitung controller agar tidak query ulang (S3).
+     */
+    public function provideCounts(array $counts): void
+    {
+        $this->providedCounts = array_merge($this->providedCounts, $counts);
+        $this->alerts = null;
+    }
+
     public function compose(View $view): void
     {
         $view->with('adminAlerts', $this->alerts ??= $this->build());
@@ -24,33 +37,31 @@ class AdminAlertsComposer
 
     private function build(): array
     {
-        $count = fn (string $table, callable $query) => Schema::hasTable($table) ? $query() : 0;
-
         $items = [
             [
                 'key' => 'permohonan',
-                'count' => $count('permohonan_kerjasama', fn () => PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count()),
+                'count' => (int) ($this->providedCounts['permohonan'] ?? PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count()),
                 'title' => 'Permohonan kerja sama baru',
                 'desc' => 'Calon mitra IDUKA menunggu review.',
                 'route' => 'bkk.admin.mitra.permohonan.index',
             ],
             [
                 'key' => 'jurnal',
-                'count' => $count('pkl_jurnal_harian', fn () => PklJurnalHarian::where('status', 'Menunggu')->count()),
+                'count' => (int) ($this->providedCounts['jurnal'] ?? PklJurnalHarian::where('status', 'Menunggu')->count()),
                 'title' => 'Jurnal PKL menunggu validasi',
                 'desc' => 'Log harian siswa belum diperiksa.',
                 'route' => 'bkk.admin.pkl.monitoring',
             ],
             [
                 'key' => 'laporan',
-                'count' => $count('pkl_laporan_akhir', fn () => PklLaporanAkhir::where('status', 'Ditinjau')->count()),
+                'count' => (int) ($this->providedCounts['laporan'] ?? PklLaporanAkhir::where('status', 'Ditinjau')->count()),
                 'title' => 'Bab laporan PKL perlu ditinjau',
                 'desc' => 'Draf laporan akhir siswa sudah dikirim.',
                 'route' => 'bkk.admin.pkl.monitoring',
             ],
             [
                 'key' => 'lamaran',
-                'count' => $count('lamaran', fn () => Lamaran::where('status', 'Terkirim')->count()),
+                'count' => (int) ($this->providedCounts['lamaran'] ?? Lamaran::where('status', 'Terkirim')->count()),
                 'title' => 'Lamaran baru masuk',
                 'desc' => 'Pelamar belum ditinjau mitra.',
                 'route' => 'bkk.admin.lowongan.index',

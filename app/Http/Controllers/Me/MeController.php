@@ -17,7 +17,6 @@ use App\Services\MeDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -48,22 +47,20 @@ class MeController extends Controller
         // Sinkronisasi data riil profil dari database jika record siswa/alumni ada
         $primaryCv = null;
         try {
-            if (Schema::hasTable('profil_siswa')) {
-                $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
-                    ? $this->currentProfilSiswa
-                    : ProfilSiswa::find($userId);
+            $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
+                ? $this->currentProfilSiswa
+                : ProfilSiswa::find($userId);
 
-                if ($dbSiswa) {
-                    $this->currentProfilSiswa = $dbSiswa;
-                    $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
-                    $profile['jurusan'] = $dbSiswa->jurusan ?: $profile['jurusan'];
-                    $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
-                    $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
-                    $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
+            if ($dbSiswa) {
+                $this->currentProfilSiswa = $dbSiswa;
+                $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
+                $profile['jurusan'] = $dbSiswa->jurusan ?: $profile['jurusan'];
+                $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
+                $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
+                $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
 
-                    $dbSiswa->loadMissing('primaryResume');
-                    $primaryCv = $dbSiswa->primaryResume;
-                }
+                $dbSiswa->loadMissing('primaryResume');
+                $primaryCv = $dbSiswa->primaryResume;
             }
         } catch (\Throwable $e) {
             report($e);
@@ -146,18 +143,15 @@ class MeController extends Controller
         $cvVersions = collect();
 
         try {
-            if (Schema::hasTable('cv_resumes')) {
-                $cvVersions = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
-                    ->withCount('lamarans')
-                    ->latest('id')
-                    ->get();
+            $cvVersions = CvResume::where('user_id', $userId)
+                ->where('temp', false)
+                ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                ->latest('id')
+                ->get();
 
-                $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
-                if ($activeHeader) {
-                    $activeCv = CvResume::find($activeHeader->id);
-                }
+            $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+            if ($activeHeader) {
+                $activeCv = CvResume::find($activeHeader->id);
             }
         } catch (\Throwable $e) {
             report($e);
@@ -220,18 +214,15 @@ class MeController extends Controller
         $cvVersions = collect();
 
         try {
-            if (Schema::hasTable('cv_resumes')) {
-                $cvVersions = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
-                    ->withCount('lamarans')
-                    ->latest('id')
-                    ->get();
+            $cvVersions = CvResume::where('user_id', $userId)
+                ->where('temp', false)
+                ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                ->latest('id')
+                ->get();
 
-                $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
-                if ($activeHeader) {
-                    $activeCv = CvResume::find($activeHeader->id);
-                }
+            $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+            if ($activeHeader) {
+                $activeCv = CvResume::find($activeHeader->id);
             }
         } catch (\Throwable $e) {
             report($e);
@@ -284,12 +275,10 @@ class MeController extends Controller
 
         $targetCv = null;
         try {
-            if (Schema::hasTable('cv_resumes')) {
-                $targetCv = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->where('id', $id)
-                    ->first();
-            }
+            $targetCv = CvResume::where('user_id', $userId)
+                ->where('temp', false)
+                ->where('id', $id)
+                ->first();
         } catch (\Throwable $e) {
             report($e);
         }
@@ -306,14 +295,11 @@ class MeController extends Controller
         $cvVersions = collect();
 
         try {
-            if (Schema::hasTable('cv_resumes')) {
-                $cvVersions = CvResume::where('user_id', $userId)
-                    ->where('temp', false)
-                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
-                    ->withCount('lamarans')
-                    ->latest('id')
-                    ->get();
-            }
+            $cvVersions = CvResume::where('user_id', $userId)
+                ->where('temp', false)
+                ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                ->latest('id')
+                ->get();
         } catch (\Throwable $e) {
             report($e);
         }
@@ -382,31 +368,29 @@ class MeController extends Controller
 
         $cv = null;
         try {
-            if (Schema::hasTable('cv_resumes')) {
-                if ($isTemp) {
-                    $cv = CvResume::saveDraft($userId, $markdown);
-                } else {
-                    $cv = CvResume::saveVersion($userId, $markdown);
-                    $bearerToken = $request->attributes->get('auth_token')
-                        ?: ($request->bearerToken()
-                        ?: ($request->cookie('access_token')
-                        ?: null));
+            if ($isTemp) {
+                $cv = CvResume::saveDraft($userId, $markdown);
+            } else {
+                $cv = CvResume::saveVersion($userId, $markdown);
+                $bearerToken = $request->attributes->get('auth_token')
+                    ?: ($request->bearerToken()
+                    ?: ($request->cookie('access_token')
+                    ?: null));
 
-                    // Picu evaluasi /api/ai/cv/score di background, update cv_resumes.feedback & cv_resumes.score, dan kirim notifikasi
-                    if ($cv) {
-                        $cvId = $cv->id;
-                        dispatch(function () use ($cvId, $role, $bearerToken) {
-                            $targetCv = CvResume::find($cvId);
-                            if ($targetCv && !$targetCv->temp) {
-                                app(AiCvService::class)->evaluateAndStoreScore(
-                                    cv: $targetCv,
-                                    recipientRole: $role,
-                                    token: is_string($bearerToken) ? $bearerToken : null,
-                                    sendNotification: true
-                                );
-                            }
-                        })->afterResponse();
-                    }
+                // Picu evaluasi /api/ai/cv/score di background, update cv_resumes.feedback & cv_resumes.score, dan kirim notifikasi
+                if ($cv) {
+                    $cvId = $cv->id;
+                    dispatch(function () use ($cvId, $role, $bearerToken) {
+                        $targetCv = CvResume::find($cvId);
+                        if ($targetCv && !$targetCv->temp) {
+                            app(AiCvService::class)->evaluateAndStoreScore(
+                                cv: $targetCv,
+                                recipientRole: $role,
+                                token: is_string($bearerToken) ? $bearerToken : null,
+                                sendNotification: true
+                            );
+                        }
+                    })->afterResponse();
                 }
             }
         } catch (\Throwable $e) {
@@ -534,13 +518,13 @@ class MeController extends Controller
 
         $penempatan = null;
         try {
-            if (Schema::hasTable('penempatan_pkl')) {
-                $penempatan = PenempatanPkl::with('mitra')
-                    ->where('siswa_id', $userId)
-                    ->where('status', 'BERJALAN')
-                    ->first();
-            }
-        } catch (\Throwable) {}
+            $penempatan = PenempatanPkl::with('mitra')
+                ->where('siswa_id', $userId)
+                ->where('status', 'BERJALAN')
+                ->first();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $totalHours = (int) array_sum(array_column(array_filter($jurnalEntries, fn($j) => $j['status'] === 'Disetujui'), 'hours'));
         if ($totalHours === 0 && $penempatan && $penempatan->total_jam_tercapai > 0) {
@@ -612,40 +596,38 @@ class MeController extends Controller
 
         $createdEntry = null;
         try {
-            if (Schema::hasTable('penempatan_pkl') && Schema::hasTable('pkl_jurnal_harian')) {
-                $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
+            $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
 
-                if (!$penempatan) {
-                    if ($request->wantsJson()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Anda belum terdaftar dalam penempatan PKL aktif.',
-                        ], 422);
-                    }
-                    return redirect()->route('bkk.me.jurnal')->with('error', 'Anda belum terdaftar dalam penempatan PKL aktif.');
+            if (!$penempatan) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda belum terdaftar dalam penempatan PKL aktif.',
+                    ], 422);
                 }
-
-                $sudahAda = PklJurnalHarian::where('penempatan_pkl_id', $penempatan->id)
-                    ->whereDate('tanggal', $validated['tanggal'])
-                    ->exists();
-
-                if ($sudahAda) {
-                    $msg = 'Jurnal untuk tanggal tersebut sudah pernah dicatat.';
-                    if ($request->wantsJson()) {
-                        return response()->json(['success' => false, 'message' => $msg], 422);
-                    }
-                    return redirect()->route('bkk.me.jurnal')->with('error', $msg);
-                }
-
-                $createdEntry = PklJurnalHarian::create([
-                    'penempatan_pkl_id' => $penempatan->id,
-                    'siswa_id' => $userId,
-                    'tanggal' => $validated['tanggal'],
-                    'aktivitas' => $validated['aktivitas'],
-                    'durasi_jam' => $validated['durasi_jam'] ?? 8,
-                    'status' => 'Menunggu',
-                ]);
+                return redirect()->route('bkk.me.jurnal')->with('error', 'Anda belum terdaftar dalam penempatan PKL aktif.');
             }
+
+            $sudahAda = PklJurnalHarian::where('penempatan_pkl_id', $penempatan->id)
+                ->whereDate('tanggal', $validated['tanggal'])
+                ->exists();
+
+            if ($sudahAda) {
+                $msg = 'Jurnal untuk tanggal tersebut sudah pernah dicatat.';
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->route('bkk.me.jurnal')->with('error', $msg);
+            }
+
+            $createdEntry = PklJurnalHarian::create([
+                'penempatan_pkl_id' => $penempatan->id,
+                'siswa_id' => $userId,
+                'tanggal' => $validated['tanggal'],
+                'aktivitas' => $validated['aktivitas'],
+                'durasi_jam' => $validated['durasi_jam'] ?? 8,
+                'status' => 'Menunggu',
+            ]);
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -686,13 +668,13 @@ class MeController extends Controller
 
         $penempatan = null;
         try {
-            if (Schema::hasTable('penempatan_pkl')) {
-                $penempatan = PenempatanPkl::with('mitra')
-                    ->where('siswa_id', $userId)
-                    ->where('status', 'BERJALAN')
-                    ->first();
-            }
-        } catch (\Throwable) {}
+            $penempatan = PenempatanPkl::with('mitra')
+                ->where('siswa_id', $userId)
+                ->where('status', 'BERJALAN')
+                ->first();
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $deadlineStr = $penempatan?->tanggal_selesai ? $penempatan->tanggal_selesai->locale('id')->translatedFormat('d F Y') : 'Belum ditentukan';
 
@@ -736,49 +718,47 @@ class MeController extends Controller
 
         $laporan = null;
         try {
-            if (Schema::hasTable('penempatan_pkl') && Schema::hasTable('pkl_laporan_akhir')) {
-                $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
+            $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->first();
 
-                if (!$penempatan) {
-                    if ($request->wantsJson()) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Anda belum memiliki penempatan PKL aktif.',
-                        ], 422);
-                    }
-                    return redirect()->route('bkk.me.laporan')->with('error', 'Anda belum memiliki penempatan PKL aktif.');
+            if (!$penempatan) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda belum memiliki penempatan PKL aktif.',
+                    ], 422);
                 }
-
-                $existing = PklLaporanAkhir::where('penempatan_pkl_id', $penempatan->id)
-                    ->where('nomor_bab', $validated['nomor_bab'])
-                    ->first();
-
-                if ($existing && $existing->status === 'Disetujui') {
-                    $msg = 'Bab ini sudah disetujui pembimbing dan tidak dapat diunggah ulang.';
-                    if ($request->wantsJson()) {
-                        return response()->json(['success' => false, 'message' => $msg], 422);
-                    }
-                    return redirect()->route('bkk.me.laporan')->with('error', $msg);
-                }
-
-                $file = $request->file('file_draft');
-                $fileName = 'bab' . $validated['nomor_bab'] . '_' . $penempatan->id . '_' . Str::random(24) . '.' . ($file->guessExtension() ?: $file->getClientOriginalExtension());
-                $path = $file->storeAs('laporan_pkl', $fileName, 'public');
-
-                $laporan = PklLaporanAkhir::updateOrCreate(
-                    [
-                        'penempatan_pkl_id' => $penempatan->id,
-                        'nomor_bab' => $validated['nomor_bab'],
-                    ],
-                    [
-                        'siswa_id' => $userId,
-                        'judul_bab' => $validated['judul_bab'],
-                        'file_draft_url' => '/bkk/storage/' . $path,
-                        'status' => 'Ditinjau',
-                        'terakhir_diperbarui' => now()->toDateString(),
-                    ]
-                );
+                return redirect()->route('bkk.me.laporan')->with('error', 'Anda belum memiliki penempatan PKL aktif.');
             }
+
+            $existing = PklLaporanAkhir::where('penempatan_pkl_id', $penempatan->id)
+                ->where('nomor_bab', $validated['nomor_bab'])
+                ->first();
+
+            if ($existing && $existing->status === 'Disetujui') {
+                $msg = 'Bab ini sudah disetujui pembimbing dan tidak dapat diunggah ulang.';
+                if ($request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->route('bkk.me.laporan')->with('error', $msg);
+            }
+
+            $file = $request->file('file_draft');
+            $fileName = 'bab' . $validated['nomor_bab'] . '_' . $penempatan->id . '_' . Str::random(24) . '.' . ($file->guessExtension() ?: $file->getClientOriginalExtension());
+            $path = $file->storeAs('laporan_pkl', $fileName, 'public');
+
+            $laporan = PklLaporanAkhir::updateOrCreate(
+                [
+                    'penempatan_pkl_id' => $penempatan->id,
+                    'nomor_bab' => $validated['nomor_bab'],
+                ],
+                [
+                    'siswa_id' => $userId,
+                    'judul_bab' => $validated['judul_bab'],
+                    'file_draft_url' => '/bkk/storage/' . $path,
+                    'status' => 'Ditinjau',
+                    'terakhir_diperbarui' => now()->toDateString(),
+                ]
+            );
         } catch (\Throwable $e) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -865,15 +845,13 @@ class MeController extends Controller
             'catatan_seleksi' => 'Berkas pendaftaran otomatis diverifikasi sistem.',
         ]);
 
-        if (Schema::hasTable('lamaran_riwayat_status')) {
-            LamaranRiwayatStatus::create([
-                'lamaran_id' => $lamaran->id,
-                'judul_tahapan' => 'Lamaran Terkirim',
-                'deskripsi' => 'Pendaftaran diajukan melalui portal BKK Penus.',
-                'diubah_oleh_id' => $userId,
-                'diubah_oleh_role' => $authUser['role'],
-            ]);
-        }
+        LamaranRiwayatStatus::create([
+            'lamaran_id' => $lamaran->id,
+            'judul_tahapan' => 'Lamaran Terkirim',
+            'deskripsi' => 'Pendaftaran diajukan melalui portal BKK Penus.',
+            'diubah_oleh_id' => $userId,
+            'diubah_oleh_role' => $authUser['role'],
+        ]);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -892,69 +870,69 @@ class MeController extends Controller
     protected function getMappedApplications(string $userId): array
     {
         try {
-            if (Schema::hasTable('lamaran')) {
-                $dbLamarans = Lamaran::with(['lowongan.mitra', 'interview', 'riwayatStatus'])
-                    ->where('siswa_id', $userId)
-                    ->latest('tanggal_melamar')
-                    ->get();
+            $dbLamarans = Lamaran::with(['lowongan.mitra', 'interview', 'riwayatStatus'])
+                ->where('siswa_id', $userId)
+                ->latest('tanggal_melamar')
+                ->get();
 
-                if ($dbLamarans->isNotEmpty()) {
-                    return $dbLamarans->map(function ($l) {
-                        $lowongan = $l->lowongan;
-                        $mitra = $lowongan?->mitra;
-                        $interview = $l->interview;
-                        $tgl = $l->tanggal_melamar ? $l->tanggal_melamar->format('d M Y') : ($l->created_at ? $l->created_at->format('d M Y') : date('d M Y'));
+            if ($dbLamarans->isNotEmpty()) {
+                return $dbLamarans->map(function ($l) {
+                    $lowongan = $l->lowongan;
+                    $mitra = $lowongan?->mitra;
+                    $interview = $l->interview;
+                    $tgl = $l->tanggal_melamar ? $l->tanggal_melamar->format('d M Y') : ($l->created_at ? $l->created_at->format('d M Y') : date('d M Y'));
 
-                        $timeline = [];
-                        if ($l->relationLoaded('riwayatStatus') && $l->riwayatStatus->isNotEmpty()) {
-                            $timeline = $l->riwayatStatus->sortBy('created_at')->map(function ($r) {
-                                return [
-                                    'date' => $r->created_at ? $r->created_at->format('d M Y, H:i') : '',
-                                    'title' => $r->judul_tahapan,
-                                    'desc' => $r->deskripsi ?? '',
-                                    'done' => true,
-                                ];
-                            })->values()->all();
-                        } else {
-                            $timeline = [
-                                ['date' => $tgl, 'title' => 'Lamaran Dikirim', 'desc' => 'Berkas dan CV diajukan ke sistem BKK.', 'done' => true],
-                                ['date' => '', 'title' => 'Verifikasi Berkas BKK', 'desc' => 'BKK Penus memvalidasi kualifikasi.', 'done' => in_array($l->status, ['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])],
-                                ['date' => '', 'title' => 'Tahap Seleksi & Interview', 'desc' => 'Ulasan oleh mitra industri atau pemanggilan interview.', 'done' => in_array($l->status, ['Dipanggil Interview', 'Diterima'])],
-                                ['date' => '', 'title' => 'Pengumuman Hasil', 'desc' => 'Status akhir penerimaan.', 'done' => in_array($l->status, ['Diterima', 'Ditolak'])],
+                    $timeline = [];
+                    if ($l->relationLoaded('riwayatStatus') && $l->riwayatStatus->isNotEmpty()) {
+                        $timeline = $l->riwayatStatus->sortBy('created_at')->map(function ($r) {
+                            return [
+                                'date' => $r->created_at ? $r->created_at->format('d M Y, H:i') : '',
+                                'title' => $r->judul_tahapan,
+                                'desc' => $r->deskripsi ?? '',
+                                'done' => true,
                             ];
-                        }
-
-                        return [
-                            'id' => $l->kode_lamaran,
-                            'code' => $l->kode_lamaran,
-                            'position' => $lowongan?->judul ?? 'Posisi Terpilih',
-                            'role' => $lowongan?->judul ?? 'Posisi Terpilih',
-                            'company' => $mitra?->nama_perusahaan ?? 'Mitra Industri',
-                            'mitra' => $mitra?->sektor_industri ?? 'Teknologi & Operasional',
-                            'type' => $lowongan?->tipe === 'PKL' ? 'PKL / Magang' : 'Full-time',
-                            'location' => $lowongan?->lokasi ?? 'Bogor',
-                            'date' => $tgl,
-                            'applied_at' => $tgl,
-                            'status' => $l->status,
-                            'color' => '#1b283b',
-                            'step' => $l->step_tahapan ?: 1,
-                            'match_score' => $l->skor_match_ai ?: 92,
-                            'timeline' => $timeline,
-                            'interview' => $interview ? [
-                                'date' => $interview->tanggal_interview ? $interview->tanggal_interview->format('l, d M Y') : '',
-                                'time' => $interview->waktu_interview ?? '09:00 WIB',
-                                'mode' => $interview->mode ?? 'Tatap Muka',
-                                'place' => $interview->lokasi_atau_url ?? 'Kampus BKK / Kantor Mitra',
-                                'location' => $interview->lokasi_atau_url ?? 'Kampus BKK / Kantor Mitra',
-                                'pic' => $interview->pic_pewawancara ?? 'Tim HRD Mitra',
-                                'instructions' => $interview->instruksi_khusus ?? 'Membawa berkas cetak dan mengenakan pakaian rapi.',
-                                'notes' => $interview->instruksi_khusus ?? '',
-                            ] : null,
+                        })->values()->all();
+                    } else {
+                        $timeline = [
+                            ['date' => $tgl, 'title' => 'Lamaran Dikirim', 'desc' => 'Berkas dan CV diajukan ke sistem BKK.', 'done' => true],
+                            ['date' => '', 'title' => 'Verifikasi Berkas BKK', 'desc' => 'BKK Penus memvalidasi kualifikasi.', 'done' => in_array($l->status, ['Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])],
+                            ['date' => '', 'title' => 'Tahap Seleksi & Interview', 'desc' => 'Ulasan oleh mitra industri atau pemanggilan interview.', 'done' => in_array($l->status, ['Dipanggil Interview', 'Diterima'])],
+                            ['date' => '', 'title' => 'Pengumuman Hasil', 'desc' => 'Status akhir penerimaan.', 'done' => in_array($l->status, ['Diterima', 'Ditolak'])],
                         ];
-                    })->all();
-                }
+                    }
+
+                    return [
+                        'id' => $l->kode_lamaran,
+                        'code' => $l->kode_lamaran,
+                        'position' => $lowongan?->judul ?? 'Posisi Terpilih',
+                        'role' => $lowongan?->judul ?? 'Posisi Terpilih',
+                        'company' => $mitra?->nama_perusahaan ?? 'Mitra Industri',
+                        'mitra' => $mitra?->sektor_industri ?? 'Teknologi & Operasional',
+                        'type' => $lowongan?->tipe === 'PKL' ? 'PKL / Magang' : 'Full-time',
+                        'location' => $lowongan?->lokasi ?? 'Bogor',
+                        'date' => $tgl,
+                        'applied_at' => $tgl,
+                        'status' => $l->status,
+                        'color' => '#1b283b',
+                        'step' => $l->step_tahapan ?: 1,
+                        'match_score' => $l->skor_match_ai ?: 92,
+                        'timeline' => $timeline,
+                        'interview' => $interview ? [
+                            'date' => $interview->tanggal_interview ? $interview->tanggal_interview->format('l, d M Y') : '',
+                            'time' => $interview->waktu_interview ?? '09:00 WIB',
+                            'mode' => $interview->mode ?? 'Tatap Muka',
+                            'place' => $interview->lokasi_atau_url ?? 'Kampus BKK / Kantor Mitra',
+                            'location' => $interview->lokasi_atau_url ?? 'Kampus BKK / Kantor Mitra',
+                            'pic' => $interview->pic_pewawancara ?? 'Tim HRD Mitra',
+                            'instructions' => $interview->instruksi_khusus ?? 'Membawa berkas cetak dan mengenakan pakaian rapi.',
+                            'notes' => $interview->instruksi_khusus ?? '',
+                        ] : null,
+                    ];
+                })->all();
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return [];
     }
@@ -962,47 +940,47 @@ class MeController extends Controller
     protected function getMappedVacancies(string $role): array
     {
         try {
-            if (Schema::hasTable('lowongan')) {
-                $tipeTarget = ($role === 'SISWA') ? 'PKL' : 'Kerja';
+            $tipeTarget = ($role === 'SISWA') ? 'PKL' : 'Kerja';
+            $dbLowongans = Lowongan::with('mitra')
+                ->terbuka()
+                ->where('tipe', $tipeTarget)
+                ->latest('created_at')
+                ->take(6)
+                ->get();
+
+            if ($dbLowongans->isEmpty()) {
                 $dbLowongans = Lowongan::with('mitra')
                     ->terbuka()
-                    ->where('tipe', $tipeTarget)
                     ->latest('created_at')
                     ->take(6)
                     ->get();
-
-                if ($dbLowongans->isEmpty()) {
-                    $dbLowongans = Lowongan::with('mitra')
-                        ->terbuka()
-                        ->latest('created_at')
-                        ->take(6)
-                        ->get();
-                }
-
-                if ($dbLowongans->isNotEmpty()) {
-                    return $dbLowongans->map(function ($l) {
-                        $jurusanTags = array_values(array_filter(array_map('trim', explode(',', (string) $l->target_jurusan))));
-                        if (empty($jurusanTags)) {
-                            $jurusanTags = ['Kompetensi Kejuruan', 'Sertifikasi Industri'];
-                        }
-
-                        return [
-                            'id' => (string) $l->id,
-                            'title' => $l->judul,
-                            'company' => $l->mitra?->nama_perusahaan ?? 'Mitra Industri',
-                            'type' => $l->tipe === 'PKL' ? 'PKL / Magang' : 'Full-time',
-                            'jurusan' => $l->target_jurusan,
-                            'location' => $l->lokasi,
-                            'salary' => $l->gaji_kompensasi ?? 'Kompetitif UMK',
-                            'deadline' => $l->deadline ? $l->deadline->format('d M Y') : 'Open',
-                            'match' => 95,
-                            'tags' => $jurusanTags,
-                            'color' => '#1b283b',
-                        ];
-                    })->all();
-                }
             }
-        } catch (\Throwable) {}
+
+            if ($dbLowongans->isNotEmpty()) {
+                return $dbLowongans->map(function ($l) {
+                    $jurusanTags = array_values(array_filter(array_map('trim', explode(',', (string) $l->target_jurusan))));
+                    if (empty($jurusanTags)) {
+                        $jurusanTags = ['Kompetensi Kejuruan', 'Sertifikasi Industri'];
+                    }
+
+                    return [
+                        'id' => (string) $l->id,
+                        'title' => $l->judul,
+                        'company' => $l->mitra?->nama_perusahaan ?? 'Mitra Industri',
+                        'type' => $l->tipe === 'PKL' ? 'PKL / Magang' : 'Full-time',
+                        'jurusan' => $l->target_jurusan,
+                        'location' => $l->lokasi,
+                        'salary' => $l->gaji_kompensasi ?? 'Kompetitif UMK',
+                        'deadline' => $l->deadline ? $l->deadline->format('d M Y') : 'Open',
+                        'match' => 95,
+                        'tags' => $jurusanTags,
+                        'color' => '#1b283b',
+                    ];
+                })->all();
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return [];
     }
@@ -1010,26 +988,26 @@ class MeController extends Controller
     protected function getMappedJurnalEntries(string $userId): array
     {
         try {
-            if (Schema::hasTable('pkl_jurnal_harian')) {
-                $dbJurnals = PklJurnalHarian::where('siswa_id', $userId)
-                    ->latest('tanggal')
-                    ->get();
+            $dbJurnals = PklJurnalHarian::where('siswa_id', $userId)
+                ->latest('tanggal')
+                ->get();
 
-                if ($dbJurnals->isNotEmpty()) {
-                    return $dbJurnals->map(function ($j) {
-                        return [
-                            'id' => $j->id,
-                            'date' => $j->tanggal ? $j->tanggal->format('d M Y') : $j->created_at->format('d M Y'),
-                            'hours' => $j->durasi_jam,
-                            'activity' => $j->aktivitas,
-                            'status' => $j->status,
-                            'catatan' => $j->catatan_revisi,
-                            'note' => $j->catatan_revisi,
-                        ];
-                    })->all();
-                }
+            if ($dbJurnals->isNotEmpty()) {
+                return $dbJurnals->map(function ($j) {
+                    return [
+                        'id' => $j->id,
+                        'date' => $j->tanggal ? $j->tanggal->format('d M Y') : $j->created_at->format('d M Y'),
+                        'hours' => $j->durasi_jam,
+                        'activity' => $j->aktivitas,
+                        'status' => $j->status,
+                        'catatan' => $j->catatan_revisi,
+                        'note' => $j->catatan_revisi,
+                    ];
+                })->all();
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return [];
     }
@@ -1045,36 +1023,36 @@ class MeController extends Controller
         ];
 
         try {
-            if (Schema::hasTable('pkl_laporan_akhir')) {
-                $dbLaporans = PklLaporanAkhir::where('siswa_id', $userId)
-                    ->orderBy('nomor_bab')
-                    ->get()
-                    ->keyBy('nomor_bab');
+            $dbLaporans = PklLaporanAkhir::where('siswa_id', $userId)
+                ->orderBy('nomor_bab')
+                ->get()
+                ->keyBy('nomor_bab');
 
-                $sections = [];
-                for ($i = 1; $i <= 5; $i++) {
-                    if ($dbLaporans->has($i)) {
-                        $l = $dbLaporans->get($i);
-                        $sections[] = [
-                            'id' => $l->nomor_bab,
-                            'title' => $l->judul_bab ?: $defaultBabs[$i],
-                            'status' => $l->status,
-                            'note' => $l->catatan_pembimbing ?? 'Belum ada catatan pembimbing',
-                            'updated' => $l->terakhir_diperbarui ? $l->terakhir_diperbarui->format('d M Y') : ($l->updated_at ? $l->updated_at->format('d M Y') : 'Baru saja'),
-                        ];
-                    } else {
-                        $sections[] = [
-                            'id' => $i,
-                            'title' => $defaultBabs[$i],
-                            'status' => 'Belum',
-                            'note' => 'Draf bab belum diunggah',
-                            'updated' => '-',
-                        ];
-                    }
+            $sections = [];
+            for ($i = 1; $i <= 5; $i++) {
+                if ($dbLaporans->has($i)) {
+                    $l = $dbLaporans->get($i);
+                    $sections[] = [
+                        'id' => $l->nomor_bab,
+                        'title' => $l->judul_bab ?: $defaultBabs[$i],
+                        'status' => $l->status,
+                        'note' => $l->catatan_pembimbing ?? 'Belum ada catatan pembimbing',
+                        'updated' => $l->terakhir_diperbarui ? $l->terakhir_diperbarui->format('d M Y') : ($l->updated_at ? $l->updated_at->format('d M Y') : 'Baru saja'),
+                    ];
+                } else {
+                    $sections[] = [
+                        'id' => $i,
+                        'title' => $defaultBabs[$i],
+                        'status' => 'Belum',
+                        'note' => 'Draf bab belum diunggah',
+                        'updated' => '-',
+                    ];
                 }
-                return $sections;
             }
-        } catch (\Throwable) {}
+            return $sections;
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $fallbackSections = [];
         for ($i = 1; $i <= 5; $i++) {
@@ -1092,26 +1070,26 @@ class MeController extends Controller
     protected function getMappedNotifications(string $userId, string $role): array
     {
         try {
-            if (Schema::hasTable('notifikasi')) {
-                $dbNotifs = Notifikasi::forRecipient($userId, $role)->latest('created_at')->take(8)->get();
-                if ($dbNotifs->isNotEmpty()) {
-                    return $dbNotifs->map(function ($n) {
-                        return [
-                            'id' => $n->id,
-                            'title' => $n->judul,
-                            'message' => $n->deskripsi,
-                            'desc' => $n->deskripsi,
-                            'type' => $n->tipe_notifikasi,
-                            'time' => $n->created_at ? $n->created_at->diffForHumans() : 'Baru saja',
-                            'is_read' => $n->is_read,
-                            'unread' => !$n->is_read,
-                            'accent' => $n->is_accent,
-                            'url' => $n->url_action ?? '#',
-                        ];
-                    })->all();
-                }
+            $dbNotifs = Notifikasi::forRecipient($userId, $role)->latest('created_at')->take(8)->get();
+            if ($dbNotifs->isNotEmpty()) {
+                return $dbNotifs->map(function ($n) {
+                    return [
+                        'id' => $n->id,
+                        'title' => $n->judul,
+                        'message' => $n->deskripsi,
+                        'desc' => $n->deskripsi,
+                        'type' => $n->tipe_notifikasi,
+                        'time' => $n->created_at ? $n->created_at->diffForHumans() : 'Baru saja',
+                        'is_read' => $n->is_read,
+                        'unread' => !$n->is_read,
+                        'accent' => $n->is_accent,
+                        'url' => $n->url_action ?? '#',
+                    ];
+                })->all();
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return [];
     }
@@ -1150,21 +1128,19 @@ class MeController extends Controller
     protected function enrichProfileFromDatabase(array $profile, string $userId): array
     {
         try {
-            if (Schema::hasTable('profil_siswa')) {
-                $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
-                    ? $this->currentProfilSiswa
-                    : ProfilSiswa::find($userId);
+            $dbSiswa = ($this->currentProfilSiswa && (string) $this->currentProfilSiswa->user_id === (string) $userId)
+                ? $this->currentProfilSiswa
+                : ProfilSiswa::find($userId);
 
-                if ($dbSiswa) {
-                    $this->currentProfilSiswa = $dbSiswa;
-                    $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
-                    if (!empty($dbSiswa->jurusan) && $dbSiswa->jurusan !== 'Belum diisi') {
-                        $profile['jurusan'] = $dbSiswa->jurusan;
-                    }
-                    $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
-                    $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
-                    $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
+            if ($dbSiswa) {
+                $this->currentProfilSiswa = $dbSiswa;
+                $profile['nis'] = $dbSiswa->nis ?: $profile['nis'];
+                if (!empty($dbSiswa->jurusan) && $dbSiswa->jurusan !== 'Belum diisi') {
+                    $profile['jurusan'] = $dbSiswa->jurusan;
                 }
+                $profile['kelas'] = $dbSiswa->kelas ?? $profile['kelas'];
+                $profile['completion'] = $dbSiswa->kelengkapan_profil ?: $profile['completion'];
+                $profile['status_aktivitas'] = $dbSiswa->status_aktivitas ?? $profile['status'];
             }
         } catch (\Throwable $e) {
             report($e);
@@ -1195,18 +1171,16 @@ class MeController extends Controller
         }
 
         try {
-            if (Schema::hasTable('profil_siswa')) {
-                return $this->currentProfilSiswa = ProfilSiswa::firstOrCreate(
-                    ['user_id' => $userId],
-                    [
-                        'nis' => $authUser['nomor_induk'] ?? $authUser['nis'] ?? '-',
-                        'jurusan' => $authUser['jurusan'] ?? 'Belum diisi',
-                        'kelas' => $authUser['kelas'] ?? null,
-                        'angkatan' => (string) ($authUser['angkatan'] ?? date('Y')),
-                        'status_kelulusan' => ($authUser['role'] ?? '') === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
-                    ]
-                );
-            }
+            return $this->currentProfilSiswa = ProfilSiswa::firstOrCreate(
+                ['user_id' => $userId],
+                [
+                    'nis' => $authUser['nomor_induk'] ?? $authUser['nis'] ?? '-',
+                    'jurusan' => $authUser['jurusan'] ?? 'Belum diisi',
+                    'kelas' => $authUser['kelas'] ?? null,
+                    'angkatan' => (string) ($authUser['angkatan'] ?? date('Y')),
+                    'status_kelulusan' => ($authUser['role'] ?? '') === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
+                ]
+            );
         } catch (\Throwable $e) {
             report($e);
         }
@@ -1225,19 +1199,19 @@ class MeController extends Controller
 
         if (!$activeCv) {
             try {
-                if (Schema::hasTable('cv_resumes')) {
-                    $cvVersions = CvResume::where('user_id', $userId)
-                        ->where('temp', false)
-                        ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
-                        ->latest('id')
-                        ->get();
+                $cvVersions = CvResume::where('user_id', $userId)
+                    ->where('temp', false)
+                    ->select(['id', 'user_id', 'created_at', 'is_main', 'score', 'checksum'])
+                    ->latest('id')
+                    ->get();
 
-                    $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
-                    if ($activeHeader) {
-                        $activeCv = CvResume::find($activeHeader->id);
-                    }
+                $activeHeader = $cvVersions->firstWhere('is_main', true) ?? $cvVersions->first();
+                if ($activeHeader) {
+                    $activeCv = CvResume::find($activeHeader->id);
                 }
-            } catch (\Throwable) {}
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         $cvMarkdown = (!empty($activeCv?->raw_markdown))

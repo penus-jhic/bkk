@@ -62,18 +62,16 @@ class CvResume extends Model
         }
 
         try {
-            if (\Illuminate\Support\Facades\Schema::hasTable('profil_siswa')) {
-                ProfilSiswa::firstOrCreate(
-                    ['user_id' => $userId],
-                    [
-                        'nis' => '-',
-                        'jurusan' => 'Belum diisi',
-                        'angkatan' => (string) date('Y'),
-                        'status_kelulusan' => 'SISWA_AKTIF',
-                    ]
-                );
-                $ensured[$userId] = true;
-            }
+            ProfilSiswa::firstOrCreate(
+                ['user_id' => $userId],
+                [
+                    'nis' => '-',
+                    'jurusan' => 'Belum diisi',
+                    'angkatan' => (string) date('Y'),
+                    'status_kelulusan' => 'SISWA_AKTIF',
+                ]
+            );
+            $ensured[$userId] = true;
         } catch (\Throwable $e) {
             report($e);
         }
@@ -81,29 +79,17 @@ class CvResume extends Model
 
     public static function getUserColumn(): string
     {
-        static $col = null;
-        if ($col === null) {
-            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'user_id') ? 'user_id' : 'siswa_id';
-        }
-        return $col;
+        return 'user_id';
     }
 
     public static function getMarkdownColumn(): string
     {
-        static $col = null;
-        if ($col === null) {
-            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'raw_markdown') ? 'raw_markdown' : 'konten_markdown';
-        }
-        return $col;
+        return 'raw_markdown';
     }
 
     public static function getMainColumn(): string
     {
-        static $col = null;
-        if ($col === null) {
-            $col = \Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'is_main') ? 'is_main' : 'is_primary';
-        }
-        return $col;
+        return 'is_main';
     }
 
     /**
@@ -164,9 +150,6 @@ class CvResume extends Model
                 'score' => null,
                 'feedback' => null,
             ];
-            if (\Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'judul_cv')) {
-                $createData['judul_cv'] = 'Draf CV ATS';
-            }
 
             return self::create($createData);
         });
@@ -248,9 +231,6 @@ class CvResume extends Model
                 'score' => null,
                 'feedback' => null,
             ];
-            if (\Illuminate\Support\Facades\Schema::hasColumn('cv_resumes', 'judul_cv')) {
-                $createData['judul_cv'] = 'CV ATS Utama';
-            }
 
             return self::create($createData);
         });
