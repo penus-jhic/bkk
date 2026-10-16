@@ -7,7 +7,6 @@ use App\Models\Notifikasi;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class AiCvService
@@ -188,38 +187,30 @@ class AiCvService
 
         if (is_array($scoreData)) {
             try {
-                $updatePayload = [];
-                if (Schema::hasColumn('cv_resumes', 'feedback')) {
-                    $updatePayload['feedback'] = $scoreData;
-                }
-                if (Schema::hasColumn('cv_resumes', 'score')) {
-                    $updatePayload['score'] = isset($scoreData['total_score']) ? (int) $scoreData['total_score'] : null;
-                }
-                if (!empty($updatePayload)) {
-                    $cv->update($updatePayload);
-                }
+                $cv->update([
+                    'feedback' => $scoreData,
+                    'score' => isset($scoreData['total_score']) ? (int) $scoreData['total_score'] : null,
+                ]);
             } catch (\Throwable $e) {
                 Log::warning('Gagal menyimpan cv_resumes.feedback/score: ' . $e->getMessage());
             }
 
             if ($sendNotification && !$cv->temp) {
                 try {
-                    if (Schema::hasTable('notifikasi')) {
-                        $totalScore = $scoreData['total_score'] ?? 88;
-                        $grade = $scoreData['grade_label'] ?? 'Baik';
-                        $verdict = $scoreData['summary_verdict'] ?? 'Evaluasi skor kesiapan CV ATS Anda telah diperbarui.';
+                    $totalScore = $scoreData['total_score'] ?? 88;
+                    $grade = $scoreData['grade_label'] ?? 'Baik';
+                    $verdict = $scoreData['summary_verdict'] ?? 'Evaluasi skor kesiapan CV ATS Anda telah diperbarui.';
 
-                        Notifikasi::create([
-                            'recipient_id' => (string) $cv->user_id,
-                            'recipient_role' => strtoupper($recipientRole ?: 'SISWA'),
-                            'judul' => "Skor CV ATS Diperbarui: {$totalScore}/100 ({$grade})",
-                            'deskripsi' => Str::limit($verdict, 220),
-                            'tipe_notifikasi' => 'AI_SCORE',
-                            'url_action' => route('bkk.me.cv', [], false),
-                            'is_read' => false,
-                            'is_accent' => true,
-                        ]);
-                    }
+                    Notifikasi::create([
+                        'recipient_id' => (string) $cv->user_id,
+                        'recipient_role' => strtoupper($recipientRole ?: 'SISWA'),
+                        'judul' => "Skor CV ATS Diperbarui: {$totalScore}/100 ({$grade})",
+                        'deskripsi' => Str::limit($verdict, 220),
+                        'tipe_notifikasi' => 'AI_SCORE',
+                        'url_action' => route('bkk.me.cv', [], false),
+                        'is_read' => false,
+                        'is_accent' => true,
+                    ]);
                 } catch (\Throwable $e) {
                     Log::warning('Gagal membuat notifikasi skor CV: ' . $e->getMessage());
                 }

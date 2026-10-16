@@ -21,9 +21,9 @@
 | X4 | XSS | Medium | `marked.parse()` → `innerHTML` without sanitizing (CV preview, AI chat) |
 | X5 | XSS | Medium | AI quick chips have the same `'` breakout as X1 |
 | X6 | XSS | Low | Toasts and the jurnal card use `innerHTML` for messages |
-| S1 | SQL | High | `Schema::hasTable()` on every request (32 schema queries on `/bkk/admin`) |
-| S2 | SQL | Medium | One `COUNT(*)` query per statistic |
-| S3 | SQL | Medium | View composers re-run counts the controller already ran |
+| S1 | SQL | High | **[FIXED]** `Schema::hasTable()` on every request (32 schema queries on `/bkk/admin`) |
+| S2 | SQL | Medium | **[FIXED]** One `COUNT(*)` query per statistic |
+| S3 | SQL | Medium | **[FIXED]** View composers re-run counts the controller already ran |
 | S4 | SQL | Low | **[FIXED]** Student profile row read twice per request; unused eager load |
 | S5 | SQL | Low | **[FIXED]** CV version list loads full markdown/JSON for every version |
 | S6 | SQL | Low | **[FIXED]** `LIKE '%q%'` search; `views_count` written on every GET |
@@ -168,7 +168,7 @@ Some toast messages come from the server and include exception text (`MeControll
 
 Counts include the database session read/write (`SESSION_DRIVER=database`).
 
-### S1: `Schema::hasTable()` on every request (High)
+### S1: `Schema::hasTable()` on every request (High) — **[FIXED]**
 
 **Locations:**
 
@@ -179,9 +179,12 @@ Counts include the database session read/write (`SESSION_DRIVER=database`).
 
 Each call is an `information_schema.tables` query, accounting for 32 of the 74 queries on `/bkk/admin`. The tables are created by migrations, so these checks protect nothing in a migrated database.
 
-**Fix:** remove the checks. If an optional table really is needed, check once and cache the result for the process (e.g. a `static` variable).
+**Resolution:**
+- Removed all `Schema::hasTable()` and `Schema::hasColumn()` runtime checks across `DashboardController`, `AdminAlertsComposer`, `MeController`, `CvResume`, and `AiCvService`.
+- Eliminated 32+ `information_schema` queries per request, relying directly on Eloquent models backed by standard migrations with appropriate exception reporting.
+- Verified zero schema queries across `/bkk/admin`, `/bkk/me`, `/bkk/me/cv`, and `/bkk/dashboard` via automated tests (`tests/Feature/SqlEfficiencyS1S2S3Test.php`).
 
-### S2: One `COUNT(*)` per statistic (Medium)
+### S2: One `COUNT(*)` per statistic (Medium) — **[FIXED]**
 
 | Location | Now | Can be |
 |---|---|---|
@@ -190,31 +193,23 @@ Each call is an `information_schema.tables` query, accounting for 32 of the 74 q
 | `AdminPklController.php:53-59` | 5 counts | 3 |
 | `MitraController.php:42-49` | 6 counts + `pluck('id')` | 2–3 |
 
-Example for berita:
+**Resolution:**
+- Consolidated multiple fragmented `COUNT(*)` queries into single unified conditional SQL aggregations (`COUNT(CASE WHEN ... THEN 1 END)`):
+  - `DashboardController`: merged Berita (4 -> 1), Lowongan (4 -> 1), Mitra (2 -> 1), PKL (2 -> 1), and reused grouping collections for Lamaran and Tracer totals.
+  - `AdminTracerController`: replaced 10 individual queries with 1 unified conditional aggregation query for BMW statuses, relevansi, and average wait time.
+  - `AdminPklController`: merged Penempatan PKL (3 -> 1) into a single aggregation.
+  - `MitraController`: merged Lowongan stats (2 -> 1) and derived applicant statistics directly from `$statusCounts`.
+- Ensured 100% ANSI SQL compatibility across PostgreSQL, MariaDB/MySQL, and SQLite.
 
-```php
-$berita = Berita::selectRaw("
-    COUNT(*) AS total,
-    SUM(status = 'PUBLISHED') AS published,
-    SUM(status = 'DRAFT') AS draft,
-    COALESCE(SUM(views_count), 0) AS views
-")->first();
-```
-
-In `MitraController.php:45-47`, the three lamaran counts duplicate `$statusCounts` (L66), which already contains them:
-
-```php
-'total_pelamar'     => $statusCounts->sum(),
-'pelamar_interview' => (int) ($statusCounts['Dipanggil Interview'] ?? 0),
-'pelamar_diterima'  => (int) ($statusCounts['Diterima'] ?? 0),
-```
-
-### S3: View composers repeat controller counts (Medium)
+### S3: View composers repeat controller counts (Medium) — **[FIXED]**
 
 - `AdminAlertsComposer` re-runs the counts for pending permohonan (`MENUNGGU_REVIEW`), jurnal (`Menunggu`) and laporan (`Ditinjau`) that `DashboardController` and `AdminPklController` have just run. These show up as `x2` in the query log.
 - `MitraAlertsComposer` runs `$mitra->lowongans()->pluck('id')` again after `MitraController::dashboard` already did.
 
-**Fix:** have the controller share its numbers (e.g. `View::share('adminAlerts', ...)`), or have both read from one per-request service.
+**Resolution:**
+- Implemented `provideCounts(array $counts)` on singleton `AdminAlertsComposer` and `MitraAlertsComposer`.
+- `DashboardController`, `AdminPklController`, and `MitraController` now feed pre-computed counts directly into the composers during the request lifecycle.
+- Composers fall back to querying the database only for keys not already provided, eliminating duplicate queries across admin and mitra page views.
 
 ### S4: Student profile read twice per request; unused eager load (Low) — **[FIXED]**
 

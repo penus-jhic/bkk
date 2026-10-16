@@ -8,6 +8,7 @@ use App\Models\LamaranRiwayatStatus;
 use App\Models\Lowongan;
 use App\Models\Mitra;
 use App\Models\PenempatanPkl;
+use App\View\Composers\MitraAlertsComposer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -39,14 +40,31 @@ class MitraController extends Controller
 
         $lowonganIds = $mitra->lowongans()->pluck('id');
 
+        // S2: Konsolidasikan metrik lowongan mitra menjadi 1 query
+        $lowonganStats = $mitra->lowongans()->selectRaw("
+            COUNT(*) AS total,
+            COUNT(CASE WHEN status = 'Aktif' THEN 1 END) AS aktif
+        ")->first();
+
+        // Posisi seluruh lamaran di tahap seleksi, urut sesuai alur rekrutmen (1 query)
+        $statusCounts = Lamaran::whereIn('lowongan_id', $lowonganIds)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
         $metrics = [
-            'total_lowongan' => $mitra->lowongans()->count(),
-            'lowongan_aktif' => $mitra->lowongans()->where('status', 'Aktif')->count(),
-            'total_pelamar' => Lamaran::whereIn('lowongan_id', $lowonganIds)->count(),
-            'pelamar_interview' => Lamaran::whereIn('lowongan_id', $lowonganIds)->where('status', 'Dipanggil Interview')->count(),
-            'pelamar_diterima' => Lamaran::whereIn('lowongan_id', $lowonganIds)->where('status', 'Diterima')->count(),
+            'total_lowongan' => (int) ($lowonganStats->total ?? 0),
+            'lowongan_aktif' => (int) ($lowonganStats->aktif ?? 0),
+            'total_pelamar' => (int) $statusCounts->sum(),
+            'pelamar_interview' => (int) ($statusCounts['Dipanggil Interview'] ?? 0),
+            'pelamar_diterima' => (int) ($statusCounts['Diterima'] ?? 0),
             'siswa_aktif_pkl' => PenempatanPkl::where('mitra_id', $mitra->id)->where('status', 'BERJALAN')->count(),
         ];
+
+        // S3: Bagikan pelamar baru belum ditinjau ke MitraAlertsComposer
+        app(MitraAlertsComposer::class)->provideCounts([
+            'pelamar' => (int) ($statusCounts['Terkirim'] ?? 0),
+        ]);
 
         // 4 Lowongan aktif / terbaru
         $vacancies = $mitra->lowongans()
@@ -62,11 +80,6 @@ class MitraController extends Controller
             ->limit(5)
             ->get();
 
-        // Posisi seluruh lamaran di tahap seleksi, urut sesuai alur rekrutmen
-        $statusCounts = Lamaran::whereIn('lowongan_id', $lowonganIds)
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
         $lamaranFunnel = collect(['Terkirim', 'Sedang Ditinjau', 'Dipanggil Interview', 'Diterima', 'Ditolak'])
             ->map(fn ($status) => ['status' => $status, 'total' => (int) ($statusCounts[$status] ?? 0)])
             ->all();

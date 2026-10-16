@@ -12,9 +12,9 @@ use App\Models\PermohonanKerjasama;
 use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
 use App\Models\TracerRespon;
+use App\View\Composers\AdminAlertsComposer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -30,77 +30,95 @@ class DashboardController extends Controller
     {
         $authUser = $request->auth_user ?? $request->input('auth_user');
 
-        $has = fn (string $table) => Schema::hasTable($table);
+        // S2: Konsolidasikan metrik berita menjadi 1 query
+        $beritaStats = Berita::selectRaw("
+            COUNT(*) AS total,
+            COUNT(CASE WHEN status = 'PUBLISHED' THEN 1 END) AS published,
+            COUNT(CASE WHEN status = 'DRAFT' THEN 1 END) AS draft,
+            COALESCE(SUM(views_count), 0) AS views
+        ")->first();
 
-        $stats = [
-            'total_berita' => $has('berita') ? Berita::count() : 0,
-            'total_published' => $has('berita') ? Berita::where('status', 'PUBLISHED')->count() : 0,
-            'total_draft' => $has('berita') ? Berita::where('status', 'DRAFT')->count() : 0,
-            'total_views' => $has('berita') ? (int) Berita::sum('views_count') : 0,
-            'total_kategori' => $has('kategori_berita') ? KategoriBerita::count() : 0,
-            'total_lowongan' => $has('lowongan') ? Lowongan::count() : 0,
-            'total_lowongan_aktif' => $has('lowongan') ? Lowongan::where('status', 'Aktif')->count() : 0,
-            'total_lowongan_pkl' => $has('lowongan') ? Lowongan::where('status', 'Aktif')->where('tipe', 'PKL')->count() : 0,
-            'total_lowongan_kerja' => $has('lowongan') ? Lowongan::where('status', 'Aktif')->where('tipe', 'Kerja')->count() : 0,
-            'total_mitra' => $has('mitra') ? Mitra::count() : 0,
-            'total_mitra_verified' => $has('mitra') ? Mitra::where('is_verified', true)->count() : 0,
-            'total_permohonan_pending' => $has('permohonan_kerjasama') ? PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count() : 0,
-            'total_siswa_pkl' => $has('penempatan_pkl') ? PenempatanPkl::where('status', 'BERJALAN')->count() : 0,
-            'total_pkl_selesai' => $has('penempatan_pkl') ? PenempatanPkl::where('status', 'SELESAI')->count() : 0,
-            'total_jurnal_menunggu' => $has('pkl_jurnal_harian') ? PklJurnalHarian::where('status', 'Menunggu')->count() : 0,
-            'total_laporan_ditinjau' => $has('pkl_laporan_akhir') ? PklLaporanAkhir::where('status', 'Ditinjau')->count() : 0,
-            'total_pelamar' => $has('lamaran') ? Lamaran::count() : 0,
-            'total_tracer_respon' => $has('tracer_respon') ? TracerRespon::count() : 0,
-        ];
+        // S2: Konsolidasikan metrik lowongan menjadi 1 query
+        $lowonganStats = Lowongan::selectRaw("
+            COUNT(*) AS total,
+            COUNT(CASE WHEN status = 'Aktif' THEN 1 END) AS aktif,
+            COUNT(CASE WHEN status = 'Aktif' AND tipe = 'PKL' THEN 1 END) AS pkl,
+            COUNT(CASE WHEN status = 'Aktif' AND tipe = 'Kerja' THEN 1 END) AS kerja
+        ")->first();
 
-        // Corong lamaran: urutan sama dengan enum status di tabel lamaran
-        $lamaranCounts = $has('lamaran')
-            ? Lamaran::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')
-            : collect();
+        // S2: Konsolidasikan metrik mitra menjadi 1 query
+        $mitraStats = Mitra::selectRaw("
+            COUNT(*) AS total,
+            COUNT(CASE WHEN is_verified IS TRUE THEN 1 END) AS verified
+        ")->first();
+
+        // S2: Konsolidasikan penempatan PKL berjalan & selesai menjadi 1 query
+        $pklStats = PenempatanPkl::selectRaw("
+            COUNT(CASE WHEN status = 'BERJALAN' THEN 1 END) AS berjalan,
+            COUNT(CASE WHEN status = 'SELESAI' THEN 1 END) AS selesai
+        ")->first();
+
+        $kategoriList = KategoriBerita::withCount('beritas')->get();
+
+        $permohonanPendingCount = PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->count();
+        $jurnalMenungguCount = PklJurnalHarian::where('status', 'Menunggu')->count();
+        $laporanDitinjauCount = PklLaporanAkhir::where('status', 'Ditinjau')->count();
+
+        // Corong lamaran: urutan sama dengan enum status di tabel lamaran (1 query)
+        $lamaranCounts = Lamaran::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
         $lamaranFunnel = collect(self::LAMARAN_STATUSES)
             ->map(fn (string $status) => ['status' => $status, 'total' => (int) ($lamaranCounts[$status] ?? 0)])
             ->all();
 
-        // Keterserapan alumni (BMW: Bekerja, Melanjutkan, Wirausaha) dari tracer study
-        $tracerCounts = $has('tracer_respon')
-            ? TracerRespon::query()->selectRaw('status_keterserapan, count(*) as total')->groupBy('status_keterserapan')->pluck('total', 'status_keterserapan')
-            : collect();
+        // Keterserapan alumni (BMW: Bekerja, Melanjutkan, Wirausaha) dari tracer study (1 query)
+        $tracerCounts = TracerRespon::query()
+            ->selectRaw('status_keterserapan, count(*) as total')
+            ->groupBy('status_keterserapan')
+            ->pluck('total', 'status_keterserapan');
         $tracerBreakdown = collect(self::TRACER_STATUSES)
             ->map(fn (string $status) => ['status' => $status, 'total' => (int) ($tracerCounts[$status] ?? 0)])
             ->all();
-        $stats['tracer_terserap'] = (int) $tracerCounts->only(['Bekerja', 'Melanjutkan Pendidikan', 'Wirausaha'])->sum();
 
-        $recentBeritas = $has('berita')
-            ? Berita::with('kategori')->latest('created_at')->take(4)->get()
-            : collect();
+        $stats = [
+            'total_berita' => (int) ($beritaStats->total ?? 0),
+            'total_published' => (int) ($beritaStats->published ?? 0),
+            'total_draft' => (int) ($beritaStats->draft ?? 0),
+            'total_views' => (int) ($beritaStats->views ?? 0),
+            'total_kategori' => $kategoriList->count(),
+            'total_lowongan' => (int) ($lowonganStats->total ?? 0),
+            'total_lowongan_aktif' => (int) ($lowonganStats->aktif ?? 0),
+            'total_lowongan_pkl' => (int) ($lowonganStats->pkl ?? 0),
+            'total_lowongan_kerja' => (int) ($lowonganStats->kerja ?? 0),
+            'total_mitra' => (int) ($mitraStats->total ?? 0),
+            'total_mitra_verified' => (int) ($mitraStats->verified ?? 0),
+            'total_permohonan_pending' => $permohonanPendingCount,
+            'total_siswa_pkl' => (int) ($pklStats->berjalan ?? 0),
+            'total_pkl_selesai' => (int) ($pklStats->selesai ?? 0),
+            'total_jurnal_menunggu' => $jurnalMenungguCount,
+            'total_laporan_ditinjau' => $laporanDitinjauCount,
+            'total_pelamar' => (int) $lamaranCounts->sum(),
+            'total_tracer_respon' => (int) $tracerCounts->sum(),
+            'tracer_terserap' => (int) $tracerCounts->only(['Bekerja', 'Melanjutkan Pendidikan', 'Wirausaha'])->sum(),
+        ];
 
-        $kategoriList = $has('kategori_berita')
-            ? KategoriBerita::withCount('beritas')->get()
-            : collect();
+        // S3: Bagikan hitungan metrik yang sudah dihitung ke AdminAlertsComposer agar tidak query ulang
+        app(AdminAlertsComposer::class)->provideCounts([
+            'permohonan' => $permohonanPendingCount,
+            'jurnal' => $jurnalMenungguCount,
+            'laporan' => $laporanDitinjauCount,
+            'lamaran' => (int) ($lamaranCounts['Terkirim'] ?? 0),
+        ]);
 
-        $recentLowongans = $has('lowongan')
-            ? Lowongan::with('mitra')->withCount('lamarans')->latest('created_at')->take(5)->get()
-            : collect();
-
-        $recentLamarans = $has('lamaran')
-            ? Lamaran::with(['lowongan.mitra', 'siswa'])->latest('tanggal_melamar')->latest('id')->take(5)->get()
-            : collect();
-
-        $recentMitras = $has('mitra')
-            ? Mitra::withCount('lowongans')->latest('created_at')->take(4)->get()
-            : collect();
-
-        $pendingPermohonans = $has('permohonan_kerjasama')
-            ? PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->latest('created_at')->take(3)->get()
-            : collect();
-
-        $recentPkl = $has('penempatan_pkl')
-            ? PenempatanPkl::with(['siswa', 'mitra'])->where('status', 'BERJALAN')->latest('tanggal_mulai')->take(4)->get()
-            : collect();
-
-        $recentTracer = $has('tracer_respon')
-            ? TracerRespon::with('profilSiswa')->latest('tanggal_pengisian')->take(4)->get()
-            : collect();
+        $recentBeritas = Berita::with('kategori')->latest('created_at')->take(4)->get();
+        $recentLowongans = Lowongan::with('mitra')->withCount('lamarans')->latest('created_at')->take(5)->get();
+        $recentLamarans = Lamaran::with(['lowongan.mitra', 'siswa'])->latest('tanggal_melamar')->latest('id')->take(5)->get();
+        $recentMitras = Mitra::withCount('lowongans')->latest('created_at')->take(4)->get();
+        $pendingPermohonans = PermohonanKerjasama::where('status', 'MENUNGGU_REVIEW')->latest('created_at')->take(3)->get();
+        $recentPkl = PenempatanPkl::with(['siswa', 'mitra'])->where('status', 'BERJALAN')->latest('tanggal_mulai')->take(4)->get();
+        $recentTracer = TracerRespon::with('profilSiswa')->latest('tanggal_pengisian')->take(4)->get();
 
         if ($request->wantsJson()) {
             return response()->json([

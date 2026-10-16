@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PenempatanPkl;
 use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
+use App\View\Composers\AdminAlertsComposer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,13 +51,29 @@ class AdminPklController extends Controller
             ->latest('updated_at')
             ->paginate(10, ['*'], 'laporan_page');
 
+        // S2: Konsolidasikan penempatan PKL menjadi 1 query
+        $penempatanStats = PenempatanPkl::selectRaw("
+            COUNT(*) AS total,
+            COUNT(CASE WHEN status = 'BERJALAN' THEN 1 END) AS berjalan,
+            COUNT(CASE WHEN status = 'SELESAI' THEN 1 END) AS selesai
+        ")->first();
+
+        $jurnalMenungguCount = PklJurnalHarian::where('status', 'Menunggu')->count();
+        $laporanDitinjauCount = PklLaporanAkhir::where('status', 'Ditinjau')->count();
+
         $stats = [
-            'total_penempatan' => PenempatanPkl::count(),
-            'berjalan' => PenempatanPkl::where('status', 'BERJALAN')->count(),
-            'selesai' => PenempatanPkl::where('status', 'SELESAI')->count(),
-            'jurnal_menunggu' => PklJurnalHarian::where('status', 'Menunggu')->count(),
-            'laporan_ditinjau' => PklLaporanAkhir::where('status', 'Ditinjau')->count(),
+            'total_penempatan' => (int) ($penempatanStats->total ?? 0),
+            'berjalan' => (int) ($penempatanStats->berjalan ?? 0),
+            'selesai' => (int) ($penempatanStats->selesai ?? 0),
+            'jurnal_menunggu' => $jurnalMenungguCount,
+            'laporan_ditinjau' => $laporanDitinjauCount,
         ];
+
+        // S3: Bagikan hitungan ke AdminAlertsComposer agar header & sidebar tidak query ulang
+        app(AdminAlertsComposer::class)->provideCounts([
+            'jurnal' => $jurnalMenungguCount,
+            'laporan' => $laporanDitinjauCount,
+        ]);
 
         $activeTab = $request->input('tab', 'penempatan');
 

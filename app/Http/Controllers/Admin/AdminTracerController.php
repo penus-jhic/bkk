@@ -20,29 +20,35 @@ class AdminTracerController extends Controller
     {
         $kuesioners = TracerKuesioner::withCount(['pertanyaans', 'respons'])->latest()->get();
 
-        $totalRespon = TracerRespon::count();
-
-        $bmwStats = [
-            'bekerja' => TracerRespon::where('status_keterserapan', 'Bekerja')->count(),
-            'melanjutkan' => TracerRespon::where('status_keterserapan', 'Melanjutkan Pendidikan')->count(),
-            'wirausaha' => TracerRespon::where('status_keterserapan', 'Wirausaha')->count(),
-            'mencari_kerja' => TracerRespon::where('status_keterserapan', 'Mencari Kerja')->count(),
-        ];
-
-        $relevansi = [
-            'sangat_selaras' => TracerRespon::where('keselarasan_jurusan', 'Sangat Selaras')->count(),
-            'selaras' => TracerRespon::where('keselarasan_jurusan', 'Selaras')->count(),
-            'kurang_selaras' => TracerRespon::where('keselarasan_jurusan', 'Kurang Selaras')->count(),
-            'tidak_selaras' => TracerRespon::where('keselarasan_jurusan', 'Tidak Selaras')->count(),
-        ];
-
-        $avgWaktuTunggu = TracerRespon::whereNotNull('waktu_tunggu_bulan')->avg('waktu_tunggu_bulan') ?? 0;
+        // S2: Konsolidasikan seluruh metrik tracer study (total, BMW, relevansi, avg tunggu) menjadi 1 query
+        $statsRow = TracerRespon::selectRaw("
+            COUNT(*) AS total_respon,
+            COUNT(CASE WHEN status_keterserapan = 'Bekerja' THEN 1 END) AS bmw_bekerja,
+            COUNT(CASE WHEN status_keterserapan = 'Melanjutkan Pendidikan' THEN 1 END) AS bmw_melanjutkan,
+            COUNT(CASE WHEN status_keterserapan = 'Wirausaha' THEN 1 END) AS bmw_wirausaha,
+            COUNT(CASE WHEN status_keterserapan = 'Mencari Kerja' THEN 1 END) AS bmw_mencari_kerja,
+            COUNT(CASE WHEN keselarasan_jurusan = 'Sangat Selaras' THEN 1 END) AS rel_sangat_selaras,
+            COUNT(CASE WHEN keselarasan_jurusan = 'Selaras' THEN 1 END) AS rel_selaras,
+            COUNT(CASE WHEN keselarasan_jurusan = 'Kurang Selaras' THEN 1 END) AS rel_kurang_selaras,
+            COUNT(CASE WHEN keselarasan_jurusan = 'Tidak Selaras' THEN 1 END) AS rel_tidak_selaras,
+            AVG(waktu_tunggu_bulan) AS avg_waktu_tunggu
+        ")->first();
 
         $stats = [
-            'total_respon' => $totalRespon,
-            'bmw' => $bmwStats,
-            'keselarasan' => $relevansi,
-            'rata_rata_waktu_tunggu_bulan' => round($avgWaktuTunggu, 1),
+            'total_respon' => (int) ($statsRow->total_respon ?? 0),
+            'bmw' => [
+                'bekerja' => (int) ($statsRow->bmw_bekerja ?? 0),
+                'melanjutkan' => (int) ($statsRow->bmw_melanjutkan ?? 0),
+                'wirausaha' => (int) ($statsRow->bmw_wirausaha ?? 0),
+                'mencari_kerja' => (int) ($statsRow->bmw_mencari_kerja ?? 0),
+            ],
+            'keselarasan' => [
+                'sangat_selaras' => (int) ($statsRow->rel_sangat_selaras ?? 0),
+                'selaras' => (int) ($statsRow->rel_selaras ?? 0),
+                'kurang_selaras' => (int) ($statsRow->rel_kurang_selaras ?? 0),
+                'tidak_selaras' => (int) ($statsRow->rel_tidak_selaras ?? 0),
+            ],
+            'rata_rata_waktu_tunggu_bulan' => round((float) ($statsRow->avg_waktu_tunggu ?? 0), 1),
         ];
 
         $recentResponses = TracerRespon::with(['profilSiswa', 'kuesioner'])
