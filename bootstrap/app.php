@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'me/*',
             'bkk/admin/*',
             'admin/*',
+            'bkk/guru/*',
+            'guru/*',
             'bkk/dashboard/*',
             'dashboard/*',
             'bkk/kerja-sama',

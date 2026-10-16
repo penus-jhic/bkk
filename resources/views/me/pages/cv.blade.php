@@ -67,6 +67,102 @@
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <!-- Left Column: Full AI Score Feedback & Versioning (5 cols) -->
         <div class="xl:col-span-5 space-y-6">
+            <!-- Kartu Unggah Berkas Fisik Dokumen CV (PDF / DOCX) -->
+            <div class="p-6 bg-white rounded-3xl border border-brand-ink/10 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-brand-ink/10 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 grid place-items-center">
+                            <i data-lucide="file-up" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-bold text-navy">Dokumen CV Resmi (PDF / DOCX)</h2>
+                            <p class="text-[11px] text-muted">Dilihat & ditinjau langsung oleh Guru Pembimbing & Mitra</p>
+                        </div>
+                    </div>
+
+                    @php
+                        $guruStatus = $activeCv?->status_review_guru ?? 'Belum Direview';
+                        $guruBadge = match($guruStatus) {
+                            'Disetujui' => 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                            'Perlu Revisi' => 'bg-red-100 text-red-800 border-red-300',
+                            default => 'bg-slate-100 text-slate-700 border-slate-200',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ $guruBadge }}" title="Status Review Guru">
+                        @if($guruStatus === 'Disetujui')
+                            <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                        @elseif($guruStatus === 'Perlu Revisi')
+                            <i data-lucide="alert-circle" class="w-3 h-3 text-red-600"></i>
+                        @else
+                            <i data-lucide="clock" class="w-3 h-3 text-slate-500"></i>
+                        @endif
+                        <span>Guru: {{ $guruStatus }}</span>
+                    </span>
+                </div>
+
+                @if(!empty($activeCv?->catatan_guru))
+                    <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                        <i data-lucide="message-square" class="w-4 h-4 text-amber-700 shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-[11px] block">Catatan Review dari Guru:</span>
+                            <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">{{ $activeCv->catatan_guru }}</p>
+                        </div>
+                    </div>
+                @endif
+
+                @if($activeCv?->has_document_file)
+                    <div class="p-4 rounded-2xl bg-canvas border border-brand-ink/10 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-700 text-white grid place-items-center font-bold text-xs shrink-0">
+                                <i data-lucide="file-check" class="w-5 h-5"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-bold text-xs text-navy truncate">{{ $activeCv->file_name }}</div>
+                                <div class="text-[11px] text-muted flex items-center gap-2 mt-0.5">
+                                    <span>{{ $activeCv->file_size_formatted }}</span>
+                                    <span>·</span>
+                                    <span class="text-emerald-700 font-semibold">Tersimpan di Cloud</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <a href="{{ $activeCv->file_url }}" target="_blank" class="h-8 px-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold inline-flex items-center gap-1 transition-colors">
+                                <i data-lucide="download" class="w-3 h-3"></i>
+                                <span>Unduh</span>
+                            </a>
+                            <form action="{{ route('bkk.me.cv.deleteFile') }}" method="POST" onsubmit="return confirm('Hapus berkas CV yang diunggah?')">
+                                @csrf
+                                <button type="submit" class="w-8 h-8 rounded-full border border-red-200 hover:bg-red-50 text-red-600 grid place-items-center transition-colors cursor-pointer" title="Hapus Berkas">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <form action="{{ route('bkk.me.cv.upload') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                        @csrf
+                        <div class="p-4 rounded-2xl border-2 border-dashed border-brand-ink/15 hover:border-emerald-600 bg-canvas/50 text-center space-y-2 transition-colors">
+                            <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-emerald-700"></i>
+                            <div class="text-xs text-navy font-semibold">Pilih berkas dokumen CV Anda</div>
+                            <p class="text-[10px] text-muted">Mendukung format PDF, DOC, atau DOCX (Maksimal 5 MB)</p>
+                            <input
+                                type="file"
+                                name="cv_file"
+                                required
+                                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                class="text-xs text-muted file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer w-full max-w-xs mx-auto"
+                            />
+                        </div>
+
+                        <button type="submit" class="w-full h-10 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-bold shadow-xs transition-colors cursor-pointer inline-flex items-center justify-center gap-2">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Unggah Berkas CV</span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+
             <!-- Penus AI Score & Diagnostic Card (/api/ai/cv/score -> cv_resumes.feedback) -->
             <div class="p-6 bg-white gemini-border rounded-3xl relative overflow-hidden shadow-sm space-y-5">
                 <div class="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-maroon/15 to-navy/10 blur-2xl pointer-events-none"></div>

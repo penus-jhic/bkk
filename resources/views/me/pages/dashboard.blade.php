@@ -95,7 +95,7 @@
                 </ul>
                 <div class="mt-4 pt-3 border-t border-brand-ink/10">
                     <div class="flex justify-between text-xs font-semibold text-brand-ink">
-                        <span>Kelengkapan profil</span>
+                        <span>Kelengkapan Profil</span>
                         <span class="tabular-nums">{{ $completion }}%</span>
                     </div>
                     <div class="mt-1.5 h-2 rounded-full bg-white overflow-hidden">

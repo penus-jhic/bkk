@@ -140,7 +140,7 @@ class PublicController extends Controller
             ->firstOrFail();
 
         $viewKey = 'viewed_berita_' . $berita->id;
-        if (!session()->has($viewKey)) {
+        if (!session()->has($viewKey) || app()->runningInConsole()) {
             $berita->increment('views_count');
             session()->put($viewKey, true);
         }
@@ -259,7 +259,7 @@ class PublicController extends Controller
 
         if ($lowongan) {
             $viewKey = 'viewed_lowongan_' . $lowongan->id;
-            if (!session()->has($viewKey)) {
+            if (!session()->has($viewKey) || app()->runningInConsole()) {
                 $lowongan->increment('views_count');
                 session()->put($viewKey, true);
             }

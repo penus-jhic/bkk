@@ -20,7 +20,59 @@ class CvResume extends Model
         'temp' => 'boolean',
         'score' => 'integer',
         'feedback' => 'array',
+        'file_size' => 'integer',
+        'reviewed_at' => 'datetime',
     ];
+
+    /**
+     * Dapatkan URL file dokumen CV yang diunggah
+     */
+    public function getFileUrlAttribute(): ?string
+    {
+        if (empty($this->file_path)) {
+            return null;
+        }
+
+        if (str_starts_with($this->file_path, 'http://') || str_starts_with($this->file_path, 'https://')) {
+            return $this->file_path;
+        }
+
+        $cleanPath = ltrim($this->file_path, '/');
+        if (str_starts_with($cleanPath, 'storage/')) {
+            $cleanPath = substr($cleanPath, 8);
+        }
+
+        return route('bkk.static.storage', ['path' => $cleanPath]);
+    }
+
+    /**
+     * Cek apakah CV memiliki file berkas fisik yang diunggah
+     */
+    public function getHasDocumentFileAttribute(): bool
+    {
+        return !empty($this->file_path);
+    }
+
+    /**
+     * Format ukuran file (KB / MB)
+     */
+    public function getFileSizeFormattedAttribute(): string
+    {
+        if (!$this->file_size) {
+            return '-';
+        }
+
+        if ($this->file_size >= 1048576) {
+            return number_format($this->file_size / 1048576, 1) . ' MB';
+        }
+
+        return number_format($this->file_size / 1024, 0) . ' KB';
+    }
+
+    public function profilSiswa(): BelongsTo
+    {
+        return $this->belongsTo(ProfilSiswa::class, 'user_id', 'user_id');
+    }
 
     protected static function booted(): void
     {

@@ -1244,4 +1244,294 @@ class MeController extends Controller
             'checksum' => $checksum,
         ];
     }
+
+    /**
+     * Upload Dokumen Berkas CV Siswa (PDF / DOCX) (POST /bkk/me/cv/upload)
+     */
+    public function cvUploadDocument(Request $request): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+
+        $request->validate([
+            'cv_file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+        ], [
+            'cv_file.required' => 'Pilih berkas file CV yang akan diunggah.',
+            'cv_file.file' => 'Berkas yang dipilih tidak valid.',
+            'cv_file.mimes' => 'Format file CV harus bertipe PDF, DOC, atau DOCX.',
+            'cv_file.max' => 'Ukuran maksimal berkas CV adalah 5 MB.',
+        ]);
+
+        $file = $request->file('cv_file');
+        $fileName = $file->getClientOriginalName();
+        $fileSize = $file->getSize();
+        $fileMime = $file->getClientMimeType() ?: $file->getMimeType();
+
+        // Simpan ke storage/app/public/cv_uploads
+        $savedPath = $file->store('cv_uploads', 'public');
+
+        CvResume::ensureProfilSiswaExists($userId);
+
+        $activeCv = CvResume::where('user_id', $userId)
+            ->where('temp', false)
+            ->where('is_main', true)
+            ->first();
+
+        if (!$activeCv) {
+            $activeCv = CvResume::where('user_id', $userId)
+                ->where('temp', false)
+                ->latest('id')
+                ->first();
+        }
+
+        // Hapus file lama jika ada
+        if ($activeCv && !empty($activeCv->file_path)) {
+            $oldPath = str_replace(['storage/', 'public/'], '', $activeCv->file_path);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        if ($activeCv) {
+            $activeCv->update([
+                'file_path' => 'storage/' . $savedPath,
+                'file_name' => $fileName,
+                'file_size' => $fileSize,
+                'file_mime' => $fileMime,
+                'status_review_guru' => 'Belum Direview',
+            ]);
+        } else {
+            $defaultMarkdown = $this->dataService->getCvMarkdown($authUser['role'] ?? 'SISWA', $this->dataService->getProfile($authUser), $userId);
+            $activeCv = CvResume::create([
+                'user_id' => $userId,
+                'raw_markdown' => $defaultMarkdown,
+                'is_main' => true,
+                'temp' => false,
+                'checksum' => CvResume::generateChecksum($defaultMarkdown),
+                'file_path' => 'storage/' . $savedPath,
+                'file_name' => $fileName,
+                'file_size' => $fileSize,
+                'file_mime' => $fileMime,
+                'status_review_guru' => 'Belum Direview',
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Berkas CV berhasil diunggah dan siap ditinjau Guru Pembimbing.',
+                'data' => [
+                    'file_name' => $fileName,
+                    'file_size_formatted' => $activeCv->file_size_formatted,
+                    'file_url' => $activeCv->file_url,
+                    'status_review_guru' => $activeCv->status_review_guru,
+                ],
+            ]);
+        }
+
+        return redirect()->route('bkk.me.cv')->with('success', "Berkas CV '{$fileName}' berhasil diunggah dan siap ditinjau Guru Pembimbing!");
+    }
+
+    /**
+     * Hapus berkas CV yang diunggah (POST /bkk/me/cv/delete-file)
+     */
+    public function cvDeleteDocument(Request $request): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+
+        $activeCv = CvResume::where('user_id', $userId)
+            ->where('temp', false)
+            ->whereNotNull('file_path')
+            ->latest('id')
+            ->first();
+
+        if ($activeCv && !empty($activeCv->file_path)) {
+            $oldPath = str_replace(['storage/', 'public/'], '', $activeCv->file_path);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+            }
+            $activeCv->update([
+                'file_path' => null,
+                'file_name' => null,
+                'file_size' => null,
+                'file_mime' => null,
+            ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Berkas dokumen CV berhasil dihapus.',
+            ]);
+        }
+
+        return redirect()->route('bkk.me.cv')->with('success', 'Berkas dokumen CV berhasil dihapus.');
+    }
+
+    /**
+     * Halaman Status & Pengajuan PKL Siswa (/bkk/me/pkl)
+     */
+    public function pklStatus(Request $request): View|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+        $role = $authUser['role'];
+
+        $profile = $this->enrichProfileFromDatabase($this->dataService->getProfile($authUser), $userId);
+        $notifications = $this->getMappedNotifications($userId, $role) ?: $this->dataService->getNotifications($userId);
+
+        $penempatans = PenempatanPkl::with(['mitra', 'lowongan'])
+            ->where('siswa_id', $userId)
+            ->latest()
+            ->get();
+
+        $activePkl = $penempatans->firstWhere('status', 'BERJALAN')
+            ?? $penempatans->firstWhere('status', 'MENUNGGU_PERSETUJUAN')
+            ?? $penempatans->first();
+
+        // Cari CV aktif siswa
+        $activeCv = CvResume::where('user_id', $userId)
+            ->where('temp', false)
+            ->latest('id')
+            ->first();
+
+        // Ambil daftar mitra untuk pilihan pengajuan
+        $mitras = \App\Models\Mitra::where('is_verified', true)->orderBy('nama_perusahaan')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'active_pkl' => $activePkl,
+                    'penempatans' => $penempatans,
+                    'cv' => $activeCv,
+                ],
+            ]);
+        }
+
+        return view('me.pages.pkl', compact(
+            'authUser',
+            'profile',
+            'notifications',
+            'penempatans',
+            'activePkl',
+            'activeCv',
+            'mitras'
+        ));
+    }
+
+    /**
+     * Kirim Formulir Pengajuan PKL Mandiri Siswa (POST /bkk/me/pkl/pengajuan)
+     */
+    public function storePengajuanPkl(Request $request): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $userId = $authUser['id'];
+
+        // Cek apakah siswa sudah punya PKL aktif
+        $existing = PenempatanPkl::where('siswa_id', $userId)
+            ->whereIn('status', ['BERJALAN', 'MENUNGGU_PERSETUJUAN'])
+            ->first();
+
+        if ($existing) {
+            $msg = ($existing->status === 'BERJALAN')
+                ? 'Anda sudah memiliki penempatan PKL aktif yang sedang berjalan.'
+                : 'Pengajuan PKL Anda sebelumnya masih menunggu persetujuan Guru Pembimbing.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
+        $validated = $request->validate([
+            'tipe_mitra' => ['required', 'in:TERDAFTAR,MANDIRI'],
+            'mitra_id' => ['nullable', 'required_if:tipe_mitra,TERDAFTAR', 'exists:mitra,id'],
+            'nama_perusahaan_mandiri' => ['nullable', 'required_if:tipe_mitra,MANDIRI', 'string', 'max:200'],
+            'alamat_mandiri' => ['nullable', 'string'],
+            'kota_mandiri' => ['nullable', 'string', 'max:100'],
+            'unit_kerja_divisi' => ['required', 'string', 'max:150'],
+            'pembimbing_industri_nama' => ['nullable', 'string', 'max:150'],
+            'tanggal_mulai' => ['required', 'date'],
+            'tanggal_selesai' => ['required', 'date', 'after:tanggal_mulai'],
+            'catatan_siswa' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'tipe_mitra.required' => 'Pilih jenis mitra PKL (Perusahaan Terafiliasi atau Tempat Baru).',
+            'mitra_id.required_if' => 'Pilih perusahaan mitra terafiliasi sekolah.',
+            'nama_perusahaan_mandiri.required_if' => 'Tuliskan nama perusahaan tempat PKL mandiri.',
+            'unit_kerja_divisi.required' => 'Divisi atau bidang penempatan kerja wajib diisi.',
+            'tanggal_mulai.required' => 'Tanggal mulai PKL wajib ditentukan.',
+            'tanggal_selesai.required' => 'Tanggal selesai PKL wajib ditentukan.',
+            'tanggal_selesai.after' => 'Tanggal selesai harus setelah tanggal mulai.',
+        ]);
+
+        $mitraId = null;
+        if ($validated['tipe_mitra'] === 'TERDAFTAR') {
+            $mitraId = $validated['mitra_id'];
+        } else {
+            // Buat mitra baru kategori mandiri
+            $createdMitra = \App\Models\Mitra::create([
+                'nama_perusahaan' => $validated['nama_perusahaan_mandiri'],
+                'npwp' => 'MDR-' . strtoupper(Str::random(8)),
+                'password' => bcrypt(Str::random(16)),
+                'sektor_industri' => 'Mitra Mandiri Rekomendasi Siswa',
+                'alamat_kantor' => $validated['alamat_mandiri'] ?? 'Alamat Mitra Mandiri',
+                'kota' => $validated['kota_mandiri'] ?? 'Kota',
+                'email_perusahaan' => 'pic@' . Str::slug($validated['nama_perusahaan_mandiri']) . '.co.id',
+                'no_telp_perusahaan' => '-',
+                'pic_name' => $validated['pembimbing_industri_nama'] ?? 'Pembimbing Lapangan',
+                'pic_role' => 'Mentor Industri',
+                'pic_phone' => '-',
+                'pic_email' => 'mentor@mitra.com',
+                'is_verified' => false,
+                'status_kemitraan' => 'Pengajuan PKL Mandiri Siswa',
+            ]);
+            $mitraId = $createdMitra->id;
+        }
+
+        CvResume::ensureProfilSiswaExists($userId);
+
+        $penempatan = PenempatanPkl::create([
+            'siswa_id' => $userId,
+            'mitra_id' => $mitraId,
+            'guru_pembimbing_id' => 'usr-guru-001',
+            'pembimbing_industri_nama' => $validated['pembimbing_industri_nama'] ?: 'Mentor Industri',
+            'unit_kerja_divisi' => $validated['unit_kerja_divisi'],
+            'tanggal_mulai' => $validated['tanggal_mulai'],
+            'tanggal_selesai' => $validated['tanggal_selesai'],
+            'target_jam' => 640,
+            'total_jam_tercapai' => 0,
+            'status' => 'MENUNGGU_PERSETUJUAN',
+            'catatan_guru' => $validated['catatan_siswa'] ? "Catatan Siswa: {$validated['catatan_siswa']}" : null,
+            'pengajuan_mandiri' => ($validated['tipe_mitra'] === 'MANDIRI'),
+        ]);
+
+        // Buat notifikasi untuk admin/guru
+        try {
+            Notifikasi::create([
+                'recipient_id' => 'usr-guru-001',
+                'recipient_role' => 'GURU',
+                'judul' => 'Pengajuan PKL Siswa Baru',
+                'deskripsi' => "Siswa NIS {$authUser['nomor_induk']} mengajukan permohonan PKL mandiri dan menunggu persetujuan (Accept).",
+                'tipe_notifikasi' => 'PKL',
+                'url_action' => route('bkk.guru.pengajuan.index'),
+                'is_read' => false,
+                'is_accent' => true,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan PKL berhasil dikirimkan dan sedang menunggu persetujuan Guru Pembimbing.',
+                'data' => $penempatan,
+            ]);
+        }
+
+        return redirect()->route('bkk.me.pkl')->with('success', 'Pengajuan PKL Anda berhasil dikirimkan dan sedang menunggu persetujuan (Accept) dari Guru Pembimbing.');
+    }
 }
+

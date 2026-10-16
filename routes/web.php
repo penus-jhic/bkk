@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AdminPklController;
 use App\Http\Controllers\Admin\AdminTracerController;
 use App\Http\Controllers\Api\AiCvController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Guru\GuruPklController;
 use App\Http\Controllers\Me\MeController;
 use App\Http\Controllers\Mitra\MitraAuthController;
 use App\Http\Controllers\Mitra\MitraController;
@@ -130,7 +131,34 @@ Route::prefix('bkk')->group(function () {
         Route::post('/jurnal', [MeController::class, 'storeJurnal'])->name('jurnal.store');
         Route::get('/laporan', [MeController::class, 'laporan'])->name('laporan');
         Route::post('/laporan', [MeController::class, 'storeLaporan'])->name('laporan.store');
+        Route::post('/cv/upload', [MeController::class, 'cvUploadDocument'])->name('cv.upload');
+        Route::post('/cv/delete-file', [MeController::class, 'cvDeleteDocument'])->name('cv.deleteFile');
+        Route::get('/pkl', [MeController::class, 'pklStatus'])->name('pkl');
+        Route::post('/pkl/pengajuan', [MeController::class, 'storePengajuanPkl'])->name('pkl.pengajuan');
         Route::post('/daftar/{id_lowongan}', [MeController::class, 'storeLamaran'])->name('daftar');
+    });
+
+    // 4. Router Group Terproteksi Khusus Guru Pembimbing: /bkk/guru/*
+    Route::middleware('verify.auth:GURU,ADMIN,DEVELOPER')->prefix('guru')->name('bkk.guru.')->group(function () {
+        Route::get('/', [GuruPklController::class, 'dashboard'])->name('dashboard');
+        Route::get('/siswa', [GuruPklController::class, 'siswaIndex'])->name('siswa.index');
+        Route::get('/siswa/{user_id}/cv', [GuruPklController::class, 'siswaCv'])->name('siswa.cv');
+        Route::post('/siswa/{user_id}/cv/feedback', [GuruPklController::class, 'storeCvFeedback'])->name('siswa.cv.feedback');
+
+        Route::get('/pengajuan', [GuruPklController::class, 'pengajuanIndex'])->name('pengajuan.index');
+        Route::post('/pengajuan/{id}/accept', [GuruPklController::class, 'acceptPengajuan'])->name('pengajuan.accept');
+        Route::post('/pengajuan/{id}/reject', [GuruPklController::class, 'rejectPengajuan'])->name('pengajuan.reject');
+        Route::post('/pengajuan/lamaran/{id}/accept', [GuruPklController::class, 'acceptLamaranPkl'])->name('pengajuan.lamaran.accept');
+
+        Route::get('/jurnal', [GuruPklController::class, 'jurnalIndex'])->name('jurnal.index');
+        Route::post('/jurnal/{id}/validate', [GuruPklController::class, 'validateJurnal'])->name('jurnal.validate');
+
+        Route::get('/laporan', [GuruPklController::class, 'laporanIndex'])->name('laporan.index');
+        Route::post('/laporan/{id}/validate', [GuruPklController::class, 'validateLaporan'])->name('laporan.validate');
+
+        Route::get('/penempatan/{id}', [GuruPklController::class, 'penempatanShow'])->name('penempatan.show');
+        Route::post('/penempatan/{id}/nilai', [GuruPklController::class, 'inputNilai'])->name('penempatan.nilai');
+        Route::post('/penempatan/{id}/selesaikan', [GuruPklController::class, 'selesaikanPkl'])->name('penempatan.selesaikan');
     });
 
     // 4. Autentikasi Publik Mitra: /bkk/dashboard/login
