@@ -1021,7 +1021,7 @@
         }
 
         // Simpan sebagai draf sementara (temp = true) tanpa menambah riwayat versi utama
-        const res = await fetch("{{ route('bkk.me.cv.update') }}", {
+        const res = await fetch("/bkk/me/cv", {
             method: 'POST',
             headers: buildApiHeaders(),
             credentials: 'include',
@@ -1591,7 +1591,7 @@
         if (!versionId) return;
         try {
             showToast('Memuat konten versi CV...');
-            const res = await fetch(`{{ url('/bkk/me/cv') }}/${versionId}/edit`, {
+            const res = await fetch(`/bkk/me/cv/${versionId}/edit`, {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'include'
             });
@@ -1684,7 +1684,7 @@
         }
 
         try {
-            const res = await fetch("{{ route('bkk.me.cv.update') }}", {
+            const res = await fetch("/bkk/me/cv", {
                 method: "POST",
                 headers: buildApiHeaders(),
                 credentials: 'include',
