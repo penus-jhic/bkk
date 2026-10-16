@@ -175,7 +175,7 @@
                     </span>
                 </div>
 
-                <div id="previewScrollContainer" class="rounded-2xl border border-line bg-[#f8f9fa] p-3 sm:p-4 max-h-[640px] overflow-y-auto">
+                <div id="previewScrollContainer" class="rounded-2xl border border-line bg-[#F5F7FA] p-3 sm:p-4 max-h-[640px] overflow-y-auto">
                     <div id="livePreviewContainer" class="bg-white rounded-xl p-5 sm:p-8 shadow-xs border border-line/60 md-cv text-navy min-h-[500px]">
                         <!-- Injected by marked.js -->
                     </div>
@@ -271,7 +271,7 @@
                             <div class="w-6 h-6 rounded-full bg-navy grid place-items-center text-white shrink-0 mt-0.5">
                                 <i data-lucide="bot" class="w-3.5 h-3.5"></i>
                             </div>
-                            <div class="text-xs rounded-2xl px-3 py-2 bg-[#f1f3f4] text-navy rounded-bl-sm leading-relaxed">
+                            <div class="text-xs rounded-2xl px-3 py-2 bg-[#EEF2F6] text-navy rounded-bl-sm leading-relaxed">
                                 Halo! Saya <b>Penus AI Assistant</b> untuk jurusan <b>{{ $userJurusan }}</b>. Tanyakan cara memperkuat butir pengalaman, kata kunci ATS, atau format CV Anda.
                             </div>
                         </div>
@@ -658,7 +658,7 @@
                     </div>
 
                     ${targetPattern || replacement ? `
-                        <div class="rounded-xl bg-[#f8f9fa] border border-line/80 p-2.5 space-y-1.5 font-mono text-[10px]">
+                        <div class="rounded-xl bg-[#F5F7FA] border border-line/80 p-2.5 space-y-1.5 font-mono text-[10px]">
                             ${targetPattern ? `
                                 <div class="text-red-700 bg-red-50/80 px-2 py-1 rounded border border-red-100 line-through break-words">
                                     - ${escapeHtml(targetPattern)}
@@ -922,7 +922,7 @@
             <div class="w-6 h-6 rounded-full bg-navy grid place-items-center text-white shrink-0 mt-0.5">
                 <i data-lucide="bot" class="w-3.5 h-3.5"></i>
             </div>
-            <div class="ai-chat-prose text-xs rounded-2xl px-3.5 py-2.5 max-w-[88%] bg-[#f1f3f4] text-navy rounded-bl-sm leading-relaxed">
+            <div class="ai-chat-prose text-xs rounded-2xl px-3.5 py-2.5 max-w-[88%] bg-[#EEF2F6] text-navy rounded-bl-sm leading-relaxed">
                 <span class="inline-flex items-center gap-1.5 text-navy/70 font-medium italic text-[11px]">
                     <svg class="animate-spin w-3 h-3 text-maroon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1065,7 +1065,7 @@
         const previewScroll = document.getElementById('previewScrollContainer');
 
         if (isFullscreenMode) {
-            wrapper.className = "fixed inset-0 z-50 bg-[#f8f9fa] p-4 sm:p-6 flex flex-col h-screen w-screen overflow-hidden space-y-3";
+            wrapper.className = "fixed inset-0 z-50 bg-[#F5F7FA] p-4 sm:p-6 flex flex-col h-screen w-screen overflow-hidden space-y-3";
             workspace.className = "flex-1 min-h-0 flex flex-col";
             columnsWrapper.className = "flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch";
             if (desktopAi) desktopAi.classList.add('!hidden');
@@ -1074,7 +1074,7 @@
             previewCard.className = "bg-white border border-line rounded-2xl p-4 shadow-sm flex flex-col h-full min-h-0 space-y-2";
 
             textarea.className = "editor-textarea flex-1 w-full p-4 rounded-xl border border-line bg-canvas/30 focus:bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs text-navy leading-relaxed resize-none overflow-y-auto";
-            previewScroll.className = "flex-1 min-h-0 rounded-xl border border-line bg-[#f8f9fa] p-4 sm:p-6 overflow-y-auto";
+            previewScroll.className = "flex-1 min-h-0 rounded-xl border border-line bg-[#F5F7FA] p-4 sm:p-6 overflow-y-auto";
 
             if (icon) icon.setAttribute('data-lucide', 'minimize-2');
             if (text) text.innerText = 'Keluar Layar Penuh';
@@ -1090,7 +1090,7 @@
             previewCard.className = "bg-white border border-line rounded-3xl p-4 sm:p-5 shadow-sm space-y-2";
 
             textarea.className = "editor-textarea w-full p-4 rounded-2xl border border-line bg-canvas/30 focus:bg-white focus:border-navy focus:ring-2 focus:ring-navy/10 outline-none text-xs text-navy leading-relaxed resize-y transition";
-            previewScroll.className = "rounded-2xl border border-line bg-[#f8f9fa] p-3 sm:p-4 max-h-[640px] overflow-y-auto";
+            previewScroll.className = "rounded-2xl border border-line bg-[#F5F7FA] p-3 sm:p-4 max-h-[640px] overflow-y-auto";
 
             if (icon) icon.setAttribute('data-lucide', 'maximize-2');
             if (text) text.innerText = 'Layar Penuh';

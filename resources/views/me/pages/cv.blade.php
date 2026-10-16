@@ -95,11 +95,11 @@
                         <svg width="132" height="132" class="-rotate-90">
                             <defs>
                                 <linearGradient id="scoreGrad" x1="0" x2="1" y1="0" y2="1">
-                                    <stop offset="0%" stop-color="#741918"></stop>
-                                    <stop offset="100%" stop-color="#1b283b"></stop>
+                                    <stop offset="0%" stop-color="#7A1018"></stop>
+                                    <stop offset="100%" stop-color="#1E293B"></stop>
                                 </linearGradient>
                             </defs>
-                            <circle cx="66" cy="66" r="{{ $radius }}" stroke="#ececec" stroke-width="{{ $stroke }}" fill="none"></circle>
+                            <circle cx="66" cy="66" r="{{ $radius }}" stroke="#EEF2F6" stroke-width="{{ $stroke }}" fill="none"></circle>
                             <circle id="scoreRingCircle" cx="66" cy="66" r="{{ $radius }}" stroke="url(#scoreGrad)" stroke-width="{{ $stroke }}" fill="none" stroke-linecap="round"
                                     stroke-dasharray="{{ $circumference }}" stroke-dashoffset="{{ $offset }}" style="transition: stroke-dashoffset 0.8s ease;"></circle>
                         </svg>
@@ -140,7 +140,7 @@
                                 default => 'bg-amber-100 text-amber-800',
                             };
                         @endphp
-                        <div class="rounded-2xl bg-[#f8f9fa] border border-line p-3.5 space-y-2">
+                        <div class="rounded-2xl bg-[#F5F7FA] border border-line p-3.5 space-y-2">
                             <div class="flex items-center justify-between gap-2">
                                 <div class="flex items-center gap-2 text-xs font-bold text-navy">
                                     <i data-lucide="{{ $pIcon }}" class="w-4 h-4 text-navy shrink-0"></i>
@@ -234,7 +234,7 @@
 
                 <div class="divide-y divide-line/60 max-h-[300px] overflow-y-auto">
                     @forelse($cvVersions ?? [] as $ver)
-                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-[#f8f9fa] transition-colors {{ $ver->is_main ? 'bg-emerald-50/40' : '' }}">
+                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-[#F5F7FA] transition-colors {{ $ver->is_main ? 'bg-emerald-50/40' : '' }}">
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2">
                                     <span class="text-xs font-bold text-navy truncate">
@@ -460,7 +460,7 @@
                     : (pStatus === 'GOOD' ? 'bg-navy/10 text-navy' : 'bg-amber-100 text-amber-800');
 
                 return `
-                    <div class="rounded-2xl bg-[#f8f9fa] border border-line p-3.5 space-y-2">
+                    <div class="rounded-2xl bg-[#F5F7FA] border border-line p-3.5 space-y-2">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex items-center gap-2 text-xs font-bold text-navy">
                                 <i data-lucide="${pIcon}" class="w-4 h-4 text-navy shrink-0"></i>

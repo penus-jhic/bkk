@@ -228,7 +228,7 @@
                                 type="text"
                                 value="{{ $mitra->nama_perusahaan }}"
                                 disabled
-                                class="w-full bg-[#f1f3f4] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line cursor-not-allowed"
+                                class="w-full bg-[#EEF2F6] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line cursor-not-allowed"
                                 title="Nama perusahaan dikelola oleh Admin BKK"
                             />
                             <p class="text-[10px] text-muted mt-0.5">Untuk pengubahan nama resmi entitas perusahaan, hubungi Admin BKK Penus.</p>
@@ -258,7 +258,7 @@
                                 type="text"
                                 value="{{ $mitra->npwp }}"
                                 disabled
-                                class="w-full bg-[#f1f3f4] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line font-mono cursor-not-allowed"
+                                class="w-full bg-[#EEF2F6] text-muted text-xs rounded-xl px-3.5 py-2.5 border border-line font-mono cursor-not-allowed"
                             />
                         </div>
                         <div>

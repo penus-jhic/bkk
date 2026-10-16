@@ -57,7 +57,7 @@
                 class="filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer {{ $loop->first ? 'bg-navy text-white border-navy active' : 'bg-white text-navy border-line hover:bg-canvas' }}"
             >
                 <span>{{ $f }}</span>
-                <span class="count-pill text-[10px] rounded-full px-1.5 min-w-5 {{ $loop->first ? 'bg-white/20 text-white' : 'bg-[#f1f3f4] text-muted' }}">
+                <span class="count-pill text-[10px] rounded-full px-1.5 min-w-5 {{ $loop->first ? 'bg-white/20 text-white' : 'bg-[#EEF2F6] text-muted' }}">
                     {{ $counts[$f] ?? 0 }}
                 </span>
             </button>
@@ -80,7 +80,7 @@
     <div id="tableViewContainer" class="{{ empty($applications) ? 'hidden' : '' }} bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
-                <thead class="bg-[#f8f9fa] border-b border-line text-muted text-[11px] uppercase tracking-wider font-semibold">
+                <thead class="bg-[#F5F7FA] border-b border-line text-muted text-[11px] uppercase tracking-wider font-semibold">
                     <tr>
                         <th class="px-5 py-3.5">Posisi & Perusahaan</th>
                         <th class="px-5 py-3.5 hidden sm:table-cell">Kategori Mitra</th>
@@ -237,7 +237,7 @@
                 btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-white/20 text-white";
             } else {
                 btn.className = "filter-chip inline-flex items-center gap-1.5 rounded-full px-4 h-8 text-xs font-semibold border transition-all whitespace-nowrap cursor-pointer bg-white text-navy border-line hover:bg-canvas";
-                btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-[#f1f3f4] text-muted";
+                btn.querySelector('.count-pill').className = "count-pill text-[10px] rounded-full px-1.5 min-w-5 bg-[#EEF2F6] text-muted";
             }
         });
         filterApplications();
@@ -340,7 +340,7 @@
                     <div class="text-xs text-muted mt-0.5">${escapeHtml(app.company)} · ${escapeHtml(app.location)}</div>
                     <div class="flex flex-wrap gap-2 mt-2">
                         <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${escapeHtml(app.status)}</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f1f3f4] text-muted">${escapeHtml(app.type)}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#EEF2F6] text-muted">${escapeHtml(app.type)}</span>
                     </div>
                 </div>
             </div>
@@ -354,7 +354,7 @@
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-[#f8f9fa] border border-line p-4 text-xs">
+            <div class="rounded-2xl bg-[#F5F7FA] border border-line p-4 text-xs">
                 <div class="font-semibold text-navy mb-1 flex items-center gap-1.5">
                     <i data-lucide="message-square" class="w-3.5 h-3.5 text-muted"></i>
                     <span>Catatan BKK Penus</span>

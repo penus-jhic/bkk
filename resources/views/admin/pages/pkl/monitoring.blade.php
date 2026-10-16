@@ -145,7 +145,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Siswa & Jurusan</th>
                             <th class="py-3 px-4">Mitra IDUKA & Penempatan</th>
                             <th class="py-3 px-4">Periode Tanggal</th>
@@ -254,7 +254,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Tanggal & Durasi</th>
                             <th class="py-3 px-4">Siswa & Mitra IDUKA</th>
                             <th class="py-3 px-4">Rincian Aktivitas Harian</th>
@@ -355,7 +355,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-line bg-[#f8f9fa] text-[11px] font-bold text-muted uppercase tracking-wider">
+                        <tr class="border-b border-line bg-[#F5F7FA] text-[11px] font-bold text-muted uppercase tracking-wider">
                             <th class="py-3 px-4">Bab & Judul Laporan</th>
                             <th class="py-3 px-4">Siswa & Mitra IDUKA</th>
                             <th class="py-3 px-4">File Naskah</th>
