@@ -226,11 +226,11 @@
                     <h2 class="text-lg font-bold text-brand-ink">
                         {{ $isSiswa ? 'Rekomendasi PKL & Lowongan' : 'Lowongan Direkomendasikan' }}
                     </h2>
-                    <p class="text-xs text-muted">Dikurasi AI berdasarkan jurusan & kata kunci CV Anda</p>
+                    <p class="text-xs text-muted">Diurutkan dari kecocokan jurusan & kata kunci CV utama Anda</p>
                 </div>
                 <span class="rounded-full px-3 py-1 text-xs font-semibold bg-maroon/10 text-maroon inline-flex items-center gap-1">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                    <span>AI Match</span>
+                    <span>Kecocokan</span>
                 </span>
             </div>
 

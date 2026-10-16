@@ -12,6 +12,9 @@ class ProfilSiswaSeeder extends Seeder
         ProfilSiswa::updateOrCreate(
             ['user_id' => 'usr-siswa-001'],
             [
+                'nama_lengkap' => 'Ahmad Rizky Pratama',
+                // Persona GURU di /bkk/dev/masuk, supaya siswa demo tampil di Portal Guru
+                'guru_pembimbing_id' => 'usr-guru-001',
                 'nis' => '0061234567',
                 'nisn' => '0061234567',
                 'jurusan' => 'Rekayasa Perangkat Lunak (RPL)',
@@ -32,6 +35,7 @@ class ProfilSiswaSeeder extends Seeder
         ProfilSiswa::updateOrCreate(
             ['user_id' => 'usr-alumni-001'],
             [
+                'nama_lengkap' => 'Nadia Salsabila',
                 'nis' => '1920.08.112',
                 'nisn' => '0049876543',
                 'jurusan' => 'Teknik Komputer & Jaringan (TKJ)',
@@ -52,6 +56,9 @@ class ProfilSiswaSeeder extends Seeder
         ProfilSiswa::updateOrCreate(
             ['user_id' => 'usr-siswa-002'],
             [
+                'nama_lengkap' => 'Fajar Nugraha',
+                // Persona GURU di /bkk/dev/masuk, supaya siswa demo tampil di Portal Guru
+                'guru_pembimbing_id' => 'usr-guru-001',
                 'nis' => '0061234588',
                 'nisn' => '0061234588',
                 'jurusan' => 'Teknik Komputer & Jaringan (TKJ)',

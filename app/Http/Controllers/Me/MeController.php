@@ -13,6 +13,7 @@ use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
 use App\Models\ProfilSiswa;
 use App\Services\AiCvService;
+use App\Services\JobMatchService;
 use App\Services\MeDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,8 @@ class MeController extends Controller
 
     public function __construct(
         protected MeDataService $dataService,
-        protected AiCvService $aiCvService
+        protected AiCvService $aiCvService,
+        protected JobMatchService $jobMatch
     ) {}
 
     /**
@@ -40,7 +42,7 @@ class MeController extends Controller
 
         $profile = $this->dataService->getProfile($authUser);
         $applications = $this->getMappedApplications($userId);
-        $vacancies = $this->getMappedVacancies($role);
+        $vacancies = $this->getMappedVacancies($role, $userId);
         $cvScore = $this->dataService->getCvScore($role, $userId);
         $notifications = $this->getMappedNotifications($userId, $role);
 
@@ -839,7 +841,7 @@ class MeController extends Controller
             'siswa_id' => $userId,
             'cv_id' => $cv->id,
             'tanggal_melamar' => now()->toDateString(),
-            'skor_match_ai' => 90,
+            'skor_match_ai' => $this->jobMatch->score($this->currentProfilSiswa ?? ProfilSiswa::find($userId), $cv, $lowongan),
             'status' => 'Terkirim',
             'step_tahapan' => 1,
             'catatan_seleksi' => 'Berkas pendaftaran otomatis diverifikasi sistem.',
@@ -915,7 +917,7 @@ class MeController extends Controller
                         'status' => $l->status,
                         'color' => '#1b283b',
                         'step' => $l->step_tahapan ?: 1,
-                        'match_score' => $l->skor_match_ai ?: 92,
+                        'match_score' => (int) $l->skor_match_ai,
                         'timeline' => $timeline,
                         'interview' => $interview ? [
                             'date' => $interview->tanggal_interview ? $interview->tanggal_interview->format('l, d M Y') : '',
@@ -937,7 +939,7 @@ class MeController extends Controller
         return [];
     }
 
-    protected function getMappedVacancies(string $role): array
+    protected function getMappedVacancies(string $role, ?string $userId = null): array
     {
         try {
             $tipeTarget = ($role === 'SISWA') ? 'PKL' : 'Kerja';
@@ -945,16 +947,25 @@ class MeController extends Controller
                 ->terbuka()
                 ->where('tipe', $tipeTarget)
                 ->latest('created_at')
-                ->take(6)
+                ->take(30)
                 ->get();
 
             if ($dbLowongans->isEmpty()) {
                 $dbLowongans = Lowongan::with('mitra')
                     ->terbuka()
                     ->latest('created_at')
-                    ->take(6)
+                    ->take(30)
                     ->get();
             }
+
+            // Rekomendasi = lowongan terbuka dengan skor kecocokan tertinggi terhadap jurusan & CV utama siswa
+            $siswa = $userId ? ProfilSiswa::find($userId) : null;
+            $cv = $userId ? CvResume::where('user_id', $userId)->where('temp', false)->where('is_main', true)->first() : null;
+            $dbLowongans = $dbLowongans
+                ->each(fn ($l) => $l->match_score = $this->jobMatch->score($siswa, $cv, $l))
+                ->sortByDesc('match_score')
+                ->take(6)
+                ->values();
 
             if ($dbLowongans->isNotEmpty()) {
                 return $dbLowongans->map(function ($l) {
@@ -972,7 +983,7 @@ class MeController extends Controller
                         'location' => $l->lokasi,
                         'salary' => $l->gaji_kompensasi ?? 'Kompetitif UMK',
                         'deadline' => $l->deadline ? $l->deadline->format('d M Y') : 'Open',
-                        'match' => 95,
+                        'match' => $l->match_score,
                         'tags' => $jurusanTags,
                         'color' => '#1b283b',
                     ];
@@ -1171,7 +1182,7 @@ class MeController extends Controller
         }
 
         try {
-            return $this->currentProfilSiswa = ProfilSiswa::firstOrCreate(
+            $profil = ProfilSiswa::firstOrCreate(
                 ['user_id' => $userId],
                 [
                     'nis' => $authUser['nomor_induk'] ?? $authUser['nis'] ?? '-',
@@ -1181,6 +1192,18 @@ class MeController extends Controller
                     'status_kelulusan' => ($authUser['role'] ?? '') === 'ALUMNI' ? 'ALUMNI' : 'SISWA_AKTIF',
                 ]
             );
+
+            // Identitas disalin dari auth service supaya mitra & guru tahu siapa siswanya
+            $profil->fill(array_filter([
+                'nama_lengkap' => $authUser['nama_lengkap'] ?? null,
+                'email' => $authUser['email'] ?? null,
+                'no_hp' => $authUser['no_hp'] ?? null,
+            ], fn ($value) => filled($value)));
+            if ($profil->isDirty()) {
+                $profil->save();
+            }
+
+            return $this->currentProfilSiswa = $profil;
         } catch (\Throwable $e) {
             report($e);
         }
@@ -1498,11 +1521,13 @@ class MeController extends Controller
         }
 
         CvResume::ensureProfilSiswaExists($userId);
+        // Belum punya pembimbing: pengajuan tetap tersimpan dan muncul di antrean admin sampai pembimbing ditetapkan
+        $guruId = ProfilSiswa::whereKey($userId)->value('guru_pembimbing_id');
 
         $penempatan = PenempatanPkl::create([
             'siswa_id' => $userId,
             'mitra_id' => $mitraId,
-            'guru_pembimbing_id' => 'usr-guru-001',
+            'guru_pembimbing_id' => $guruId,
             'pembimbing_industri_nama' => ($validated['pembimbing_industri_nama'] ?? null) ?: 'Mentor Industri',
             'unit_kerja_divisi' => $validated['unit_kerja_divisi'],
             'tanggal_mulai' => $validated['tanggal_mulai'],
@@ -1514,20 +1539,23 @@ class MeController extends Controller
             'pengajuan_mandiri' => ($validated['tipe_mitra'] === 'MANDIRI'),
         ]);
 
-        // Buat notifikasi untuk admin/guru
-        try {
-            Notifikasi::create([
-                'recipient_id' => 'usr-guru-001',
-                'recipient_role' => 'GURU',
-                'judul' => 'Pengajuan PKL Siswa Baru',
-                'deskripsi' => "Siswa NIS {$authUser['nomor_induk']} mengajukan permohonan PKL mandiri dan menunggu persetujuan (Accept).",
-                'tipe_notifikasi' => 'PKL',
-                'url_action' => route('bkk.guru.pengajuan.index'),
-                'is_read' => false,
-                'is_accent' => true,
-            ]);
-        } catch (\Throwable $e) {
-            report($e);
+        // Notifikasi ke guru pembimbing siswa (kalau sudah ditetapkan)
+        if ($guruId) {
+            try {
+                $namaSiswa = $authUser['nama_lengkap'] ?? ('NIS ' . ($authUser['nomor_induk'] ?? '-'));
+                Notifikasi::create([
+                    'recipient_id' => $guruId,
+                    'recipient_role' => 'GURU',
+                    'judul' => 'Pengajuan PKL Siswa Baru',
+                    'deskripsi' => "Siswa {$namaSiswa} mengajukan permohonan PKL mandiri dan menunggu persetujuan (Accept).",
+                    'tipe_notifikasi' => 'PKL',
+                    'url_action' => route('bkk.guru.pengajuan.index'),
+                    'is_read' => false,
+                    'is_accent' => true,
+                ]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         if ($request->wantsJson()) {

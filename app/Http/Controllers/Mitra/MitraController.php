@@ -398,15 +398,15 @@ class MitraController extends Controller
             $cvMarkdown = $applicant->cvResume->konten_markdown;
         } else {
             $siswa = $applicant->profilSiswa;
-            $nama = $siswa?->nama_lengkap ?? 'Pelamar BKK';
+            $nama = $siswa?->nama_lengkap ?: 'Pelamar BKK';
             $jurusan = $siswa?->jurusan ?? $vacancy->target_jurusan;
             $bio = $applicant->pesan_pelamar ?: ($siswa?->bio_singkat ?? 'Siswa/Alumni berkomitmen tinggi.');
 
             $cvMarkdown = "# {$nama}\n"
-                . "**Jurusan:** {$jurusan} | **Domisili:** " . ($siswa?->kota ?? 'Bogor') . "\n\n"
+                . "**Jurusan:** {$jurusan} | **Domisili:** " . ($siswa?->kota ?: '-') . "\n\n"
                 . "## Ringkasan Profil\n{$bio}\n\n"
                 . "## Pendidikan\n- **SMK Plus Pelita Nusantara** — {$jurusan} (" . ($siswa?->status_kelulusan === 'ALUMNI' ? 'Alumni' : 'Siswa Aktif') . ")\n\n"
-                . "## Kualifikasi & Portofolio\n- Nilai Kecocokan AI: {$applicant->skor_match_ai}%\n"
+                . "## Kualifikasi & Portofolio\n- Skor Kecocokan: {$applicant->skor_match_ai}%\n"
                 . "- Portofolio: " . ($siswa?->link_portfolio ?: 'Tersedia pada verifikasi offline') . "\n";
         }
 

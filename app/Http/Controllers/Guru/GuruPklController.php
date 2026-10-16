@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\CvResume;
+use App\Models\GuruPembimbing;
 use App\Models\Lamaran;
 use App\Models\Lowongan;
 use App\Models\Mitra;
@@ -34,12 +35,65 @@ class GuruPklController extends Controller
      */
     protected function getAuthUser(Request $request): array
     {
-        return $request->auth_user ?? $request->input('auth_user') ?? [
+        $authUser = $request->auth_user ?? $request->input('auth_user') ?? [
             'id' => 'usr-guru-001',
             'username' => 'guru',
             'nama_lengkap' => 'Guru Pembimbing PKL',
             'role' => 'GURU',
         ];
+
+        if ($this->guruScope($authUser) !== null) {
+            $this->registerGuru($authUser);
+        }
+
+        return $authUser;
+    }
+
+    /**
+     * Id guru yang aksesnya dibatasi ke siswa bimbingannya; null untuk ADMIN & DEVELOPER (melihat semua siswa).
+     */
+    protected function guruScope(array $authUser): ?string
+    {
+        return strtoupper($authUser['role'] ?? '') === 'GURU' && !empty($authUser['id'])
+            ? (string) $authUser['id']
+            : null;
+    }
+
+    /**
+     * Batasi query ke siswa bimbingan guru. $siswaRelation = relasi ke ProfilSiswa, kosong jika query-nya ProfilSiswa.
+     * Record milik siswa bimbingan guru lain jadi tidak ditemukan (404).
+     */
+    protected function bimbingan($query, ?string $guruId, ?string $siswaRelation = 'siswa')
+    {
+        if ($guruId === null) {
+            return $query;
+        }
+
+        return $siswaRelation
+            ? $query->whereHas($siswaRelation, fn ($s) => $s->where('guru_pembimbing_id', $guruId))
+            : $query->where('guru_pembimbing_id', $guruId);
+    }
+
+    /**
+     * Catat guru ke daftar guru pembimbing (auth service tidak punya endpoint daftar pengguna),
+     * supaya admin bisa memilihnya sebagai pembimbing siswa.
+     */
+    protected function registerGuru(array $authUser): void
+    {
+        try {
+            $guru = GuruPembimbing::firstOrNew(['user_id' => (string) $authUser['id']]);
+            $guru->fill(array_filter([
+                'nama_lengkap' => $authUser['nama_lengkap'] ?? $authUser['username'] ?? null,
+                'email' => $authUser['email'] ?? null,
+                'no_hp' => $authUser['no_hp'] ?? null,
+                'nomor_induk' => $authUser['nomor_induk'] ?? null,
+            ], fn ($value) => filled($value)));
+            if (!$guru->exists || $guru->isDirty()) {
+                $guru->save();
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -48,47 +102,49 @@ class GuruPklController extends Controller
     public function dashboard(Request $request): View|JsonResponse
     {
         $authUser = $this->getAuthUser($request);
+        $guruId = $this->guruScope($authUser);
 
         $stats = [
-            'total_siswa' => ProfilSiswa::count(),
-            'pkl_berjalan' => PenempatanPkl::where('status', 'BERJALAN')->count(),
-            'pengajuan_menunggu' => PenempatanPkl::where('status', 'MENUNGGU_PERSETUJUAN')->count(),
-            'lamaran_pkl_menunggu' => Lamaran::whereHas('lowongan', fn ($q) => $q->where('tipe', 'PKL'))
+            'total_siswa' => $this->bimbingan(ProfilSiswa::query(), $guruId, null)->count(),
+            'pkl_berjalan' => $this->bimbingan(PenempatanPkl::query(), $guruId)->where('status', 'BERJALAN')->count(),
+            'pengajuan_menunggu' => $this->bimbingan(PenempatanPkl::query(), $guruId)->where('status', 'MENUNGGU_PERSETUJUAN')->count(),
+            'lamaran_pkl_menunggu' => $this->bimbingan(Lamaran::query(), $guruId)
+                ->whereHas('lowongan', fn ($q) => $q->where('tipe', 'PKL'))
                 ->whereIn('status', ['Terkirim', 'Sedang Ditinjau'])
                 ->count(),
-            'cv_perlu_review' => CvResume::where('temp', false)
+            'cv_perlu_review' => $this->bimbingan(CvResume::query(), $guruId)->where('temp', false)
                 ->where(function ($q) {
                     $q->whereNull('status_review_guru')
                       ->orWhere('status_review_guru', 'Belum Direview');
                 })->count(),
-            'jurnal_menunggu' => PklJurnalHarian::where('status', 'Menunggu')->count(),
-            'laporan_ditinjau' => PklLaporanAkhir::where('status', 'Ditinjau')->count(),
-            'pkl_selesai' => PenempatanPkl::where('status', 'SELESAI')->count(),
+            'jurnal_menunggu' => $this->bimbingan(PklJurnalHarian::query(), $guruId)->where('status', 'Menunggu')->count(),
+            'laporan_ditinjau' => $this->bimbingan(PklLaporanAkhir::query(), $guruId)->where('status', 'Ditinjau')->count(),
+            'pkl_selesai' => $this->bimbingan(PenempatanPkl::query(), $guruId)->where('status', 'SELESAI')->count(),
         ];
 
         // Daftar pengajuan PKL yang menunggu persetujuan (Actionable)
-        $pendingPengajuan = PenempatanPkl::with(['siswa', 'mitra', 'lowongan'])
+        $pendingPengajuan = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra', 'lowongan']), $guruId)
             ->where('status', 'MENUNGGU_PERSETUJUAN')
             ->latest()
             ->take(5)
             ->get();
 
         // Daftar CV yang baru diunggah / diupdate siswa
-        $recentCvs = CvResume::with('profilSiswa')
+        $recentCvs = $this->bimbingan(CvResume::with('profilSiswa'), $guruId)
             ->where('temp', false)
             ->latest('updated_at')
             ->take(6)
             ->get();
 
         // Antrean jurnal harian menunggu validasi
-        $pendingJurnals = PklJurnalHarian::with(['penempatan.siswa', 'penempatan.mitra'])
+        $pendingJurnals = $this->bimbingan(PklJurnalHarian::with(['penempatan.siswa', 'penempatan.mitra']), $guruId)
             ->where('status', 'Menunggu')
             ->latest('tanggal')
             ->take(5)
             ->get();
 
         // Antrean laporan akhir menunggu validasi
-        $pendingLaporans = PklLaporanAkhir::with(['penempatan.siswa', 'penempatan.mitra'])
+        $pendingLaporans = $this->bimbingan(PklLaporanAkhir::with(['penempatan.siswa', 'penempatan.mitra']), $guruId)
             ->where('status', 'Ditinjau')
             ->latest('updated_at')
             ->take(5)
@@ -123,14 +179,16 @@ class GuruPklController extends Controller
     public function siswaIndex(Request $request): View|JsonResponse
     {
         $authUser = $this->getAuthUser($request);
+        $guruId = $this->guruScope($authUser);
 
-        $query = ProfilSiswa::with(['mainResume', 'activePkl.mitra']);
+        $query = $this->bimbingan(ProfilSiswa::with(['mainResume', 'activePkl.mitra', 'guruPembimbing']), $guruId, null);
 
         $search = trim((string) $request->input('q', ''));
         if (!empty($search)) {
             $like = config('database.default') === 'pgsql' ? 'ilike' : 'like';
             $query->where(function ($q) use ($search, $like) {
                 $q->where('nis', $like, "%{$search}%")
+                  ->orWhere('nama_lengkap', $like, "%{$search}%")
                   ->orWhere('nisn', $like, "%{$search}%")
                   ->orWhere('jurusan', $like, "%{$search}%")
                   ->orWhere('kelas', $like, "%{$search}%")
@@ -165,7 +223,17 @@ class GuruPklController extends Controller
             $query->doesntHave('penempatanPkl');
         }
 
+        // Filter pembimbing (hanya admin): 'none' = siswa yang belum punya guru pembimbing
+        $pembimbing = $guruId === null ? $request->input('pembimbing') : null;
+        if ($pembimbing === 'none') {
+            $query->whereNull('guru_pembimbing_id');
+        } elseif (!empty($pembimbing)) {
+            $query->where('guru_pembimbing_id', $pembimbing);
+        }
+
         $daftarJurusan = ProfilSiswa::select('jurusan')->distinct()->pluck('jurusan')->filter()->values();
+        $daftarGuru = $guruId === null ? GuruPembimbing::orderBy('nama_lengkap')->get() : collect();
+        $canAssignGuru = $guruId === null;
 
         $siswaList = $query->latest('updated_at')->paginate(12)->withQueryString();
 
@@ -183,7 +251,10 @@ class GuruPklController extends Controller
             'jurusan',
             'statusCv',
             'statusPkl',
-            'daftarJurusan'
+            'daftarJurusan',
+            'daftarGuru',
+            'canAssignGuru',
+            'pembimbing'
         ));
     }
 
@@ -194,7 +265,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $siswa = ProfilSiswa::with(['activePkl.mitra', 'penempatanPkl.mitra'])
+        $siswa = $this->bimbingan(ProfilSiswa::with(['activePkl.mitra', 'penempatanPkl.mitra']), $this->guruScope($authUser), null)
             ->where('user_id', $user_id)
             ->firstOrFail();
 
@@ -253,6 +324,7 @@ class GuruPklController extends Controller
     public function storeCvFeedback(Request $request, string $user_id): RedirectResponse|JsonResponse
     {
         $authUser = $this->getAuthUser($request);
+        $this->bimbingan(ProfilSiswa::query(), $this->guruScope($authUser), null)->where('user_id', $user_id)->firstOrFail();
 
         $validated = $request->validate([
             'status_review_guru' => ['required', 'in:Disetujui,Perlu Revisi,Belum Direview'],
@@ -314,43 +386,81 @@ class GuruPklController extends Controller
     }
 
     /**
+     * Tetapkan / ganti guru pembimbing siswa (POST /bkk/guru/siswa/{user_id}/pembimbing). Khusus admin.
+     * PKL yang belum selesai ikut dipindahkan ke pembimbing baru.
+     */
+    public function assignPembimbing(Request $request, string $user_id): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->getAuthUser($request);
+        abort_if($this->guruScope($authUser) !== null, 403, 'Hanya admin yang dapat menetapkan guru pembimbing.');
+
+        $siswa = ProfilSiswa::where('user_id', $user_id)->firstOrFail();
+
+        $validated = $request->validate([
+            'guru_pembimbing_id' => ['nullable', 'string', 'exists:guru_pembimbing,user_id'],
+        ], [
+            'guru_pembimbing_id.exists' => 'Guru pembimbing tidak ditemukan.',
+        ]);
+        $guruId = $validated['guru_pembimbing_id'] ?? null;
+
+        DB::transaction(function () use ($siswa, $guruId) {
+            $siswa->update(['guru_pembimbing_id' => $guruId]);
+            PenempatanPkl::where('siswa_id', $siswa->user_id)
+                ->whereIn('status', ['MENUNGGU_PERSETUJUAN', 'MENUNGGU_SURAT', 'BERJALAN'])
+                ->update(['guru_pembimbing_id' => $guruId]);
+        });
+
+        $guru = $guruId ? GuruPembimbing::find($guruId) : null;
+        $message = $guru
+            ? 'Guru pembimbing ditetapkan: ' . ($guru->nama_lengkap ?: $guru->user_id) . '.'
+            : 'Guru pembimbing siswa dikosongkan.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message, 'data' => $siswa->fresh()]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
      * Halaman Kelola & Persetujuan Pengajuan PKL (/bkk/guru/pengajuan)
      */
     public function pengajuanIndex(Request $request): View|JsonResponse
     {
         $authUser = $this->getAuthUser($request);
+        $guruId = $this->guruScope($authUser);
         $tab = $request->input('tab', 'menunggu');
 
         // 1. Pengajuan PKL Siswa yang Menunggu Persetujuan Guru
-        $pengajuanMenunggu = PenempatanPkl::with(['siswa', 'mitra', 'lowongan'])
+        $pengajuanMenunggu = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra', 'lowongan']), $guruId)
             ->where('status', 'MENUNGGU_PERSETUJUAN')
             ->latest()
             ->paginate(10, ['*'], 'menunggu_page');
 
         // 2. Lamaran Lowongan PKL Industri Siswa (Terkirim / Sedang Ditinjau)
-        $lamaranPkl = Lamaran::with(['profilSiswa', 'cvResume', 'lowongan.mitra'])
+        $lamaranPkl = $this->bimbingan(Lamaran::with(['profilSiswa', 'cvResume', 'lowongan.mitra']), $guruId)
             ->whereHas('lowongan', fn ($q) => $q->where('tipe', 'PKL'))
             ->whereIn('status', ['Terkirim', 'Sedang Ditinjau'])
             ->latest()
             ->paginate(10, ['*'], 'lamaran_page');
 
         // 3. Penempatan PKL Aktif (Berjalan)
-        $penempatanBerjalan = PenempatanPkl::with(['siswa', 'mitra', 'lowongan'])
+        $penempatanBerjalan = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra', 'lowongan']), $guruId)
             ->where('status', 'BERJALAN')
             ->latest()
             ->paginate(10, ['*'], 'berjalan_page');
 
         // 4. Riwayat Selesai / Dibatalkan
-        $penempatanSelesai = PenempatanPkl::with(['siswa', 'mitra', 'lowongan'])
+        $penempatanSelesai = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra', 'lowongan']), $guruId)
             ->whereIn('status', ['SELESAI', 'DIBATALKAN'])
             ->latest()
             ->paginate(10, ['*'], 'riwayat_page');
 
         $counts = [
-            'menunggu' => PenempatanPkl::where('status', 'MENUNGGU_PERSETUJUAN')->count(),
-            'lamaran' => Lamaran::whereHas('lowongan', fn ($q) => $q->where('tipe', 'PKL'))->whereIn('status', ['Terkirim', 'Sedang Ditinjau'])->count(),
-            'berjalan' => PenempatanPkl::where('status', 'BERJALAN')->count(),
-            'selesai' => PenempatanPkl::whereIn('status', ['SELESAI', 'DIBATALKAN'])->count(),
+            'menunggu' => $this->bimbingan(PenempatanPkl::query(), $guruId)->where('status', 'MENUNGGU_PERSETUJUAN')->count(),
+            'lamaran' => $this->bimbingan(Lamaran::query(), $guruId)->whereHas('lowongan', fn ($q) => $q->where('tipe', 'PKL'))->whereIn('status', ['Terkirim', 'Sedang Ditinjau'])->count(),
+            'berjalan' => $this->bimbingan(PenempatanPkl::query(), $guruId)->where('status', 'BERJALAN')->count(),
+            'selesai' => $this->bimbingan(PenempatanPkl::query(), $guruId)->whereIn('status', ['SELESAI', 'DIBATALKAN'])->count(),
         ];
 
         if ($request->wantsJson()) {
@@ -384,7 +494,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $penempatan = PenempatanPkl::with(['siswa', 'mitra'])->findOrFail($id);
+        $penempatan = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra']), $this->guruScope($authUser))->findOrFail($id);
 
         $validated = $request->validate([
             'catatan_guru' => ['nullable', 'string', 'max:1000'],
@@ -396,7 +506,7 @@ class GuruPklController extends Controller
 
         $updateData = [
             'status' => 'BERJALAN',
-            'guru_pembimbing_id' => $authUser['id'] ?? 'usr-guru-001',
+            'guru_pembimbing_id' => $penempatan->siswa?->guru_pembimbing_id ?? $penempatan->guru_pembimbing_id,
             'disetujui_oleh' => $authUser['id'] ?? 'usr-guru-001',
             'disetujui_pada' => now(),
             'catatan_guru' => $validated['catatan_guru'] ?? 'Pengajuan PKL telah disetujui oleh Guru Pembimbing.',
@@ -470,7 +580,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $penempatan = PenempatanPkl::with(['siswa', 'mitra'])->findOrFail($id);
+        $penempatan = $this->bimbingan(PenempatanPkl::with(['siswa', 'mitra']), $this->guruScope($authUser))->findOrFail($id);
 
         $validated = $request->validate([
             'alasan' => ['required', 'string', 'max:1000'],
@@ -520,7 +630,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $lamaran = Lamaran::with(['lowongan.mitra', 'profilSiswa'])->findOrFail($id);
+        $lamaran = $this->bimbingan(Lamaran::with(['lowongan.mitra', 'profilSiswa']), $this->guruScope($authUser))->findOrFail($id);
 
         // Cek apakah sudah ada penempatan untuk siswa ini
         $existing = PenempatanPkl::where('siswa_id', $lamaran->siswa_id)
@@ -538,7 +648,7 @@ class GuruPklController extends Controller
             'siswa_id' => $lamaran->siswa_id,
             'mitra_id' => $mitraId,
             'lowongan_id' => $lowongan->id,
-            'guru_pembimbing_id' => $authUser['id'] ?? 'usr-guru-001',
+            'guru_pembimbing_id' => $lamaran->profilSiswa?->guru_pembimbing_id,
             'pembimbing_industri_nama' => $lowongan->mitra->pic_name ?? 'Mentor Industri',
             'unit_kerja_divisi' => $lowongan->kategori_posisi ?? 'Operasional & Teknis',
             'tanggal_mulai' => now()->toDateString(),
@@ -589,9 +699,10 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
+        $guruId = $this->guruScope($authUser);
         $statusFilter = $request->input('status', 'Menunggu');
 
-        $query = PklJurnalHarian::with(['penempatan.siswa', 'penempatan.mitra']);
+        $query = $this->bimbingan(PklJurnalHarian::with(['penempatan.siswa', 'penempatan.mitra']), $guruId);
 
         if (!empty($statusFilter) && $statusFilter !== 'Semua') {
             $query->where('status', $statusFilter);
@@ -610,9 +721,9 @@ class GuruPklController extends Controller
         $jurnals = $query->latest('tanggal')->paginate(12)->withQueryString();
 
         $stats = [
-            'menunggu' => PklJurnalHarian::where('status', 'Menunggu')->count(),
-            'disetujui' => PklJurnalHarian::where('status', 'Disetujui')->count(),
-            'revisi' => PklJurnalHarian::where('status', 'Revisi')->count(),
+            'menunggu' => $this->bimbingan(PklJurnalHarian::query(), $guruId)->where('status', 'Menunggu')->count(),
+            'disetujui' => $this->bimbingan(PklJurnalHarian::query(), $guruId)->where('status', 'Disetujui')->count(),
+            'revisi' => $this->bimbingan(PklJurnalHarian::query(), $guruId)->where('status', 'Revisi')->count(),
         ];
 
         if ($request->wantsJson()) {
@@ -639,7 +750,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $jurnal = PklJurnalHarian::with('penempatan.siswa')->findOrFail($id);
+        $jurnal = $this->bimbingan(PklJurnalHarian::with('penempatan.siswa'), $this->guruScope($authUser))->findOrFail($id);
 
         $validated = $request->validate([
             'status' => ['required', 'in:Menunggu,Disetujui,Revisi'],
@@ -700,9 +811,10 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
+        $guruId = $this->guruScope($authUser);
         $statusFilter = $request->input('status', 'Ditinjau');
 
-        $query = PklLaporanAkhir::with(['penempatan.siswa', 'penempatan.mitra']);
+        $query = $this->bimbingan(PklLaporanAkhir::with(['penempatan.siswa', 'penempatan.mitra']), $guruId);
 
         if (!empty($statusFilter) && $statusFilter !== 'Semua') {
             $query->where('status', $statusFilter);
@@ -721,9 +833,9 @@ class GuruPklController extends Controller
         $laporans = $query->latest('updated_at')->paginate(12)->withQueryString();
 
         $stats = [
-            'ditinjau' => PklLaporanAkhir::where('status', 'Ditinjau')->count(),
-            'disetujui' => PklLaporanAkhir::where('status', 'Disetujui')->count(),
-            'revisi' => PklLaporanAkhir::where('status', 'Revisi')->count(),
+            'ditinjau' => $this->bimbingan(PklLaporanAkhir::query(), $guruId)->where('status', 'Ditinjau')->count(),
+            'disetujui' => $this->bimbingan(PklLaporanAkhir::query(), $guruId)->where('status', 'Disetujui')->count(),
+            'revisi' => $this->bimbingan(PklLaporanAkhir::query(), $guruId)->where('status', 'Revisi')->count(),
         ];
 
         if ($request->wantsJson()) {
@@ -750,7 +862,7 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $laporan = PklLaporanAkhir::with('penempatan.siswa')->findOrFail($id);
+        $laporan = $this->bimbingan(PklLaporanAkhir::with('penempatan.siswa'), $this->guruScope($authUser))->findOrFail($id);
 
         $validated = $request->validate([
             'status' => ['required', 'in:Belum,Ditinjau,Revisi,Disetujui'],
@@ -803,13 +915,13 @@ class GuruPklController extends Controller
     {
         $authUser = $this->getAuthUser($request);
 
-        $penempatan = PenempatanPkl::with([
+        $penempatan = $this->bimbingan(PenempatanPkl::with([
             'siswa.mainResume',
             'mitra',
             'lowongan',
             'jurnals' => fn ($q) => $q->latest('tanggal'),
             'laporans' => fn ($q) => $q->orderBy('nomor_bab'),
-        ])->findOrFail($id);
+        ]), $this->guruScope($authUser))->findOrFail($id);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -826,7 +938,8 @@ class GuruPklController extends Controller
      */
     public function inputNilai(Request $request, string $id): RedirectResponse|JsonResponse
     {
-        $penempatan = PenempatanPkl::findOrFail($id);
+        $authUser = $this->getAuthUser($request);
+        $penempatan = $this->bimbingan(PenempatanPkl::query(), $this->guruScope($authUser))->findOrFail($id);
 
         $validated = $request->validate([
             'nilai_akhir_sekolah' => ['required', 'numeric', 'min:0', 'max:100'],
@@ -864,7 +977,8 @@ class GuruPklController extends Controller
      */
     public function selesaikanPkl(Request $request, string $id): RedirectResponse|JsonResponse
     {
-        $penempatan = PenempatanPkl::with('siswa')->findOrFail($id);
+        $authUser = $this->getAuthUser($request);
+        $penempatan = $this->bimbingan(PenempatanPkl::with('siswa'), $this->guruScope($authUser))->findOrFail($id);
 
         $penempatan->update([
             'status' => 'SELESAI',
