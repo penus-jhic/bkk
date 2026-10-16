@@ -22,11 +22,23 @@ class PenempatanPkl extends Model
         'total_jam_tercapai' => 'integer',
         'nilai_akhir_industri' => 'float',
         'nilai_akhir_sekolah' => 'float',
+        'disetujui_pada' => 'datetime',
+        'pengajuan_mandiri' => 'boolean',
     ];
 
     public function scopeBerjalan(Builder $query): Builder
     {
         return $query->where('status', 'BERJALAN');
+    }
+
+    public function scopeMenungguPersetujuan(Builder $query): Builder
+    {
+        return $query->where('status', 'MENUNGGU_PERSETUJUAN');
+    }
+
+    public function scopeSelesai(Builder $query): Builder
+    {
+        return $query->where('status', 'SELESAI');
     }
 
     public function siswa(): BelongsTo

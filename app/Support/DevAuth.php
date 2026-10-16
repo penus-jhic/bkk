@@ -42,6 +42,11 @@ class DevAuth
             'email' => 'alumni@smkpenus.sch.id', 'nomor_induk' => '1920.08.112',
             'label' => 'Alumni', 'desc' => 'Portal alumni: CV & lamaran kerja', 'home' => '/bkk/me',
         ],
+        'GURU' => [
+            'id' => 'usr-guru-001', 'username' => 'guru', 'nama_lengkap' => 'Bpk. Hendra Gunawan, S.Kom.',
+            'email' => 'hendra.guru@smkpenus.sch.id', 'nomor_induk' => 'NIP-19880215-001',
+            'label' => 'Guru Pembimbing PKL', 'desc' => 'Portal guru: review CV, accept PKL siswa, validasi jurnal & laporan', 'home' => '/bkk/guru',
+        ],
     ];
 
     /**

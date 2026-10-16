@@ -14,6 +14,7 @@
 
     if ($isSiswa) {
         $navGroups['Khusus Siswa PKL'] = [
+            ['label' => 'Status & Pengajuan PKL', 'icon' => 'briefcase', 'route' => 'bkk.me.pkl', 'active' => ['bkk.me.pkl']],
             ['label' => 'Jurnal PKL', 'icon' => 'notebook-pen', 'route' => 'bkk.me.jurnal', 'active' => ['bkk.me.jurnal']],
             ['label' => 'Laporan Akhir', 'icon' => 'book-open', 'route' => 'bkk.me.laporan', 'active' => ['bkk.me.laporan']],
         ];

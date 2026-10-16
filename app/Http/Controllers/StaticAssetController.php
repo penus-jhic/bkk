@@ -21,6 +21,8 @@ class StaticAssetController extends Controller
         'gif'   => 'image/gif',
         'ico'   => 'image/x-icon',
         'pdf'   => 'application/pdf',
+        'doc'   => 'application/msword',
+        'docx'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'woff'  => 'font/woff',
         'woff2' => 'font/woff2',
         'ttf'   => 'font/ttf',
