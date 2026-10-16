@@ -6,10 +6,16 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
 <style>
+    /* Cetak / simpan PDF: hanya salinan lembar CV di #cvPrintRoot (dibuat saat beforeprint), elemen lain disembunyikan
+       dengan display:none supaya tidak menyisakan halaman kosong. Margin halaman 0 membuat browser tidak mencetak
+       judul tab & URL (mis. "localhost") di atas/bawah kertas, jadi jarak tepi diganti padding lembar CV. */
+    @page { size: A4; margin: 0; }
+    #cvPrintRoot { display: none; }
     @media print {
-        body * { visibility: hidden; }
-        #cvPaper, #cvPaper * { visibility: visible; }
-        #cvPaper { position: absolute; left: 0; top: 0; width: 100%; max-width: 100%; border: none; box-shadow: none; padding: 20px; }
+        body > *:not(#cvPrintRoot) { display: none !important; }
+        html, body { background: #fff !important; }
+        #cvPrintRoot { display: block; padding: 16mm 18mm; }
+        #cvPrintRoot [data-sketch] { display: none; }
     }
 </style>
 @endpush
@@ -30,60 +36,59 @@
         'param_portfolio_impact' => 'award',
     ];
     $fallbackIcons = ['target', 'layers', 'file-search', 'award'];
-    $shortChecksum = substr($checksum ?? '', 0, 12);
+
+    // Tiga warna penanda skor (tanpa gradasi): hijau >= 85, biru 70-84, merah < 70. Sama dengan scoreTone() di JS.
+    $scoreTone = fn (int $score): array => match (true) {
+        $score >= 85 => ['bar' => 'bg-emerald-500', 'badge' => 'bg-emerald-100 text-emerald-800', 'hex' => '#10B981'],
+        $score >= 70 => ['bar' => 'bg-navy', 'badge' => 'bg-navy/10 text-navy', 'hex' => '#1E293B'],
+        default => ['bar' => 'bg-brand-darkred', 'badge' => 'bg-brand-darkred/10 text-brand-darkred', 'hex' => '#7A1018'],
+    };
+    $totalTone = $scoreTone($scoreVal);
+    $candidateName = $authUser['nama_lengkap'] ?? $authUser['username'] ?? 'Siswa';
 @endphp
 
 @section('content')
-<div class="space-y-6 fade-up">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+<div class="space-y-8 fade-up">
+    {{-- Header --}}
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-            <div class="flex flex-wrap items-center gap-2">
-                <h1 class="text-2xl font-bold text-navy tracking-tight">CV & AI Scoring Hub</h1>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                    <span>CV Utama (Aktif)</span>
-                </span>
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-mono bg-navy/5 text-navy border border-line" title="Checksum SHA-256: {{ $checksum }}">
-                    <i data-lucide="hash" class="w-3 h-3 text-muted"></i>
-                    <span id="hubChecksumText">{{ $shortChecksum }}…</span>
-                </span>
-            </div>
-            <p class="text-xs sm:text-sm text-muted mt-1">Pratinjau CV profesional ATS dan laporan diagnostik kesiapan kerja dari <code class="text-[11px] bg-navy/5 px-1.5 py-0.5 rounded">cv_resumes.feedback</code>.</p>
+            <p class="dash-eyebrow">Portal Siswa · AI CV Enhancer</p>
+            <h1 class="dash-title font-display text-brand-ink">CV &amp; <x-sketch.underline>AI Scoring</x-sketch.underline> Hub</h1>
+            <p class="text-sm text-brand-ink/65 mt-1 max-w-2xl">Pratinjau CV berstandar ATS dan hasil penilaian kesiapan kerja dari Penus AI.</p>
         </div>
 
-        <div class="flex gap-2">
-            <button onclick="downloadCvPdf()" class="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-line bg-white hover:bg-canvas text-navy text-xs font-semibold shadow-sm cursor-pointer transition-colors">
+        <div class="flex flex-wrap gap-2">
+            <button onclick="downloadCvPdf()" class="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-brand-ink/15 bg-white hover:bg-brand-softmist text-brand-ink text-xs font-semibold cursor-pointer transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i>
                 <span>Download PDF</span>
             </button>
-            <a href="{{ route('bkk.me.cv.edit') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-semibold shadow-sm transition-colors">
+            <a href="{{ route('bkk.me.cv.edit', ['baru' => 1]) }}" class="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-brand-ink/15 bg-white hover:bg-brand-softmist text-brand-ink text-xs font-semibold transition-colors">
+                <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+                <span>Versi Baru</span>
+            </a>
+            <a href="{{ route('bkk.me.cv.edit') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-semibold transition-colors">
                 <i data-lucide="pen-line" class="w-4 h-4"></i>
-                <span>Edit CV & Asisten AI</span>
+                <span>Edit CV &amp; Asisten AI</span>
             </a>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        <!-- Left Column: Full AI Score Feedback & Versioning (5 cols) -->
-        <div class="xl:col-span-5 space-y-6">
-            <!-- Penus AI Score & Diagnostic Card (/api/ai/cv/score -> cv_resumes.feedback) -->
-            <div class="p-6 bg-white gemini-border rounded-3xl relative overflow-hidden shadow-sm space-y-5">
-                <div class="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-gradient-to-br from-maroon/15 to-navy/10 blur-2xl pointer-events-none"></div>
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        {{-- Kolom kiri: skor, saran AI, riwayat versi --}}
+        <div class="xl:col-span-5 space-y-8">
+            {{-- Skor ATS (cv_resumes.feedback) --}}
+            <div class="relative bg-white p-6 space-y-5">
+                <x-sketch.box />
 
-                <div class="relative flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="sparkles" class="w-5 h-5 text-maroon"></i>
-                        <span class="font-bold text-sm gemini-text">Penus AI · Diagnostik Skor ATS</span>
-                    </div>
-                    <button id="btnReanalyze" onclick="reanalyzeCv()" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold text-navy bg-navy/5 hover:bg-navy hover:text-white transition-colors cursor-pointer">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="font-display text-lg uppercase tracking-wide text-brand-ink">Diagnostik Skor ATS</h2>
+                    <button id="btnReanalyze" onclick="reanalyzeCv()" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold text-brand-ink border border-brand-ink/15 hover:bg-navy hover:text-white hover:border-navy transition-colors cursor-pointer">
                         <i data-lucide="refresh-cw" id="reanalyzeIcon" class="w-3.5 h-3.5"></i>
                         <span id="reanalyzeText">Analisis ulang</span>
                     </button>
                 </div>
 
-                <div class="relative flex flex-col sm:flex-row items-center gap-6">
-                    <!-- SVG Radial Score Ring -->
+                <div class="flex flex-col sm:flex-row items-center gap-6">
                     @php
                         $size = 132;
                         $stroke = 10;
@@ -92,40 +97,34 @@
                         $offset = $circumference - ($scoreVal / 100) * $circumference;
                     @endphp
                     <div class="relative w-[132px] h-[132px] shrink-0">
-                        <svg width="132" height="132" class="-rotate-90">
-                            <defs>
-                                <linearGradient id="scoreGrad" x1="0" x2="1" y1="0" y2="1">
-                                    <stop offset="0%" stop-color="#741918"></stop>
-                                    <stop offset="100%" stop-color="#1b283b"></stop>
-                                </linearGradient>
-                            </defs>
-                            <circle cx="66" cy="66" r="{{ $radius }}" stroke="#ececec" stroke-width="{{ $stroke }}" fill="none"></circle>
-                            <circle id="scoreRingCircle" cx="66" cy="66" r="{{ $radius }}" stroke="url(#scoreGrad)" stroke-width="{{ $stroke }}" fill="none" stroke-linecap="round"
-                                    stroke-dasharray="{{ $circumference }}" stroke-dashoffset="{{ $offset }}" style="transition: stroke-dashoffset 0.8s ease;"></circle>
+                        <svg width="132" height="132" class="-rotate-90" aria-hidden="true">
+                            <circle cx="66" cy="66" r="{{ $radius }}" stroke="#F1ECEB" stroke-width="{{ $stroke }}" fill="none"></circle>
+                            <circle id="scoreRingCircle" cx="66" cy="66" r="{{ $radius }}" stroke="{{ $totalTone['hex'] }}" stroke-width="{{ $stroke }}" fill="none" stroke-linecap="round"
+                                    stroke-dasharray="{{ $circumference }}" stroke-dashoffset="{{ $offset }}" style="transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;"></circle>
                         </svg>
                         <div class="absolute inset-0 grid place-items-center text-center">
                             <div>
-                                <div id="scoreText" class="font-bold text-navy text-3xl leading-none">{{ $scoreVal }}</div>
-                                <div class="text-[10px] text-muted mt-0.5">/ 100</div>
+                                <div id="scoreText" class="font-display font-bold text-brand-ink text-4xl leading-none">{{ $scoreVal }}</div>
+                                <div class="text-[10px] text-brand-ink/50 mt-1">/ 100</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="flex-1 text-center sm:text-left space-y-2">
                         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                            <span id="gradeLabelBadge" class="rounded-full px-3 py-1 text-xs font-semibold bg-navy text-white">{{ $label }}</span>
-                            <span id="percentileBadge" class="rounded-full px-2.5 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span id="gradeLabelBadge" class="rounded-full px-3 py-1 text-xs font-semibold {{ $totalTone['badge'] }}">{{ $label }}</span>
+                            <span id="percentileBadge" class="text-[11px] font-semibold text-brand-ink/60">
                                 Top {{ max(3, 100 - $percentile) }}% (Persentil {{ $percentile }}%)
                             </span>
                         </div>
-                        <p id="summaryVerdictText" class="text-xs text-muted leading-relaxed">
+                        <p id="summaryVerdictText" class="text-xs text-brand-ink/70 leading-relaxed">
                             {{ $verdict }}
                         </p>
                     </div>
                 </div>
 
-                <!-- 4 Detailed Parameters List -->
-                <div id="parametersGrid" class="relative space-y-3 pt-1">
+                {{-- Rincian 4 parameter, dipisah garis coretan --}}
+                <ul id="parametersGrid" class="pt-1">
                     @foreach($parameters as $idx => $p)
                         @php
                             $pScore = (int) ($p['score'] ?? $p['value'] ?? 85);
@@ -134,42 +133,38 @@
                             $pWeight = isset($p['weight']) ? round(((float) $p['weight']) * 100) : 25;
                             $pFeedback = $p['feedback'] ?? '';
                             $pIcon = $paramIcons[$p['id'] ?? ''] ?? ($fallbackIcons[$idx] ?? 'check-circle');
-                            $statusBadgeClass = match($pStatus) {
-                                'EXCELLENT' => 'bg-emerald-100 text-emerald-800',
-                                'GOOD' => 'bg-navy/10 text-navy',
-                                default => 'bg-amber-100 text-amber-800',
-                            };
+                            $pTone = $scoreTone($pScore);
                         @endphp
-                        <div class="rounded-2xl bg-[#f8f9fa] border border-line p-3.5 space-y-2">
+                        <li class="relative py-4 first:pt-0 last:pb-0 space-y-2">
+                            @if($idx > 0)
+                                <x-sketch.rule :delay="$idx * 100" class="text-brand-darkred/25 -left-1 -right-1 -top-1.5 h-3" />
+                            @endif
                             <div class="flex items-center justify-between gap-2">
-                                <div class="flex items-center gap-2 text-xs font-bold text-navy">
-                                    <i data-lucide="{{ $pIcon }}" class="w-4 h-4 text-navy shrink-0"></i>
+                                <div class="flex items-center gap-2 text-xs font-bold text-brand-ink">
+                                    <i data-lucide="{{ $pIcon }}" class="w-4 h-4 text-brand-darkred shrink-0"></i>
                                     <span>{{ $p['label'] }}</span>
-                                    <span class="text-[10px] font-normal text-muted">({{ $pWeight }}%)</span>
+                                    <span class="text-[10px] font-normal text-brand-ink/50">({{ $pWeight }}%)</span>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase {{ $statusBadgeClass }}">
-                                        {{ $pStatus }}
-                                    </span>
-                                    <span class="text-xs font-bold text-navy">{{ $pScore }}<span class="text-[10px] text-muted font-normal">/{{ $pMax }}</span></span>
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase {{ $pTone['badge'] }}">{{ $pStatus }}</span>
+                                    <span class="font-display text-base text-brand-ink">{{ $pScore }}<span class="text-[10px] text-brand-ink/40">/{{ $pMax }}</span></span>
                                 </div>
                             </div>
-
-                            <div class="h-1.5 rounded-full bg-line/60 overflow-hidden">
-                                <div class="h-full rounded-full {{ $pScore >= 85 ? 'bg-navy' : 'bg-maroon' }}" style="width: {{ min(100, $pScore) }}%"></div>
+                            <div class="h-1.5 rounded-full bg-brand-ink/[0.07] overflow-hidden">
+                                <div class="h-full rounded-full {{ $pTone['bar'] }}" style="width: {{ min(100, $pScore) }}%"></div>
                             </div>
-
                             @if($pFeedback)
-                                <p class="text-[11px] text-muted leading-relaxed">{{ $pFeedback }}</p>
+                                <p class="text-[11px] text-brand-ink/60 leading-relaxed">{{ $pFeedback }}</p>
                             @endif
-                        </div>
+                        </li>
                     @endforeach
-                </div>
+                </ul>
 
-                <!-- Detected vs Missing Sections -->
-                <div id="sectionsAnalysisBox" class="relative pt-2 border-t border-line space-y-2.5 text-xs">
+                {{-- Bagian terdeteksi & yang disarankan --}}
+                <div id="sectionsAnalysisBox" class="relative pt-5 space-y-3 text-xs">
+                    <x-sketch.rule class="text-brand-darkred/25 -left-1 -right-1 -top-1.5 h-3" />
                     <div>
-                        <div class="text-[11px] font-bold text-navy mb-1.5">Bagian ATS Terdeteksi:</div>
+                        <div class="text-[11px] font-bold text-brand-ink mb-1.5">Bagian ATS Terdeteksi:</div>
                         <div id="detectedSectionsList" class="flex flex-wrap gap-1.5">
                             @forelse($detectedSections as $sec)
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -177,16 +172,16 @@
                                     <span>{{ $sec }}</span>
                                 </span>
                             @empty
-                                <span class="text-[11px] text-muted italic">Belum ada bagian terdeteksi.</span>
+                                <span class="text-[11px] text-brand-ink/50 italic">Belum ada bagian terdeteksi.</span>
                             @endforelse
                         </div>
                     </div>
 
                     <div id="missingSectionsWrapper" class="{{ empty($missingSections) ? 'hidden' : '' }}">
-                        <div class="text-[11px] font-bold text-amber-900 mb-1.5">Bagian Disarankan untuk Ditambahkan:</div>
+                        <div class="text-[11px] font-bold text-brand-darkred mb-1.5">Bagian Disarankan untuk Ditambahkan:</div>
                         <div id="missingSectionsList" class="flex flex-wrap gap-1.5">
                             @foreach($missingSections as $msec)
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-darkred/5 text-brand-darkred border border-brand-darkred/20">
                                     <i data-lucide="alert-circle" class="w-3 h-3"></i>
                                     <span>{{ $msec }}</span>
                                 </span>
@@ -196,121 +191,98 @@
                 </div>
             </div>
 
-            <!-- Pintas ke Fitur Saran Patch & Chat AI di CV Editor -->
-            <div class="bg-gradient-to-br from-navy to-[#263852] text-white rounded-3xl p-5 shadow-sm space-y-3">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-2xl bg-white/10 grid place-items-center text-white shrink-0">
-                            <i data-lucide="wand-2" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-sm">Saran Patch AI & Konsultasi Chat</h3>
-                            <p class="text-[11px] text-white/75">Gunakan Asisten AI di Editor CV untuk menyuntikkan perbaikan kalimat dan tanya jawab real-time.</p>
-                        </div>
+            {{-- Pintas ke saran & chat AI di Editor CV --}}
+            <div class="relative bg-white p-6">
+                <x-sketch.box />
+                <div class="flex items-start gap-3">
+                    <i data-lucide="wand-2" class="w-5 h-5 text-brand-darkred shrink-0 mt-0.5"></i>
+                    <div>
+                        <h2 class="font-display text-lg uppercase tracking-wide text-brand-ink">Saran AI &amp; Konsultasi</h2>
+                        <p class="mt-1 text-xs text-brand-ink/65 leading-relaxed">Terapkan perbaikan kalimat dari Penus AI dan tanya jawab langsung di Editor CV.</p>
                     </div>
                 </div>
-                <div class="flex justify-end">
-                    <a href="{{ route('bkk.me.cv.edit') }}" class="h-9 px-4 rounded-full bg-white text-navy hover:bg-canvas text-xs font-bold inline-flex items-center gap-1.5 transition">
-                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-maroon"></i>
-                        <span>Buka Editor & Gunakan AI</span>
+                <div class="mt-4 flex justify-end">
+                    <a href="{{ route('bkk.me.cv.edit') }}" class="group h-9 px-4 rounded-full bg-navy hover:bg-navy-dark text-white text-xs font-semibold inline-flex items-center gap-2 transition-colors">
+                        Buka Editor CV
+                        <x-sketch.arrow class="w-6 h-3 transition-transform group-hover:translate-x-0.5" />
                     </a>
                 </div>
             </div>
 
-            <!-- Versioning / Riwayat Versi CV Card (Hanya versi tersimpan temp = false) -->
-            <div class="bg-white border border-line rounded-3xl overflow-hidden shadow-sm">
-                <div class="p-5 border-b border-line flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-full bg-navy/10 text-navy grid place-items-center">
-                            <i data-lucide="history" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-sm text-navy">Riwayat Versi CV</div>
-                            <div class="text-[11px] text-muted">{{ count($cvVersions ?? []) }} versi resmi tersimpan</div>
-                        </div>
+            {{-- Riwayat versi CV (hanya versi tersimpan, temp = false) --}}
+            <div class="relative bg-white p-6">
+                <x-sketch.box />
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="font-display text-lg uppercase tracking-wide text-brand-ink">Riwayat Versi CV</h2>
+                        <p class="text-[11px] text-brand-ink/55">{{ count($cvVersions ?? []) }} versi tersimpan</p>
                     </div>
-                    <span class="text-[11px] text-muted font-mono">Checksum SHA-256</span>
+                    <a href="{{ route('bkk.me.cv.edit', ['baru' => 1]) }}" class="h-8 px-3 rounded-full border border-brand-ink/15 bg-white hover:bg-navy hover:text-white hover:border-navy text-brand-ink text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        Versi Baru
+                    </a>
                 </div>
 
-                <div class="divide-y divide-line/60 max-h-[300px] overflow-y-auto">
-                    @forelse($cvVersions ?? [] as $ver)
-                        <div class="p-4 flex items-center justify-between gap-3 hover:bg-[#f8f9fa] transition-colors {{ $ver->is_main ? 'bg-emerald-50/40' : '' }}">
+                <ul class="mt-4 max-h-[340px] overflow-y-auto">
+                    @forelse($cvVersions ?? [] as $i => $ver)
+                        @php $verScore = $ver->score ?? (is_array($ver->feedback) ? ($ver->feedback['total_score'] ?? null) : null); @endphp
+                        <li class="relative py-3.5 flex items-center justify-between gap-3">
+                            @if($i > 0)
+                                <x-sketch.rule :delay="$i * 80" class="text-brand-darkred/20 -left-1 -right-1 -top-1.5 h-3" />
+                            @endif
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs font-bold text-navy truncate">
-                                        Versi #{{ $ver->id }}
-                                    </span>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="text-xs font-bold text-brand-ink">Versi #{{ $ver->id }}</span>
                                     @if($ver->is_main)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                            Utama
-                                        </span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-navy text-white">Utama</span>
                                     @endif
-                                    @if($ver->score !== null)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">
-                                            Skor {{ $ver->score }}
-                                        </span>
-                                    @elseif(is_array($ver->feedback) && isset($ver->feedback['total_score']))
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy/5 text-navy">
-                                            Skor {{ $ver->feedback['total_score'] }}
-                                        </span>
+                                    @if($verScore !== null)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {{ $scoreTone((int) $verScore)['badge'] }}">Skor {{ $verScore }}</span>
                                     @endif
                                 </div>
-                                <div class="flex items-center gap-2 mt-1 text-[11px] text-muted">
-                                    <span class="font-mono">{{ substr($ver->checksum, 0, 12) }}…</span>
-                                    <span>•</span>
-                                    <span>{{ $ver->created_at ? $ver->created_at->format('d M Y, H:i') : '-' }}</span>
+                                <div class="mt-0.5 text-[11px] text-brand-ink/50">
+                                    {{ $ver->created_at ? $ver->created_at->format('d M Y, H:i') : '-' }}
+                                    @if($ver->lamarans_count)
+                                        · dipakai di {{ $ver->lamarans_count }} lamaran
+                                    @endif
                                 </div>
                             </div>
 
-                            @if(!$ver->is_main)
-                                <div class="flex items-center gap-1.5 shrink-0">
-                                    <a href="{{ route('bkk.me.cv.editVersion', $ver->id) }}" class="h-7 px-2.5 rounded-full border border-line bg-white hover:bg-canvas text-navy text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1" title="Sunting versi ini">
-                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
-                                        <span>Sunting</span>
-                                    </a>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <a href="{{ $ver->is_main ? route('bkk.me.cv.edit') : route('bkk.me.cv.editVersion', $ver->id) }}" class="h-7 px-2.5 rounded-full border border-brand-ink/15 bg-white hover:bg-brand-softmist text-brand-ink text-[11px] font-semibold transition-colors inline-flex items-center gap-1" title="Sunting versi ini">
+                                    <i data-lucide="edit-3" class="w-3 h-3"></i>
+                                    <span>Sunting</span>
+                                </a>
+                                @unless($ver->is_main)
                                     <form action="{{ route('bkk.me.cv.setMain', $ver->id) }}" method="POST">
                                         @csrf
-                                        <button type="submit" class="h-7 px-2.5 rounded-full border border-line bg-white hover:bg-navy hover:text-white text-navy text-[11px] font-semibold transition-colors cursor-pointer" title="Jadikan versi ini sebagai CV Utama">
+                                        <button type="submit" class="h-7 px-2.5 rounded-full border border-brand-ink/15 bg-white hover:bg-navy hover:text-white hover:border-navy text-brand-ink text-[11px] font-semibold transition-colors cursor-pointer" title="Jadikan versi ini sebagai CV Utama">
                                             Aktifkan
                                         </button>
                                     </form>
-                                </div>
-                            @else
-                                <div class="flex items-center gap-1.5 shrink-0">
-                                    <a href="{{ route('bkk.me.cv.edit') }}" class="h-7 px-2.5 rounded-full bg-navy text-white text-[11px] font-semibold transition-colors cursor-pointer inline-flex items-center gap-1">
-                                        <i data-lucide="edit-3" class="w-3 h-3"></i>
-                                        <span>Sunting</span>
-                                    </a>
-                                    <span class="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Digunakan
-                                    </span>
-                                </div>
-                            @endif
-                        </div>
+                                    @include('me.partials.cv-delete-button', ['version' => $ver, 'compact' => true])
+                                @endunless
+                            </div>
+                        </li>
                     @empty
-                        <div class="p-5 text-center text-xs text-muted">
-                            Belum ada riwayat versi CV lainnya.
-                        </div>
+                        <li class="py-5 text-center text-xs text-brand-ink/55">Belum ada riwayat versi CV.</li>
                     @endforelse
-                </div>
+                </ul>
             </div>
         </div>
 
-        <!-- Right Column: ATS CV Paper Preview (7 cols) -->
+        {{-- Kolom kanan: lembar CV ATS --}}
         <div class="xl:col-span-7 space-y-3">
-            <div class="flex items-center justify-between text-xs text-muted px-1">
-                <span class="flex items-center gap-1.5 font-medium">
-                    <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i>
-                    <span>Format Standar ATS Friendly (A4 Ready)</span>
-                </span>
-                <span class="font-mono text-[11px] text-muted">sha256: {{ $shortChecksum }}…</span>
+            <div class="flex items-center gap-1.5 text-xs font-medium text-brand-ink/60 px-1">
+                <i data-lucide="file-check" class="w-4 h-4 text-emerald-600"></i>
+                <span>Format Standar ATS Friendly (A4 Ready)</span>
             </div>
 
-            <!-- Printable Paper Container -->
-            <div id="cvPaper" class="bg-white border border-line rounded-3xl p-6 sm:p-10 shadow-lg min-h-[700px] md-cv">
+            <div id="cvPaper" class="relative bg-white border border-brand-ink/10 rounded-lg p-6 sm:p-10 min-h-[700px] md-cv shadow-[0_20px_40px_-24px_rgb(36_16_18/0.25)]">
+                <x-sketch.corner class="-left-3 -top-3 w-24 h-10" />
+                <x-sketch.corner :delay="350" class="-right-3 -bottom-3 rotate-180 w-24 h-10" />
                 <div id="cvRenderedContent">
-                    <!-- Injected by Marked.js from raw markdown -->
+                    {{-- Diisi marked.js + DOMPurify dari raw markdown --}}
                 </div>
             </div>
         </div>
@@ -321,6 +293,7 @@
 @push('scripts')
 <script>
     const rawMarkdown = @json($cvMarkdown);
+    const candidateName = @json($candidateName);
     let activeCvId = @json($activeCv?->id ?? null);
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -333,6 +306,13 @@
             const parsed = marked.parse(md);
             container.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
         }
+    }
+
+    // Tiga warna penanda skor, sama dengan $scoreTone di Blade
+    function scoreTone(score) {
+        if (score >= 85) return { bar: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800', hex: '#10B981' };
+        if (score >= 70) return { bar: 'bg-navy', badge: 'bg-navy/10 text-navy', hex: '#1E293B' };
+        return { bar: 'bg-brand-darkred', badge: 'bg-brand-darkred/10 text-brand-darkred', hex: '#7A1018' };
     }
 
     async function reanalyzeCv() {
@@ -398,7 +378,7 @@
             }
 
             updateScoreFeedbackUi(json.data);
-            showToast('Evaluasi skor ATS selesai dan tersimpan di cv_resumes.feedback!');
+            showToast('Evaluasi skor ATS selesai dan tersimpan.');
         } catch (err) {
             showToast(err.message || 'Gagal menghubungi layanan evaluasi AI.');
         } finally {
@@ -420,16 +400,19 @@
         const missingList = document.getElementById('missingSectionsList');
 
         const newScore = Number(data.total_score ?? 88);
+        const tone = scoreTone(newScore);
         if (scoreText) scoreText.innerText = newScore;
 
         if (scoreRing) {
             const radius = 61;
             const c = 2 * Math.PI * radius;
             scoreRing.style.strokeDashoffset = c - (newScore / 100) * c;
+            scoreRing.setAttribute('stroke', tone.hex);
         }
 
-        if (gradeBadge && data.grade_label) {
-            gradeBadge.innerText = data.grade_label;
+        if (gradeBadge) {
+            gradeBadge.className = `rounded-full px-3 py-1 text-xs font-semibold ${tone.badge}`;
+            if (data.grade_label) gradeBadge.innerText = data.grade_label;
         }
 
         if (percentileBadge && data.percentile) {
@@ -449,36 +432,33 @@
         };
 
         if (paramsGrid && Array.isArray(data.parameters)) {
-            paramsGrid.innerHTML = data.parameters.map((p) => {
+            paramsGrid.innerHTML = data.parameters.map((p, idx) => {
                 const pScore = Number(p.score ?? 85);
                 const pMax = Number(p.max_score ?? 100);
                 const pStatus = String(p.status || 'GOOD').toUpperCase();
                 const pWeight = Math.round(Number(p.weight ?? 0.25) * 100);
                 const pIcon = iconMap[p.id] || 'check-circle';
-                const badgeClass = pStatus === 'EXCELLENT'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : (pStatus === 'GOOD' ? 'bg-navy/10 text-navy' : 'bg-amber-100 text-amber-800');
+                const pTone = scoreTone(pScore);
 
                 return `
-                    <div class="rounded-2xl bg-[#f8f9fa] border border-line p-3.5 space-y-2">
+                    <li class="relative py-4 first:pt-0 last:pb-0 space-y-2">
+                        ${idx > 0 ? '<span data-sketch="rule" data-duration="900" data-threshold="0.6" aria-hidden="true" class="pointer-events-none absolute text-brand-darkred/25 -left-1 -right-1 -top-1.5 h-3"></span>' : ''}
                         <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 text-xs font-bold text-navy">
-                                <i data-lucide="${pIcon}" class="w-4 h-4 text-navy shrink-0"></i>
+                            <div class="flex items-center gap-2 text-xs font-bold text-brand-ink">
+                                <i data-lucide="${pIcon}" class="w-4 h-4 text-brand-darkred shrink-0"></i>
                                 <span>${escapeHtml(p.label)}</span>
-                                <span class="text-[10px] font-normal text-muted">(${pWeight}%)</span>
+                                <span class="text-[10px] font-normal text-brand-ink/50">(${pWeight}%)</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${badgeClass}">
-                                    ${escapeHtml(pStatus)}
-                                </span>
-                                <span class="text-xs font-bold text-navy">${pScore}<span class="text-[10px] text-muted font-normal">/${pMax}</span></span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${pTone.badge}">${escapeHtml(pStatus)}</span>
+                                <span class="font-display text-base text-brand-ink">${pScore}<span class="text-[10px] text-brand-ink/40">/${pMax}</span></span>
                             </div>
                         </div>
-                        <div class="h-1.5 rounded-full bg-line/60 overflow-hidden">
-                            <div class="h-full rounded-full ${pScore >= 85 ? 'bg-navy' : 'bg-maroon'}" style="width: ${Math.min(100, pScore)}%"></div>
+                        <div class="h-1.5 rounded-full bg-brand-ink/[0.07] overflow-hidden">
+                            <div class="h-full rounded-full ${pTone.bar}" style="width: ${Math.min(100, pScore)}%"></div>
                         </div>
-                        ${p.feedback ? `<p class="text-[11px] text-muted leading-relaxed">${escapeHtml(p.feedback)}</p>` : ''}
-                    </div>
+                        ${p.feedback ? `<p class="text-[11px] text-brand-ink/60 leading-relaxed">${escapeHtml(p.feedback)}</p>` : ''}
+                    </li>
                 `;
             }).join('');
         }
@@ -495,7 +475,7 @@
         if (missingWrap && missingList && Array.isArray(data.missing_sections)) {
             missingWrap.classList.toggle('hidden', data.missing_sections.length === 0);
             missingList.innerHTML = data.missing_sections.map(msec => `
-                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-brand-darkred/5 text-brand-darkred border border-brand-darkred/20">
                     <i data-lucide="alert-circle" class="w-3 h-3"></i>
                     <span>${escapeHtml(msec)}</span>
                 </span>
@@ -504,6 +484,25 @@
 
         lucide.createIcons();
     }
+
+    // Cetak hanya isi CV, baik dari tombol Download PDF maupun Ctrl+P. Judul tab dipakai browser sebagai nama file PDF,
+    // jadi diganti sementara menjadi nama kandidat.
+    const pageTitle = document.title;
+
+    window.addEventListener('beforeprint', () => {
+        document.getElementById('cvPrintRoot')?.remove();
+        const root = document.createElement('div');
+        root.id = 'cvPrintRoot';
+        root.className = 'md-cv text-brand-ink';
+        root.innerHTML = document.getElementById('cvRenderedContent')?.innerHTML || '';
+        document.body.appendChild(root);
+        document.title = `CV ${candidateName}`;
+    });
+
+    window.addEventListener('afterprint', () => {
+        document.getElementById('cvPrintRoot')?.remove();
+        document.title = pageTitle;
+    });
 
     function downloadCvPdf() {
         window.print();

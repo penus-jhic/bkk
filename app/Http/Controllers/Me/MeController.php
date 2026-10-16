@@ -473,6 +473,36 @@ class MeController extends Controller
     }
 
     /**
+     * Hapus versi CV arsip milik siswa (DELETE /bkk/me/cv/{id}).
+     * CV Utama tidak boleh dihapus supaya siswa selalu punya CV aktif, dan versi yang sudah dipakai melamar juga
+     * ditolak karena lamaran.cv_id bersifat cascadeOnDelete (lamarannya ikut terhapus).
+     */
+    public function cvDestroy(Request $request, int|string $id): RedirectResponse|JsonResponse
+    {
+        $authUser = $this->resolveAuthUser($request);
+        $cv = CvResume::where('user_id', $authUser['id'])->where('temp', false)->findOrFail($id);
+
+        $refusal = match (true) {
+            (bool) $cv->is_main => 'CV Utama tidak bisa dihapus. Jadikan versi lain sebagai CV Utama terlebih dahulu.',
+            $cv->lamarans()->exists() => 'Versi CV ini sudah dipakai untuk melamar, jadi tidak bisa dihapus.',
+            default => null,
+        };
+
+        if ($refusal) {
+            return $request->wantsJson()
+                ? response()->json(['success' => false, 'message' => $refusal], 422)
+                : back()->with('error', $refusal);
+        }
+
+        $cv->delete();
+        $message = "Versi CV #{$id} berhasil dihapus.";
+
+        return $request->wantsJson()
+            ? response()->json(['success' => true, 'message' => $message])
+            : redirect()->route('bkk.me.cv')->with('success', $message);
+    }
+
+    /**
      * Jurnal PKL Harian (/bkk/me/jurnal)
      */
     public function jurnal(Request $request): View|JsonResponse

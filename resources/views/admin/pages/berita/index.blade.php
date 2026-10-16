@@ -7,9 +7,8 @@
     <!-- Page Header & Action -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold font-headline-md text-on-surface">
-                Kelola Berita &amp; Agenda BKK
-            </h1>
+            <p class="dash-eyebrow">Panel Admin · Publikasi</p>
+            <h1 class="dash-title font-display text-brand-ink">Kelola Berita &amp; <x-sketch.underline>Agenda BKK</x-sketch.underline></h1>
             <p class="text-xs text-on-surface-variant mt-1">
                 Daftar seluruh publikasi warta bursa kerja, agenda rekrutmen, dan tips karier siswa.
             </p>

@@ -2,7 +2,7 @@
     <div class="w-16 h-16 rounded-full bg-maroon/10 grid place-items-center mx-auto text-maroon mb-4">
         <i data-lucide="lock" class="w-7 h-7"></i>
     </div>
-    <h2 class="text-xl font-bold text-navy">Fitur Khusus Siswa PKL</h2>
+    <h2 class="text-xl font-bold text-brand-ink">Fitur Khusus Siswa PKL</h2>
     <p class="text-sm text-muted mt-2 max-w-sm mx-auto leading-relaxed">
         Halaman ini dikhususkan bagi Peserta Didik (Siswa) aktif yang sedang menempuh Praktik Kerja Lapangan (PKL).
     </p>

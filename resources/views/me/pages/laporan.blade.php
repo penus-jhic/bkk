@@ -9,7 +9,8 @@
     <div class="space-y-6 fade-up">
         <!-- Header -->
         <div>
-            <h1 class="text-2xl font-bold text-navy tracking-tight">Laporan Akhir PKL</h1>
+            <p class="dash-eyebrow">Portal Siswa · Khusus PKL</p>
+            <h1 class="dash-title font-display text-brand-ink">Laporan <x-sketch.underline>Akhir PKL</x-sketch.underline></h1>
             <p class="text-xs sm:text-sm text-muted">Pantau status validasi dan pengumpulan draf naskah laporan pertanggungjawaban PKL per bab.</p>
         </div>
 
@@ -24,8 +25,8 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="flex-1">
                     <div class="flex justify-between text-sm font-semibold mb-2">
-                        <span class="text-navy">Progres Persetujuan Laporan</span>
-                        <span class="text-navy" id="progressPctText">{{ $pctBab }}%</span>
+                        <span class="text-brand-ink">Progres Persetujuan Laporan</span>
+                        <span class="text-brand-ink" id="progressPctText">{{ $pctBab }}%</span>
                     </div>
                     <div class="h-3 rounded-full bg-line/60 overflow-hidden">
                         <div id="progressBarFill" class="h-full rounded-full bg-navy transition-all duration-700" style="width: {{ $pctBab }}%"></div>
@@ -71,9 +72,9 @@
                                 @endif
                             </div>
                             <div>
-                                <h3 class="font-bold text-sm text-navy">{{ $sec['title'] }}</h3>
+                                <h3 class="font-bold text-sm text-brand-ink">{{ $sec['title'] }}</h3>
                                 <div class="text-xs text-muted mt-1 leading-relaxed">
-                                    Catatan: <span class="font-medium text-navy/80">{{ $sec['note'] }}</span>
+                                    Catatan: <span class="font-medium text-brand-ink/80">{{ $sec['note'] }}</span>
                                     <span class="mx-1.5">·</span>
                                     Diperbarui: <span class="text-muted/80">{{ $sec['updated'] }}</span>
                                 </div>
@@ -96,7 +97,7 @@
                                 <button
                                     id="btn-upload-{{ $sec['id'] }}"
                                     onclick="document.getElementById('file-{{ $sec['id'] }}').click()"
-                                    class="h-8 px-4 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer {{ $sec['status'] === 'Revisi' ? 'bg-maroon hover:bg-maroon-dark text-white' : 'border border-line bg-white hover:bg-canvas text-navy' }}"
+                                    class="h-8 px-4 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer {{ $sec['status'] === 'Revisi' ? 'bg-maroon hover:bg-maroon-dark text-white' : 'border border-line bg-white hover:bg-canvas text-brand-ink' }}"
                                 >
                                     <i data-lucide="{{ $sec['status'] === 'Revisi' ? 'file-up' : 'upload-cloud' }}" class="w-3.5 h-3.5"></i>
                                     <span>{{ $sec['status'] === 'Revisi' ? 'Unggah Revisi' : 'Unggah Draf' }}</span>

@@ -124,6 +124,7 @@ Route::prefix('bkk')->group(function () {
         Route::get('/cv', [MeController::class, 'cv'])->name('cv');
         Route::post('/cv', [MeController::class, 'cvUpdate'])->name('cv.update');
         Route::post('/cv/{id}/main', [MeController::class, 'cvSetMain'])->name('cv.setMain');
+        Route::delete('/cv/{id}', [MeController::class, 'cvDestroy'])->name('cv.destroy');
         Route::get('/cv/edit', [MeController::class, 'cvEdit'])->name('cv.edit');
         Route::get('/cv/{id}/edit', [MeController::class, 'cvEditVersion'])->name('cv.editVersion');
         Route::get('/jurnal', [MeController::class, 'jurnal'])->name('jurnal');

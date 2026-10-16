@@ -7,31 +7,29 @@
     <!-- Breadcrumb & Top Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2 text-xs text-muted mb-1">
-                <a href="{{ route('bkk.mitra.dashboard') }}" class="hover:text-navy">Dashboard</a>
+            <div class="dash-eyebrow">
+                <a href="{{ route('bkk.mitra.dashboard') }}" class="hover:text-brand-ink">Dashboard</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="hover:text-navy">Lowongan</a>
+                <a href="{{ route('bkk.mitra.lowongan.index') }}" class="hover:text-brand-ink">Lowongan</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                <span class="text-navy font-semibold">Review Pelamar</span>
+                <span class="text-brand-ink font-semibold">Review Pelamar</span>
             </div>
-            <h1 class="text-2xl font-headline font-bold text-navy truncate max-w-2xl">
-                Pelamar: {{ $vacancy['title'] }}
-            </h1>
+            <h1 class="dash-title font-display text-brand-ink"><x-sketch.underline>Pelamar</x-sketch.underline>: {{ $vacancy['title'] }}</h1>
             <p class="text-xs text-muted mt-0.5 flex flex-wrap items-center gap-2">
-                <span>Tipe: <strong class="text-navy">{{ $vacancy['tipe_badge'] }}</strong></span>
+                <span>Tipe: <strong class="text-brand-ink">{{ $vacancy['tipe_badge'] }}</strong></span>
                 <span>•</span>
-                <span>Jurusan: <strong class="text-navy">{{ $vacancy['jurusan'] }}</strong></span>
+                <span>Jurusan: <strong class="text-brand-ink">{{ $vacancy['jurusan'] }}</strong></span>
                 <span>•</span>
-                <span>Total: <strong class="text-navy">{{ count($applicants) }} Pelamar</strong></span>
+                <span>Total: <strong class="text-brand-ink">{{ count($applicants) }} Pelamar</strong></span>
             </p>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <a href="{{ route('bkk.mitra.lowongan.edit', $vacancy['id']) }}" class="px-4 py-2 rounded-full border border-line hover:bg-canvas text-navy text-xs font-semibold transition-colors flex items-center gap-1.5">
+            <a href="{{ route('bkk.mitra.lowongan.edit', $vacancy['id']) }}" class="px-4 py-2 rounded-full border border-line hover:bg-canvas text-brand-ink text-xs font-semibold transition-colors flex items-center gap-1.5">
                 <i data-lucide="settings" class="w-4 h-4"></i>
                 <span>Pengaturan Lowongan</span>
             </a>
-            <a href="{{ route('bkk.mitra.lowongan.index') }}" class="px-4 py-2 rounded-full bg-canvas text-muted hover:text-navy text-xs font-semibold transition-colors">
+            <a href="{{ route('bkk.mitra.lowongan.index') }}" class="px-4 py-2 rounded-full bg-canvas text-muted hover:text-brand-ink text-xs font-semibold transition-colors">
                 Kembali ke Lowongan
             </a>
         </div>
@@ -47,12 +45,12 @@
                     name="q"
                     value="{{ $search ?? '' }}"
                     placeholder="Cari nama kandidat siswa/alumni atau jurusan..."
-                    class="w-full pl-10 pr-4 py-2 bg-canvas text-navy placeholder:text-muted text-sm rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
+                    class="w-full pl-10 pr-4 py-2 bg-canvas text-brand-ink placeholder:text-muted text-sm rounded-full border border-line focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                 />
             </div>
 
             <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-                <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-navy rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
+                <select name="status" onchange="this.form.submit()" class="px-3.5 py-2 bg-canvas text-xs font-medium text-brand-ink rounded-full border border-line focus:outline-none focus:ring-1 focus:ring-navy">
                     <option value="Semua" {{ ($statusFilter ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Semua Status Seleksi</option>
                     <option value="Sedang Ditinjau" {{ ($statusFilter ?? '') === 'Sedang Ditinjau' ? 'selected' : '' }}>Sedang Ditinjau</option>
                     <option value="Dipanggil Interview" {{ ($statusFilter ?? '') === 'Dipanggil Interview' ? 'selected' : '' }}>Dipanggil Interview</option>
@@ -65,7 +63,7 @@
                 </button>
 
                 @if(!empty($search) || (!empty($statusFilter) && $statusFilter !== 'Semua'))
-                    <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="px-3 py-2 text-muted hover:text-navy text-xs font-medium">
+                    <a href="{{ route('bkk.mitra.pelamar.index', $vacancy['id']) }}" class="px-3 py-2 text-muted hover:text-brand-ink text-xs font-medium">
                         Reset
                     </a>
                 @endif
@@ -92,7 +90,7 @@
                         @php
                             $badgeColor = match($item['status']) {
                                 'Dipanggil Interview' => 'bg-amber-50 text-amber-800 border-amber-200',
-                                'Sedang Ditinjau' => 'bg-blue-50 text-blue-800 border-blue-200',
+                                'Sedang Ditinjau' => 'bg-navy/5 text-navy border-navy/20',
                                 'Diterima' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
                                 'Ditolak' => 'bg-red-50 text-red-800 border-red-200',
                                 default => 'bg-gray-100 text-gray-700 border-gray-200',
@@ -102,11 +100,11 @@
                             <!-- Kandidat Info -->
                             <td class="py-4 px-5">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-navy/10 text-navy font-bold flex items-center justify-center text-xs shrink-0">
+                                    <div class="w-9 h-9 rounded-full bg-brand-ink/10 text-brand-ink font-bold flex items-center justify-center text-xs shrink-0">
                                         {{ substr($item['nama'], 0, 1) }}
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="font-headline font-bold text-navy text-sm truncate">
+                                        <div class="font-headline font-bold text-brand-ink text-sm truncate">
                                             <a href="{{ route('bkk.mitra.pelamar.show', [$vacancy['id'], $item['id']]) }}" class="hover:text-maroon">
                                                 {{ $item['nama'] }}
                                             </a>
@@ -119,13 +117,13 @@
                             </td>
 
                             <!-- Jurusan -->
-                            <td class="py-4 px-4 hidden md:table-cell font-medium text-navy">
+                            <td class="py-4 px-4 hidden md:table-cell font-medium text-brand-ink">
                                 {{ $item['jurusan'] }}
                             </td>
 
                             <!-- AI CV Match Score -->
                             <td class="py-4 px-4 text-center">
-                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold {{ $item['cv_score'] >= 90 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold {{ $item['cv_score'] >= 90 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-navy/5 text-navy border border-navy/20' }}">
                                     <i data-lucide="sparkles" class="w-3 h-3"></i>
                                     {{ $item['cv_score'] }}%
                                 </span>
