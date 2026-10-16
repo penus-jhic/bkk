@@ -13,16 +13,14 @@
 <div class="flex flex-col gap-6">
     <!-- Page Header -->
     <div>
-        <div class="flex items-center gap-2 text-xs text-muted mb-1">
-            <a href="{{ route('bkk.admin.index') }}" class="hover:text-navy">Dashboard</a>
+        <div class="dash-eyebrow">
+            <a href="{{ route('bkk.admin.index') }}" class="hover:text-brand-ink">Dashboard</a>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-            <a href="{{ route('bkk.admin.mitra.index') }}" class="hover:text-navy">Mitra IDUKA</a>
+            <a href="{{ route('bkk.admin.mitra.index') }}" class="hover:text-brand-ink">Mitra IDUKA</a>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-            <span class="text-navy font-semibold">Permohonan Kerja Sama</span>
+            <span class="text-brand-ink font-semibold">Permohonan Kerja Sama</span>
         </div>
-        <h1 class="text-2xl font-bold font-headline text-navy">
-            Permohonan Kerja Sama
-        </h1>
+        <h1 class="dash-title font-display text-brand-ink">Permohonan <x-sketch.underline>Kerja Sama</x-sketch.underline></h1>
         <p class="text-xs text-muted mt-1">
             Pengajuan kemitraan dari perusahaan melalui formulir kerja sama di web publik BKK.
         </p>
@@ -52,7 +50,7 @@
 
                             <!-- Perusahaan -->
                             <td class="py-4 px-4">
-                                <div class="font-headline font-bold text-navy text-sm">{{ $item->nama_perusahaan }}</div>
+                                <div class="font-headline font-bold text-brand-ink text-sm">{{ $item->nama_perusahaan }}</div>
                                 <div class="text-[11px] text-muted mt-0.5">{{ $item->bidang_usaha }}</div>
                                 <div class="text-[11px] text-muted mt-0.5 max-w-[220px]">{{ $item->alamat_perusahaan }}</div>
                                 <div class="text-[10px] text-muted mt-1">Diajukan {{ $item->created_at?->format('d M Y H:i') }}</div>
@@ -60,7 +58,7 @@
 
                             <!-- PIC -->
                             <td class="py-4 px-4">
-                                <div class="font-semibold text-navy">{{ $item->nama_pic }}</div>
+                                <div class="font-semibold text-brand-ink">{{ $item->nama_pic }}</div>
                                 <div class="text-[11px] text-muted">{{ $item->jabatan_pic }}</div>
                                 <div class="text-[11px] text-maroon font-mono mt-0.5 flex items-center gap-1">
                                     <i data-lucide="phone" class="w-3 h-3"></i>
@@ -76,14 +74,14 @@
                             <td class="py-4 px-4">
                                 <div class="flex flex-wrap gap-1 max-w-[260px]">
                                     @foreach((array) $item->jenis_kerjasama as $jenis)
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">{{ $jenis }}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-navy/5 text-navy border border-navy/20">{{ $jenis }}</span>
                                     @endforeach
                                 </div>
                                 @if($item->pesan_tambahan)
                                     <p class="text-[11px] text-muted mt-1.5 max-w-[260px] leading-relaxed">{{ \Illuminate\Support\Str::limit($item->pesan_tambahan, 160) }}</p>
                                 @endif
                                 @if($item->catatan_admin)
-                                    <p class="text-[11px] text-navy mt-1.5 max-w-[260px]"><span class="font-semibold">Catatan admin:</span> {{ $item->catatan_admin }}</p>
+                                    <p class="text-[11px] text-brand-ink mt-1.5 max-w-[260px]"><span class="font-semibold">Catatan admin:</span> {{ $item->catatan_admin }}</p>
                                 @endif
                             </td>
 
@@ -125,7 +123,7 @@
                         <tr>
                             <td colspan="6" class="py-12 text-center">
                                 <i data-lucide="inbox" class="w-10 h-10 mx-auto text-muted/60"></i>
-                                <p class="text-sm font-semibold text-navy mt-3">Belum ada permohonan kerja sama</p>
+                                <p class="text-sm font-semibold text-brand-ink mt-3">Belum ada permohonan kerja sama</p>
                                 <p class="text-xs text-muted mt-1">Pengajuan dari formulir kerja sama publik akan muncul di sini.</p>
                             </td>
                         </tr>

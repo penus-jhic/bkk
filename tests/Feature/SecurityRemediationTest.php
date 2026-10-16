@@ -140,10 +140,9 @@ class SecurityRemediationTest extends TestCase
 EOT;
 
         $cv = CvResume::create([
-            'siswa_id' => $profil->user_id,
-            'judul_cv' => 'CV Default',
-            'konten_markdown' => $xssPayload,
-            'is_primary' => true,
+            'user_id' => $profil->user_id,
+            'raw_markdown' => $xssPayload,
+            'is_main' => true,
         ]);
 
         $lamaran = Lamaran::create([

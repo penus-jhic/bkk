@@ -177,8 +177,9 @@ class MeDataFetchingAndSubmissionTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('cv_resumes', [
-            'siswa_id' => 'usr-siswa-001',
-            'konten_markdown' => "# Ahmad Rizky Pratama\n\n## Ringkasan Profil\nJunior Web Developer berpengalaman dengan Laravel.",
+            'user_id' => 'usr-siswa-001',
+            'raw_markdown' => "# Ahmad Rizky Pratama\n\n## Ringkasan Profil\nJunior Web Developer berpengalaman dengan Laravel.",
+            'is_main' => true,
         ]);
     }
 

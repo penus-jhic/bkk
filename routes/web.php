@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminLowonganController;
 use App\Http\Controllers\Admin\AdminMitraController;
 use App\Http\Controllers\Admin\AdminPklController;
 use App\Http\Controllers\Admin\AdminTracerController;
+use App\Http\Controllers\Api\AiCvController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Me\MeController;
 use App\Http\Controllers\Mitra\MitraAuthController;
@@ -31,7 +32,22 @@ use Illuminate\Support\Facades\Route;
 // Redirect root ke /bkk
 Route::redirect('/', '/bkk');
 
+// Endpoint Integrasi AI CV sesuai AI_CONTRACT.md (/api/ai/cv/*)
+Route::middleware('verify.auth:SISWA,ALUMNI,ADMIN')->prefix('api/ai/cv')->name('api.ai.cv.')->group(function () {
+    Route::post('/score', [AiCvController::class, 'score'])->name('score');
+    Route::post('/scores', [AiCvController::class, 'score'])->name('scores');
+    Route::post('/suggestions', [AiCvController::class, 'suggestions'])->name('suggestions');
+    Route::post('/chat', [AiCvController::class, 'chat'])->name('chat');
+});
+
 Route::prefix('bkk')->group(function () {
+    // Alias /bkk/api/ai/cv/* untuk kompatibilitas path-based reverse proxy
+    Route::middleware('verify.auth:SISWA,ALUMNI,ADMIN')->prefix('api/ai/cv')->name('bkk.api.ai.cv.')->group(function () {
+        Route::post('/score', [AiCvController::class, 'score'])->name('score');
+        Route::post('/scores', [AiCvController::class, 'score'])->name('scores');
+        Route::post('/suggestions', [AiCvController::class, 'suggestions'])->name('suggestions');
+        Route::post('/chat', [AiCvController::class, 'chat'])->name('chat');
+    });
     // 0. Static Asset Handlers (Kompatibilitas Reverse Proxy Path-Based)
     Route::get('/images/{path}', [StaticAssetController::class, 'serveImage'])->where('path', '.*')->name('bkk.static.images');
     Route::get('/uploads/{path}', [StaticAssetController::class, 'serveUpload'])->where('path', '.*')->name('bkk.static.uploads');
@@ -107,7 +123,10 @@ Route::prefix('bkk')->group(function () {
         Route::get('/lamaran', [MeController::class, 'lamaran'])->name('lamaran');
         Route::get('/cv', [MeController::class, 'cv'])->name('cv');
         Route::post('/cv', [MeController::class, 'cvUpdate'])->name('cv.update');
+        Route::post('/cv/{id}/main', [MeController::class, 'cvSetMain'])->name('cv.setMain');
+        Route::delete('/cv/{id}', [MeController::class, 'cvDestroy'])->name('cv.destroy');
         Route::get('/cv/edit', [MeController::class, 'cvEdit'])->name('cv.edit');
+        Route::get('/cv/{id}/edit', [MeController::class, 'cvEditVersion'])->name('cv.editVersion');
         Route::get('/jurnal', [MeController::class, 'jurnal'])->name('jurnal');
         Route::post('/jurnal', [MeController::class, 'storeJurnal'])->name('jurnal.store');
         Route::get('/laporan', [MeController::class, 'laporan'])->name('laporan');

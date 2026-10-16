@@ -53,10 +53,6 @@ class BkkDatabaseAndModuleTest extends TestCase
         $expectedTables = [
             'profil_siswa',
             'cv_resumes',
-            'cv_pendidikan',
-            'cv_pengalaman',
-            'cv_keahlian',
-            'cv_sertifikat',
             'mitra',
             'permohonan_kerjasama',
             'lowongan',
@@ -103,14 +99,13 @@ class BkkDatabaseAndModuleTest extends TestCase
         // Lowongan
         $this->assertGreaterThanOrEqual(4, Lowongan::count());
 
-        // Resume CV & AI Score
-        $resume = CvResume::where('siswa_id', 'usr-siswa-001')->first();
+        // Resume CV & Checksum & Versioning
+        $resume = CvResume::where('user_id', 'usr-siswa-001')->where('is_main', true)->first();
         $this->assertNotNull($resume);
-        $this->assertEquals(94, $resume->skor_total_ai);
-        $this->assertGreaterThan(0, $resume->pendidikan()->count());
-        $this->assertGreaterThan(0, $resume->pengalaman()->count());
-        $this->assertGreaterThan(0, $resume->keahlian()->count());
-        $this->assertGreaterThan(0, $resume->sertifikat()->count());
+        $this->assertTrue($resume->is_main);
+        $this->assertNotEmpty($resume->raw_markdown);
+        $this->assertEquals(hash('sha256', trim(str_replace("\r\n", "\n", $resume->raw_markdown))), $resume->checksum);
+        $this->assertGreaterThanOrEqual(2, CvResume::where('user_id', 'usr-siswa-001')->count());
 
         // Lamaran & Interview
         $lamaran = Lamaran::with(['interview', 'riwayatStatus'])->where('siswa_id', 'usr-siswa-001')->first();

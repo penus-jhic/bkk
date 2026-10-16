@@ -166,7 +166,7 @@ class BeritaModuleTest extends TestCase
         $resIndex = $this->withHeader('Authorization', 'Bearer valid_token')
             ->get('/bkk/admin/berita');
         $resIndex->assertStatus(200);
-        $resIndex->assertSee('Kelola Berita &amp; Agenda BKK', false);
+        $resIndex->assertSeeText('Kelola Berita & Agenda BKK');
         $resIndex->assertSee('Job Fair Akbar 2025');
     }
 

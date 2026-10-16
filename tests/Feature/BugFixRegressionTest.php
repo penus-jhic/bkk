@@ -63,7 +63,7 @@ class BugFixRegressionTest extends TestCase
     public function test_student_without_cv_cannot_apply(): void
     {
         $this->fakeAuth('SISWA', 'usr-siswa-002');
-        CvResume::where('siswa_id', 'usr-siswa-002')->delete();
+        CvResume::where('user_id', 'usr-siswa-002')->delete();
         $lowongan = Lowongan::terbuka()->firstOrFail();
 
         $this->withHeader('Authorization', 'Bearer t')
@@ -97,7 +97,7 @@ class BugFixRegressionTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertNotNull(ProfilSiswa::find('usr-siswa-baru-777'));
-        $this->assertDatabaseHas('cv_resumes', ['siswa_id' => 'usr-siswa-baru-777', 'konten_markdown' => '# CV Baru']);
+        $this->assertDatabaseHas('cv_resumes', ['user_id' => 'usr-siswa-baru-777', 'raw_markdown' => '# CV Baru']);
     }
 
     public function test_admin_status_endpoints_reject_unknown_values(): void

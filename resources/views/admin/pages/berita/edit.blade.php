@@ -8,33 +8,33 @@
     <style>
         .EasyMDEContainer .CodeMirror {
             border-radius: 0 0 0.75rem 0.75rem;
-            border-color: #e5e2e0;
+            border-color: #EAE4E3;
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 13px;
             background: #ffffff;
         }
         .EasyMDEContainer .editor-toolbar {
             border-radius: 0.75rem 0.75rem 0 0;
-            border-color: #e5e2e0;
-            background: #f6f3f1;
+            border-color: #EAE4E3;
+            background: #F6F3F2;
         }
         .editor-preview, .editor-preview-side {
             background: #ffffff;
-            color: #1c1c1a;
+            color: #241012;
             padding: 1.5rem;
             font-family: 'Inter', sans-serif;
             font-size: 14px;
             line-height: 1.6;
         }
-        .editor-preview h1, .editor-preview-side h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #bc0013; }
-        .editor-preview h2, .editor-preview-side h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #1c1c1a; border-bottom: 1px solid #e5e2e0; padding-bottom: 0.25rem; }
+        .editor-preview h1, .editor-preview-side h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1rem; color: #7A1018; }
+        .editor-preview h2, .editor-preview-side h2 { font-size: 1.35rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #241012; border-bottom: 1px solid #EAE4E3; padding-bottom: 0.25rem; }
         .editor-preview h3, .editor-preview-side h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #875300; }
-        .editor-preview blockquote, .editor-preview-side blockquote { border-left: 4px solid #bc0013; padding-left: 1rem; color: #5f3f3b; font-style: italic; margin: 1rem 0; background: #f6f3f1; padding: 0.5rem 1rem; border-radius: 0 0.5rem 0.5rem 0; }
+        .editor-preview blockquote, .editor-preview-side blockquote { border-left: 4px solid #7A1018; padding-left: 1rem; color: #5E5253; font-style: italic; margin: 1rem 0; background: #F6F3F2; padding: 0.5rem 1rem; border-radius: 0 0.5rem 0.5rem 0; }
         .editor-preview ul, .editor-preview-side ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
         .editor-preview ol, .editor-preview-side ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; }
         .editor-preview table, .editor-preview-side table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-        .editor-preview th, .editor-preview-side th, .editor-preview td, .editor-preview-side td { border: 1px solid #e5e2e0; padding: 0.5rem; }
-        .editor-preview th, .editor-preview-side th { background: #f0edeb; }
+        .editor-preview th, .editor-preview-side th, .editor-preview td, .editor-preview-side td { border: 1px solid #EAE4E3; padding: 0.5rem; }
+        .editor-preview th, .editor-preview-side th { background: #F1ECEB; }
     </style>
 @endpush
 

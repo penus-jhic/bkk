@@ -7,143 +7,120 @@
     $isSiswa = ($role === 'SISWA');
     $activeCount = count($activeApplications ?? []);
     $interviewCount = count($interviews ?? []);
-    $completion = $profile['completion'] ?? 75;
-    $hour = (int) date('H');
-    $greet = ($hour < 11) ? 'Selamat pagi' : (($hour < 15) ? 'Selamat siang' : (($hour < 18) ? 'Selamat sore' : 'Selamat malam'));
+    $totalApplications = count($applications ?? []);
+    $acceptedCount = collect($applications ?? [])->where('status', 'Diterima')->count();
+    $completion = (int) ($profile['completion'] ?? 0);
+    $score = (int) ($cvScore['total'] ?? 0);
+    $firstName = \Illuminate\Support\Str::of($profile['name'] ?? 'Siswa')->explode(' ')->first();
+    $hour = (int) now()->format('H');
+    $greet = match (true) {
+        $hour < 11 => 'Selamat pagi',
+        $hour < 15 => 'Selamat siang',
+        $hour < 18 => 'Selamat sore',
+        default => 'Selamat malam',
+    };
+
+    // Hal yang sebaiknya dikerjakan siswa/alumni sekarang
+    $todo = array_values(array_filter([
+        $interviewCount > 0 ? ['count' => $interviewCount, 'label' => 'undangan interview menunggu konfirmasi', 'href' => route('bkk.me.lamaran')] : null,
+        $completion < 100 ? ['count' => $completion . '%', 'label' => 'kelengkapan profil, lengkapi agar dilirik mitra', 'href' => route('bkk.me.cv.edit')] : null,
+        $score > 0 && $score < 70 ? ['count' => $score, 'label' => 'skor CV, perbaiki dengan saran AI', 'href' => route('bkk.me.cv')] : null,
+    ]));
+
+    $nearestInterview = $interviews[0] ?? null;
+    $kpis = [
+        ['label' => 'Lamaran Aktif', 'value' => $activeCount, 'icon' => 'briefcase', 'note' => $totalApplications . ' lamaran terkirim seluruhnya', 'href' => route('bkk.me.lamaran')],
+        ['label' => 'Panggilan Interview', 'value' => $interviewCount, 'icon' => 'calendar-check', 'note' => $nearestInterview ? 'Terdekat: ' . $nearestInterview['company'] : 'Belum ada jadwal wawancara', 'href' => route('bkk.me.lamaran'), 'alert' => $interviewCount > 0],
+        ['label' => 'Skor CV', 'value' => $score, 'suffix' => '/100', 'icon' => 'sparkles', 'note' => $score >= 80 ? 'CV sudah kuat, pertahankan' : 'Optimalkan dengan saran AI', 'href' => route('bkk.me.cv')],
+        ['label' => 'Diterima Mitra', 'value' => $acceptedCount, 'icon' => 'badge-check', 'note' => 'dari ' . $totalApplications . ' lamaran', 'href' => route('bkk.me.lamaran')],
+    ];
+
+    $card = 'bg-white rounded-card border border-brand-ink/10 shadow-card';
 @endphp
 
 @section('content')
-<div class="space-y-6 fade-up">
-    <!-- Greeting Banner -->
-    <div class="p-6 sm:p-8 bg-white border border-line rounded-3xl relative overflow-hidden shadow-sm">
-        <div class="absolute right-0 top-0 h-full w-1/2 pointer-events-none hidden md:block">
-            <div class="absolute right-10 top-6 w-40 h-40 rounded-full bg-navy/5"></div>
-            <div class="absolute right-40 bottom-[-40px] w-32 h-32 rounded-full bg-maroon/10"></div>
-            <div class="absolute right-16 bottom-8 w-14 h-14 rounded-2xl bg-line/40 rotate-12"></div>
-        </div>
-
-        <div class="relative flex flex-col md:flex-row md:items-center gap-6">
-            <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $isSiswa ? 'bg-navy text-white' : 'bg-maroon text-white' }}">
-                        {{ $isSiswa ? 'Siswa PKL' : 'Alumni' }}
-                    </span>
-                    <span class="text-xs text-muted font-medium">{{ $profile['jurusan'] ?? 'SMK Plus Pelita Nusantara' }}</span>
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-bold text-navy tracking-tight">
-                    Halo, {{ $profile['name'] }} 👋
+<div class="space-y-8 fade-up">
+    {{-- HERO --}}
+    <section class="{{ $card }} relative p-6 sm:p-8 overflow-hidden">
+        <div class="absolute -right-20 -top-24 w-72 h-72 rounded-full bg-brand-darkred/[0.04] pointer-events-none"></div>
+        <div class="relative grid lg:grid-cols-[1fr_340px] gap-8 items-center">
+            <div>
+                <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-darkred">
+                    Portal {{ $isSiswa ? 'Siswa PKL' : 'Alumni' }} · {{ $profile['jurusan'] ?? 'SMK Plus Pelita Nusantara' }}
+                </p>
+                <h1 class="mt-3 font-display text-3xl sm:text-4xl lg:text-[44px] font-bold uppercase tracking-wide text-brand-ink leading-[1.1]">
+                    {{ $greet }}, <x-sketch.underline size="md">{{ $firstName }}</x-sketch.underline>
                 </h1>
-                <p class="text-muted mt-1.5 text-sm sm:text-base leading-relaxed">
-                    {{ $greet }}!
+                <p class="mt-5 text-sm sm:text-[15px] text-brand-ink/70 leading-relaxed max-w-2xl">
                     @if($interviewCount > 0)
-                        Anda punya <b class="text-maroon">{{ $interviewCount }} undangan interview</b> yang menunggu konfirmasi kehadiran.
+                        Anda punya <b class="text-brand-ink">{{ $activeCount }} lamaran aktif</b> dan
+                        <b class="text-brand-darkred">{{ $interviewCount }} undangan interview</b> yang menunggu konfirmasi kehadiran.
                     @else
-                        Terus pantau status lamaran kerja/PKL dan rekomendasi lowongan mitra industri terbaru.
+                        Anda punya <b class="text-brand-ink">{{ $activeCount }} lamaran aktif</b>. Terus pantau status lamaran
+                        dan rekomendasi lowongan mitra industri terbaru.
                     @endif
                 </p>
+                <div class="mt-6 flex flex-wrap gap-2.5">
+                    <a href="{{ route('bkk.lowongan') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-gradient-to-r from-brand-signal to-brand-darkred text-white text-sm font-semibold shadow-[0_4px_14px_0_rgba(122,16,24,0.25)] hover:-translate-y-px transition-transform">
+                        Cari Lowongan
+                        <x-sketch.arrow class="w-6 h-3" />
+                    </a>
+                    <a href="{{ route('bkk.me.cv.edit') }}" class="inline-flex items-center gap-2 h-10 px-5 rounded-full border border-brand-ink/15 bg-white text-brand-ink text-sm font-semibold hover:bg-brand-softmist transition-colors">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-brand-darkred"></i>
+                        Optimalkan CV
+                    </a>
+                </div>
             </div>
 
-            <div class="md:w-80 bg-[#f8f9fa] rounded-2xl border border-line p-4">
-                <div class="flex justify-between text-sm mb-2 font-medium">
-                    <span class="text-navy">Kelengkapan Profil</span>
-                    <span class="font-bold text-navy">{{ $completion }}%</span>
-                </div>
-                <div class="h-2 rounded-full bg-line/60 overflow-hidden">
-                    <div class="h-full rounded-full transition-all duration-700 {{ $completion >= 85 ? 'bg-navy' : 'bg-maroon' }}" style="width: {{ $completion }}%"></div>
-                </div>
-                <a href="{{ route('bkk.me.cv.edit') }}" class="text-xs text-maroon font-semibold mt-3 inline-flex items-center gap-1 hover:underline">
-                    <span>Lengkapi profil sekarang</span>
-                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4 Metric Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <!-- Metric 1: Lamaran Aktif -->
-        <div class="p-5 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-muted font-medium">Lamaran Aktif</span>
-                <div class="w-9 h-9 rounded-full bg-navy/8 grid place-items-center text-navy">
-                    <i data-lucide="briefcase" class="w-4 h-4"></i>
-                </div>
-            </div>
-            <div class="text-3xl font-bold text-navy mt-3">{{ $activeCount }}</div>
-            <div class="flex items-center gap-1 text-xs mt-1 text-emerald-700 font-medium">
-                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-                <span>+2 dari minggu lalu</span>
-            </div>
-            <div class="flex items-end gap-1 h-8 mt-3">
-                @foreach([30, 45, 20, 60, 50, 75, 95] as $bar)
-                    <div class="flex-1 rounded-sm bg-navy" style="height: {{ $bar }}%; opacity: {{ 0.3 + ($loop->index * 0.1) }};"></div>
-                @endforeach
-            </div>
-        </div>
-
-        <!-- Metric 2: Panggilan Interview -->
-        <div class="p-5 bg-gradient-to-br from-white to-maroon/5 border border-maroon/30 rounded-2xl hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-maroon font-semibold">Panggilan Interview</span>
-                <div class="w-9 h-9 rounded-full bg-maroon grid place-items-center text-white">
-                    <i data-lucide="calendar-check" class="w-4 h-4"></i>
-                </div>
-            </div>
-            <div class="text-3xl font-bold text-maroon mt-3">{{ $interviewCount }}</div>
-            @if(!empty($interviews[0]['interview']))
-                <div class="text-xs mt-1 text-muted">
-                    Terdekat: <b class="text-navy">{{ $interviews[0]['company'] }}</b> · {{ explode(',', $interviews[0]['interview']['date'])[1] ?? '' }}
-                </div>
-            @else
-                <div class="text-xs mt-1 text-muted">Belum ada jadwal wawancara baru</div>
-            @endif
-            <div class="mt-4 flex -space-x-2">
-                @foreach($interviews as $inv)
-                    <div class="w-7 h-7 rounded-lg text-white font-bold text-[10px] grid place-items-center ring-2 ring-white shadow-sm" style="background: {{ $inv['color'] }}">
-                        {{ strtoupper(substr($inv['company'], 0, 2)) }}
+            {{-- Perlu tindakan --}}
+            <div class="relative rounded-card bg-brand-paper p-5">
+                <x-sketch.corner class="-left-2 -top-2 w-20 h-8" />
+                <x-sketch.corner :delay="350" class="-right-2 -bottom-2 rotate-180 w-20 h-8" />
+                <h2 class="font-display text-lg uppercase tracking-wide text-brand-ink">Perlu Tindakan</h2>
+                <ul class="mt-3 space-y-1.5">
+                    @forelse($todo as $item)
+                        <li>
+                            <a href="{{ $item['href'] }}" class="group flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-white transition-colors">
+                                <span class="min-w-8 h-8 px-2 rounded-full bg-brand-darkred text-white font-display text-sm grid place-items-center">{{ $item['count'] }}</span>
+                                <span class="text-sm text-brand-ink flex-1">{{ $item['label'] }}</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-muted group-hover:text-brand-darkred group-hover:translate-x-0.5 transition-transform"></i>
+                            </a>
+                        </li>
+                    @empty
+                        <li class="flex items-center gap-2 text-sm text-brand-ink/70 py-2">
+                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                            Profil & CV sudah siap, tinggal melamar.
+                        </li>
+                    @endforelse
+                </ul>
+                <div class="mt-4 pt-3 border-t border-brand-ink/10">
+                    <div class="flex justify-between text-xs font-semibold text-brand-ink">
+                        <span>Kelengkapan profil</span>
+                        <span class="tabular-nums">{{ $completion }}%</span>
                     </div>
-                @endforeach
-            </div>
-        </div>
-
-        <!-- Metric 3: CV Health Score -->
-        <div class="p-5 bg-white gemini-border rounded-2xl hover:shadow-md transition-shadow relative overflow-hidden">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-muted font-medium">CV Health Score</span>
-                <i data-lucide="sparkles" class="w-5 h-5 text-maroon"></i>
-            </div>
-            <div class="text-3xl font-bold text-navy mt-3">
-                {{ $cvScore['total'] ?? 82 }}<span class="text-base text-muted font-normal">/100</span>
-            </div>
-            <div class="h-2 rounded-full bg-line/60 overflow-hidden mt-2">
-                <div class="h-full rounded-full transition-all duration-700" style="width: {{ $cvScore['total'] ?? 82 }}%; background: linear-gradient(90deg, #741918, #1b283b)"></div>
-            </div>
-            <a href="{{ route('bkk.me.cv') }}" class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-maroon hover:underline">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span>Optimalkan dengan AI</span>
-            </a>
-        </div>
-
-        <!-- Metric 4: Profil Dilihat Mitra -->
-        <div class="p-5 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow">
-            <div class="flex items-center justify-between">
-                <span class="text-sm text-muted font-medium">Profil Dilihat Mitra</span>
-                <div class="w-9 h-9 rounded-full bg-emerald-50 grid place-items-center text-emerald-700">
-                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    <div class="mt-1.5 h-2 rounded-full bg-white overflow-hidden">
+                        <div class="h-full rounded-full bg-brand-darkred" style="width: {{ $completion }}%"></div>
+                    </div>
                 </div>
             </div>
-            <div class="text-3xl font-bold text-navy mt-3">{{ $isSiswa ? 23 : 41 }}</div>
-            <div class="flex items-center gap-1 text-xs mt-1 text-emerald-700 font-medium">
-                <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-                <span>+18% dalam 30 hari</span>
-            </div>
-            <div class="flex items-end gap-1 h-8 mt-3">
-                @foreach([20, 35, 55, 45, 65, 80, 90] as $bar)
-                    <div class="flex-1 rounded-sm bg-maroon" style="height: {{ $bar }}%; opacity: {{ 0.3 + ($loop->index * 0.1) }};"></div>
-                @endforeach
-            </div>
         </div>
-    </div>
+    </section>
+
+    {{-- KPI --}}
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" aria-label="Ringkasan lamaran">
+        @foreach($kpis as $kpi)
+            <a href="{{ $kpi['href'] }}" class="{{ $card }} group p-5 hover:border-brand-darkred/25 hover:shadow-softpill transition-all {{ !empty($kpi['alert']) ? 'ring-1 ring-brand-darkred/20' : '' }}">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider {{ !empty($kpi['alert']) ? 'text-brand-darkred' : 'text-brand-ink/60' }}">{{ $kpi['label'] }}</span>
+                    <span class="w-9 h-9 rounded-full grid place-items-center transition-colors {{ !empty($kpi['alert']) ? 'bg-brand-darkred text-white' : 'bg-brand-darkred/[0.07] text-brand-darkred group-hover:bg-brand-darkred group-hover:text-white' }}">
+                        <i data-lucide="{{ $kpi['icon'] }}" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="mt-3 font-display text-5xl font-bold text-brand-ink leading-none">{{ number_format($kpi['value']) }}@if(!empty($kpi['suffix']))<span class="text-lg text-brand-ink/40">{{ $kpi['suffix'] }}</span>@endif</div>
+                <div class="mt-3 pt-3 border-t border-brand-ink/10 text-xs text-brand-ink/60 truncate">{{ $kpi['note'] }}</div>
+            </a>
+        @endforeach
+    </section>
 
     <!-- Main Section: Tracker Lamaran + Rekomendasi Lowongan -->
     <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
@@ -151,7 +128,7 @@
         <div class="xl:col-span-2 space-y-4">
             <div class="flex items-end justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-navy">Tracker Lamaran</h2>
+                    <h2 class="text-lg font-bold text-brand-ink">Tracker Lamaran</h2>
                     <p class="text-xs text-muted">3 lamaran terbaru yang Anda kirimkan</p>
                 </div>
                 <a href="{{ route('bkk.me.lamaran') }}" class="text-xs font-semibold text-maroon inline-flex items-center gap-1 hover:underline">
@@ -164,12 +141,12 @@
                 @forelse(array_slice($applications, 0, 3) as $app)
                     @php
                         $statusBadgeClass = match($app['status']) {
-                            'Terkirim' => 'border border-navy text-navy bg-white',
+                            'Terkirim' => 'border border-navy text-brand-ink bg-white',
                             'Sedang Ditinjau' => 'bg-amber-100 text-amber-800 border border-amber-200',
                             'Dipanggil Interview' => 'bg-maroon text-white border border-maroon',
                             'Diterima' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
                             'Ditolak' => 'bg-gray-100 text-muted border border-gray-200',
-                            default => 'bg-gray-100 text-navy'
+                            default => 'bg-gray-100 text-brand-ink'
                         };
                     @endphp
                     <div class="p-4 bg-white border border-line rounded-2xl hover:shadow-md transition-shadow cursor-pointer" onclick='openDetailModal(@json($app))'>
@@ -180,7 +157,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="min-w-0">
-                                        <div class="font-semibold text-sm text-navy truncate">{{ $app['position'] }}</div>
+                                        <div class="font-semibold text-sm text-brand-ink truncate">{{ $app['position'] }}</div>
                                         <div class="text-xs text-muted mt-0.5">{{ $app['company'] }} · {{ $app['date'] }}</div>
                                     </div>
                                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap {{ $statusBadgeClass }}">
@@ -220,7 +197,7 @@
                                                     {{ $idx + 1 }}
                                                 @endif
                                             </div>
-                                            <span class="text-[10px] {{ $isDone ? 'text-navy font-semibold' : 'text-muted' }}">{{ $st }}</span>
+                                            <span class="text-[10px] {{ $isDone ? 'text-brand-ink font-semibold' : 'text-muted' }}">{{ $st }}</span>
                                         </div>
                                         @if(!$isLast)
                                             <div class="flex-1 h-0.5 mx-1 -mt-4 {{ $idx < $currentStep - 1 ? 'bg-navy' : 'bg-line' }}"></div>
@@ -235,7 +212,7 @@
                         <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
                             <i data-lucide="inbox" class="w-5 h-5"></i>
                         </div>
-                        <div class="font-bold text-sm text-navy">Belum Ada Lamaran Aktif</div>
+                        <div class="font-bold text-sm text-brand-ink">Belum Ada Lamaran Aktif</div>
                         <p class="text-xs text-muted max-w-xs mx-auto">Anda belum mengajukan lamaran atau pendaftaran PKL. Silakan jelajahi lowongan yang tersedia untuk mulai mendaftar.</p>
                     </div>
                 @endforelse
@@ -246,7 +223,7 @@
         <div class="xl:col-span-3 space-y-4">
             <div class="flex items-end justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-navy">
+                    <h2 class="text-lg font-bold text-brand-ink">
                         {{ $isSiswa ? 'Rekomendasi PKL & Lowongan' : 'Lowongan Direkomendasikan' }}
                     </h2>
                     <p class="text-xs text-muted">Dikurasi AI berdasarkan jurusan & kata kunci CV Anda</p>
@@ -266,10 +243,10 @@
                                     {{ strtoupper(substr($v['company'], 0, 2)) }}
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-sm text-navy leading-snug truncate">{{ $v['title'] }}</div>
+                                    <div class="font-bold text-sm text-brand-ink leading-snug truncate">{{ $v['title'] }}</div>
                                     <div class="text-xs text-muted mt-0.5">{{ $v['company'] }}</div>
                                 </div>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $v['match'] >= 90 ? 'bg-maroon text-white' : 'bg-navy/10 text-navy' }}">
+                                <span class="rounded-full px-2 py-0.5 text-xs font-bold {{ $v['match'] >= 90 ? 'bg-maroon text-white' : 'bg-brand-ink/10 text-brand-ink' }}">
                                     {{ $v['match'] }}%
                                 </span>
                             </div>
@@ -289,16 +266,16 @@
                             <div class="flex flex-wrap gap-1.5 mt-3">
                                 <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">{{ $v['type'] }}</span>
                                 @foreach($v['tags'] as $tg)
-                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f1f3f4] text-muted">{{ $tg }}</span>
+                                    <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-brand-softmist text-muted">{{ $tg }}</span>
                                 @endforeach
                             </div>
                         </div>
 
                         <div class="mt-5 pt-3 border-t border-line flex items-center justify-between gap-2">
-                            <button onclick="showToast('Lowongan disimpan ke bookmark')" class="text-xs text-muted hover:text-navy font-medium cursor-pointer transition-colors">
+                            <button onclick="showToast('Lowongan disimpan ke bookmark')" class="text-xs text-muted hover:text-brand-ink font-medium cursor-pointer transition-colors">
                                 Simpan
                             </button>
-                            <button id="btn-apply-{{ $v['id'] }}" onclick="applyVacancy('{{ $v['id'] }}', '{{ $v['title'] }}')" class="h-8 px-4 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer">
+                            <button id="btn-apply-{{ $v['id'] }}" onclick="applyVacancy(@js($v['id']), @js($v['title']))" class="h-8 px-4 rounded-full bg-maroon text-white text-xs font-semibold hover:bg-maroon-dark transition-colors shadow-sm cursor-pointer">
                                 Lamar Sekarang
                             </button>
                         </div>
@@ -308,7 +285,7 @@
                         <div class="w-10 h-10 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
                             <i data-lucide="briefcase" class="w-5 h-5"></i>
                         </div>
-                        <div class="font-bold text-sm text-navy">Belum Ada Lowongan Aktif</div>
+                        <div class="font-bold text-sm text-brand-ink">Belum Ada Lowongan Aktif</div>
                         <p class="text-xs text-muted max-w-xs mx-auto">Saat ini belum ada lowongan atau posisi PKL aktif yang tersedia.</p>
                     </div>
                 @endforelse
@@ -318,11 +295,11 @@
 </div>
 
 <!-- Slide-in Detail Drawer for Application Status -->
-<div id="detailDrawerBackdrop" class="fixed inset-0 bg-navy/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
+<div id="detailDrawerBackdrop" class="fixed inset-0 bg-brand-ink/40 backdrop-blur-[1px] z-50 hidden transition-opacity duration-300" onclick="closeDetailModal()"></div>
 
 <aside id="detailDrawer" class="fixed right-0 top-0 bottom-0 w-full sm:w-[460px] bg-white shadow-2xl flex flex-col z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden">
     <div class="flex items-center justify-between px-5 h-16 border-b border-line shrink-0">
-        <span class="font-bold text-navy text-base">Detail Seleksi & Timeline</span>
+        <span class="font-bold text-brand-ink text-base">Detail Seleksi & Timeline</span>
         <button onclick="closeDetailModal()" class="w-9 h-9 rounded-full grid place-items-center hover:bg-canvas cursor-pointer text-muted" aria-label="Tutup">
             <i data-lucide="x" class="w-5 h-5"></i>
         </button>
@@ -333,7 +310,7 @@
     </div>
 
     <div class="p-4 border-t border-line flex gap-2 justify-end bg-canvas">
-        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-navy bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
+        <button onclick="window.print()" class="h-9 px-4 rounded-full border border-line text-brand-ink bg-white text-xs font-semibold hover:bg-canvas inline-flex items-center gap-1.5 cursor-pointer">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
             <span>Unduh Bukti</span>
         </button>
@@ -399,10 +376,10 @@
                     <div class="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none"></div>
                     <div class="text-[11px] uppercase tracking-wider text-white/80 font-bold">Jadwal Interview & Wawancara</div>
                     <div class="mt-3 space-y-2 text-xs relative">
-                        <div class="flex items-center gap-2.5"><i data-lucide="calendar" class="w-4 h-4 text-white/70"></i><span>${app.interview.date}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="clock" class="w-4 h-4 text-white/70"></i><span>${app.interview.time}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="map-pin" class="w-4 h-4 text-white/70"></i><span>${app.interview.mode} — ${app.interview.place}</span></div>
-                        <div class="flex items-center gap-2.5"><i data-lucide="user" class="w-4 h-4 text-white/70"></i><span>PIC: ${app.interview.pic}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="calendar" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.date)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="clock" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.time)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="map-pin" class="w-4 h-4 text-white/70"></i><span>${escapeHtml(app.interview.mode)} — ${escapeHtml(app.interview.place)}</span></div>
+                        <div class="flex items-center gap-2.5"><i data-lucide="user" class="w-4 h-4 text-white/70"></i><span>PIC: ${escapeHtml(app.interview.pic)}</span></div>
                     </div>
                     <div class="flex gap-2 mt-4 relative">
                         <button onclick="showToast('Kehadiran interview berhasil dikonfirmasi')" class="h-8 px-4 rounded-full bg-white text-maroon text-xs font-bold hover:bg-canvas cursor-pointer shadow-sm">Konfirmasi Hadir</button>
@@ -416,26 +393,29 @@
             timelineItemsHtml = app.timeline.map((t, idx) => `
                 <li class="pl-6 relative">
                     <span class="absolute -left-[9px] top-0.5 w-4 h-4 rounded-full bg-white grid place-items-center">
-                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-navy' : 'text-line'}"></i>
+                        <i data-lucide="${t.done ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${t.done ? 'text-brand-ink' : 'text-line'}"></i>
                     </span>
-                    <div class="text-xs font-semibold ${t.done ? 'text-navy' : 'text-muted'}">${t.title}</div>
-                    <div class="text-[11px] text-muted leading-relaxed">${t.desc}</div>
-                    ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${t.date}</div>` : ''}
+                    <div class="text-xs font-semibold ${t.done ? 'text-brand-ink' : 'text-muted'}">${escapeHtml(t.title)}</div>
+                    <div class="text-[11px] text-muted leading-relaxed">${escapeHtml(t.desc)}</div>
+                    ${t.date ? `<div class="text-[10px] text-muted/70 mt-0.5">${escapeHtml(t.date)}</div>` : ''}
                 </li>
             `).join('');
         }
 
+        const validColor = /^#[0-9a-fA-F]{6}$/.test(app.color || '') ? app.color : '#241012';
+        const companyShort = escapeHtml(String(app.company || '').substring(0, 2).toUpperCase());
+
         body.innerHTML = `
             <div class="flex gap-4 items-center">
-                <div class="w-13 h-13 rounded-2xl grid place-items-center text-white font-bold text-base shrink-0 shadow-sm" style="width: 52px; height: 52px; background: ${app.color}">
-                    ${app.company.substring(0, 2).toUpperCase()}
+                <div class="w-13 h-13 rounded-2xl grid place-items-center text-white font-bold text-base shrink-0 shadow-sm" style="width: 52px; height: 52px; background: ${validColor}">
+                    ${companyShort}
                 </div>
                 <div class="min-w-0">
-                    <h3 class="font-bold text-base text-navy leading-snug">${app.position}</h3>
-                    <div class="text-xs text-muted mt-0.5">${app.company} · ${app.location}</div>
+                    <h3 class="font-bold text-base text-brand-ink leading-snug">${escapeHtml(app.position)}</h3>
+                    <div class="text-xs text-muted mt-0.5">${escapeHtml(app.company)} · ${escapeHtml(app.location)}</div>
                     <div class="flex flex-wrap gap-2 mt-2">
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${app.status}</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[#f1f3f4] text-muted">${app.type}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold bg-navy text-white">${escapeHtml(app.status)}</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-brand-softmist text-muted">${escapeHtml(app.type)}</span>
                     </div>
                 </div>
             </div>
@@ -449,8 +429,8 @@
                 </ol>
             </div>
 
-            <div class="rounded-2xl bg-[#f8f9fa] border border-line p-4 text-xs">
-                <div class="font-semibold text-navy mb-1 flex items-center gap-1.5">
+            <div class="rounded-2xl bg-brand-paper border border-line p-4 text-xs">
+                <div class="font-semibold text-brand-ink mb-1 flex items-center gap-1.5">
                     <i data-lucide="message-square" class="w-3.5 h-3.5 text-muted"></i>
                     <span>Catatan BKK Penus</span>
                 </div>

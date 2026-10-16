@@ -9,7 +9,8 @@
     <div class="space-y-6 fade-up">
         <!-- Title & Subtitle -->
         <div>
-            <h1 class="text-2xl font-bold text-navy tracking-tight">Jurnal PKL Harian</h1>
+            <p class="dash-eyebrow">Portal Siswa · Khusus PKL</p>
+            <h1 class="dash-title font-display text-brand-ink">Jurnal PKL <x-sketch.underline>Harian</x-sketch.underline></h1>
             <p class="text-xs sm:text-sm text-muted">Catat agenda dan aktivitas harian PKL untuk divalidasi oleh pembimbing industri & guru sekolah.</p>
         </div>
 
@@ -26,10 +27,10 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="p-5 bg-white border border-line rounded-2xl shadow-sm">
                 <div class="text-xs text-muted font-medium flex items-center gap-2">
-                    <i data-lucide="clock" class="w-4 h-4 text-navy"></i>
+                    <i data-lucide="clock" class="w-4 h-4 text-brand-ink"></i>
                     <span>Total Jam PKL</span>
                 </div>
-                <div class="text-2xl sm:text-3xl font-bold text-navy mt-2">
+                <div class="text-2xl sm:text-3xl font-bold text-brand-ink mt-2">
                     {{ $totalHours }}<span class="text-sm text-muted font-normal"> / {{ $targetHours }} jam</span>
                 </div>
                 <div class="h-2 rounded-full bg-line/60 overflow-hidden mt-3">
@@ -39,10 +40,10 @@
 
             <div class="p-5 bg-white border border-line rounded-2xl shadow-sm">
                 <div class="text-xs text-muted font-medium flex items-center gap-2">
-                    <i data-lucide="map-pin" class="w-4 h-4 text-navy"></i>
+                    <i data-lucide="map-pin" class="w-4 h-4 text-brand-ink"></i>
                     <span>Tempat PKL</span>
                 </div>
-                <div class="font-bold text-base sm:text-lg text-navy mt-2 truncate">{{ $mitraNama }}</div>
+                <div class="font-bold text-base sm:text-lg text-brand-ink mt-2 truncate">{{ $mitraNama }}</div>
                 <div class="text-xs text-muted mt-1 truncate">{{ $pembimbingNama }}</div>
             </div>
 
@@ -51,7 +52,7 @@
                     <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
                     <span>Jurnal Disetujui</span>
                 </div>
-                <div class="text-2xl sm:text-3xl font-bold text-navy mt-2">{{ $approvedCount }}</div>
+                <div class="text-2xl sm:text-3xl font-bold text-brand-ink mt-2">{{ $approvedCount }}</div>
                 <div class="text-xs text-maroon font-semibold mt-1">{{ $revisionCount }} catatan perlu perbaikan</div>
             </div>
         </div>
@@ -61,7 +62,7 @@
             <!-- Left: Form Input (2 cols) -->
             <div class="lg:col-span-2 p-5 sm:p-6 bg-white border border-line rounded-3xl shadow-sm space-y-4">
                 <div>
-                    <div class="flex items-center gap-2 font-bold text-navy text-sm sm:text-base">
+                    <div class="flex items-center gap-2 font-bold text-brand-ink text-sm sm:text-base">
                         <i data-lucide="notebook-pen" class="w-5 h-5 text-maroon"></i>
                         <span>Log Cepat Hari Ini</span>
                     </div>
@@ -76,7 +77,7 @@
                         id="jurnalActivity"
                         rows="5"
                         placeholder="Contoh: Konfigurasi router Mikrotik dan penyambungan kabel drop core FO ke pelanggan…"
-                        class="w-full p-3.5 rounded-2xl border border-line bg-canvas/40 focus:bg-white focus:border-navy outline-none text-xs sm:text-sm text-navy leading-relaxed transition"
+                        class="w-full p-3.5 rounded-2xl border border-line bg-canvas/40 focus:bg-white focus:border-navy outline-none text-xs sm:text-sm text-brand-ink leading-relaxed transition"
                     ></textarea>
                 </div>
 
@@ -89,7 +90,7 @@
                                 type="button"
                                 onclick="selectHours({{ $h }})"
                                 data-hours="{{ $h }}"
-                                class="h-8 px-3.5 rounded-full text-xs font-semibold border transition-all cursor-pointer {{ $h === 8 ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-line hover:bg-canvas' }}"
+                                class="h-8 px-3.5 rounded-full text-xs font-semibold border transition-all cursor-pointer {{ $h === 8 ? 'bg-navy text-white border-navy' : 'bg-white text-brand-ink border-line hover:bg-canvas' }}"
                             >
                                 {{ $h }} jam
                             </button>
@@ -133,10 +134,10 @@
                     <div class="p-4 sm:p-5 bg-white border border-line rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <div class="text-xs text-muted font-medium">{{ $entry['date'] }} · <span class="text-navy font-semibold">{{ $entry['hours'] }} jam</span></div>
-                                <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">{{ $entry['activity'] }}</div>
+                                <div class="text-xs text-muted font-medium">{{ $entry['date'] }} · <span class="text-brand-ink font-semibold">{{ $entry['hours'] }} jam</span></div>
+                                <div class="text-xs sm:text-sm text-brand-ink mt-1.5 leading-relaxed font-medium">{{ $entry['activity'] }}</div>
                                 @if(!empty($entry['catatan']))
-                                    <div class="mt-2 text-xs bg-canvas p-2.5 rounded-xl border border-line text-navy/90">
+                                    <div class="mt-2 text-xs bg-canvas p-2.5 rounded-xl border border-line text-brand-ink/90">
                                         <span class="font-semibold text-maroon">Catatan Pembimbing:</span> {{ $entry['catatan'] }}
                                     </div>
                                 @endif
@@ -151,7 +152,7 @@
                         <div class="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mx-auto text-muted">
                             <i data-lucide="notebook" class="w-6 h-6"></i>
                         </div>
-                        <div class="font-bold text-sm text-navy">Belum Ada Catatan Jurnal</div>
+                        <div class="font-bold text-sm text-brand-ink">Belum Ada Catatan Jurnal</div>
                         <p class="text-xs text-muted max-w-sm mx-auto">Anda belum mencatat aktivitas PKL. Gunakan formulir di sebelah kiri untuk mengisi log aktivitas harian Anda.</p>
                     </div>
                 @endforelse
@@ -172,7 +173,7 @@
             if (val === h) {
                 btn.className = "h-8 px-3.5 rounded-full text-xs font-semibold border transition-all cursor-pointer bg-navy text-white border-navy";
             } else {
-                btn.className = "h-8 px-3.5 rounded-full text-xs font-semibold border transition-all cursor-pointer bg-white text-navy border-line hover:bg-canvas";
+                btn.className = "h-8 px-3.5 rounded-full text-xs font-semibold border transition-all cursor-pointer bg-white text-brand-ink border-line hover:bg-canvas";
             }
         });
     }
@@ -256,14 +257,15 @@
             card.innerHTML = `
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <div class="text-xs text-muted font-medium">${dateStr} · <span class="text-navy font-semibold">${selectedDuration} jam</span></div>
-                        <div class="text-xs sm:text-sm text-navy mt-1.5 leading-relaxed font-medium">${activity}</div>
+                        <div class="text-xs text-muted font-medium">${escapeHtml(dateStr)} · <span class="text-brand-ink font-semibold">${escapeHtml(selectedDuration)} jam</span></div>
+                        <div class="text-xs sm:text-sm text-brand-ink mt-1.5 leading-relaxed font-medium jurnal-entry-activity"></div>
                     </div>
                     <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap bg-amber-100 text-amber-800">
                         Menunggu
                     </span>
                 </div>
             `;
+            card.querySelector('.jurnal-entry-activity').textContent = activity;
 
             list.insertBefore(card, list.firstChild);
             textarea.value = '';

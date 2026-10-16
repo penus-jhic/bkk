@@ -147,77 +147,42 @@
 {{-- ============================================================
      2. HERO
      ============================================================ --}}
-<section id="beranda" class="relative overflow-hidden bg-white pt-28 md:pt-36 pb-16 md:pb-24 px-6 scroll-mt-24">
-    {{-- Latar: grid halus + semburat merah --}}
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-        <div class="absolute inset-0 bg-[linear-gradient(to_right,rgb(36_16_18/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(36_16_18/0.04)_1px,transparent_1px)] bg-size-[44px_44px] mask-[radial-gradient(ellipse_70%_60%_at_30%_30%,#000_60%,transparent_100%)]"></div>
-        <div class="absolute -top-40 -right-32 w-140 h-140 rounded-full bg-brand-signal/10 blur-[120px]"></div>
-    </div>
+{{-- Satu layar penuh dengan foto gedung sebagai latar, seperti video hero di HeroHome.tsx (FeLandingPageJhic) --}}
+<section id="beranda" class="relative flex min-h-svh w-full items-center justify-center overflow-hidden bg-brand-ink px-6 pt-28 pb-24 scroll-mt-24">
+    <img src="{{ asset('images/fotogedung.jpg') }}" alt="" aria-hidden="true" class="absolute inset-0 h-full w-full object-cover" loading="eager" fetchpriority="high">
+    <div aria-hidden="true" class="absolute inset-0 bg-brand-ink/60"></div>
 
-    <div class="relative max-w-6xl mx-auto grid gap-14 lg:grid-cols-[1.1fr_1fr] lg:gap-12 items-center">
-        <div class="animate-fade-up">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
-                Bursa Kerja Khusus &amp; Pusat Karier Digital Vokasi
-            </p>
-            <h1 class="mt-5 font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-wide leading-[1.05] text-left">
-                Langsung Terhubung ke
-                <x-sketch.underline size="lg">Industri,</x-sketch.underline>
-                <span class="block mt-2 sm:mt-3 text-brand-darkred">Dibekali Teknologi AI.</span>
-            </h1>
-            <p class="mt-8 max-w-xl text-base md:text-lg leading-relaxed text-brand-ink/70">
-                Satu portal untuk mencari lowongan PKL &amp; kerja dari mitra IDUKA terverifikasi, mengoptimalkan CV agar lolos
-                penyaringan ATS, dan terhubung dengan alumni yang sudah berkarier di perusahaan terkemuka.
-            </p>
+    <div class="relative max-w-4xl mx-auto text-center animate-fade-up">
+        <p class="text-xs sm:text-sm md:text-base font-semibold uppercase tracking-[0.25em] text-brand-mist/80">
+            Bursa Kerja Khusus &amp; Pusat Karier Digital Vokasi
+        </p>
+        <h1 class="mt-4 font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-wide leading-[1.05] text-white">
+            Langsung Terhubung ke
+            <x-sketch.underline size="lg" tone="text-brand-signal" :delay="700">Industri,</x-sketch.underline>
+            <span class="block mt-2 sm:mt-3 text-[#F5C2C7]">Dibekali Teknologi AI.</span>
+        </h1>
+        <p class="mt-8 mx-auto max-w-2xl text-base md:text-lg leading-relaxed text-white/80">
+            Satu portal untuk mencari lowongan PKL &amp; kerja dari mitra IDUKA terverifikasi, mengoptimalkan CV agar lolos
+            penyaringan ATS, dan terhubung dengan alumni yang sudah berkarier di perusahaan terkemuka.
+        </p>
 
-            <div class="mt-9 flex flex-wrap items-center gap-4">
-                <a href="#lowongan" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-brand-darkred/25 transition-transform hover:-translate-y-0.5">
-                    Cari Lowongan Aktif
-                    <x-sketch.arrow :delay="600" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
-                </a>
-                <a href="#ai-cv" class="group inline-flex items-center gap-2 rounded-full border-2 border-brand-darkred/20 bg-white px-7 py-3 text-sm font-semibold text-brand-darkred transition-colors hover:border-brand-darkred hover:bg-brand-darkred/5">
-                    <x-landing.icon name="bulb" class="w-4 h-4" />
-                    <span class="mr-4">Tingkatkan CV dengan AI</span>
-                </a>
-            </div>
-        </div>
-
-        {{-- Visual hero: foto gedung + kartu analisis CV interaktif --}}
-        <div class="relative lg:pl-6">
-            <div class="relative overflow-hidden rounded-card shadow-softpill ring-1 ring-brand-ink/5">
-                <img src="{{ asset('images/fotogedung.jpg') }}" alt="Gedung SMK Plus Pelita Nusantara di Cibinong, Bogor" class="w-full aspect-4/5 sm:aspect-4/3 lg:aspect-4/5 object-cover" loading="eager">
-                {{-- Keterangan di atas foto, karena bagian bawahnya tertutup kartu analisis CV di HP & tablet --}}
-                <div class="absolute inset-0 bg-linear-to-b from-brand-ink/75 via-brand-ink/5 to-transparent"></div>
-                <div class="absolute left-5 top-5 right-5 text-white">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">SMK PLUS PELITA NUSANTARA Cibinong, Bogor</p>
-                    <p class="mt-1 font-display text-2xl font-bold uppercase tracking-wide">We Are Different</p>
-                </div>
-            </div>
-            {{-- Siku coretan di luar foto, berjarak 1rem dari tepinya supaya goresannya tidak menimpa foto.
-                 Kiri: di desktop foto bergeser lg:pl-6 (1.5rem), jadi sikunya cukup lg:left-2 agar jaraknya tetap 1rem.
-                 Kanan: foto menempel ke tepi kanan wadah, jadi sikunya keluar -right-4 di semua ukuran. --}}
-            <x-sketch.corner class="-left-4 -top-4 w-24 h-10 md:w-32 md:h-12 lg:left-2" />
-            <x-sketch.corner :delay="350" class="-right-4 -bottom-4 rotate-180 w-24 h-10 md:w-32 md:h-12" />
+        <div class="mt-9 flex flex-wrap items-center justify-center gap-4">
+            <a href="#lowongan" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-black/25 transition-transform hover:-translate-y-0.5">
+                Cari Lowongan Aktif
+                <x-sketch.arrow :delay="600" class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
+            </a>
+            <a href="/bkk/me/cv" class="inline-flex items-center gap-2 rounded-full border-2 border-white/30 px-7 py-3 text-sm font-semibold text-white transition-all hover:border-white hover:bg-white/10">
+                <x-landing.icon name="bulb" class="w-4 h-4" />
+                Tingkatkan CV dengan AI
+            </a>
         </div>
     </div>
 
-    {{-- Statistik singkat --}}
-    <dl class="relative max-w-6xl mx-auto mt-16 md:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-card bg-brand-ink/10 ring-1 ring-brand-ink/10">
-        @php
-            $stats = array_values(array_filter([
-                $mitraCount > 0 ? ['value' => $mitraCount, 'label' => 'Mitra IDUKA terverifikasi'] : null,
-                ['value' => '1.500+', 'label' => 'Alumni dalam jejaring'],
-                ['value' => '92%', 'label' => 'Lulusan terserap kerja & studi'],
-                ['value' => 'A', 'label' => 'Akreditasi BAN-PDM 2024–2029'],
-                $mitraCount > 0 ? null : ['value' => '5', 'label' => 'Kompetensi keahlian'],
-            ]));
-        @endphp
-        @foreach ($stats as $stat)
-            <div class="flex flex-col bg-white px-5 py-6 md:px-7">
-                <dt class="text-xs sm:text-sm text-brand-ink/60">{{ $stat['label'] }}</dt>
-                <dd class="order-first font-display text-3xl md:text-4xl font-bold uppercase tracking-wide text-brand-darkred">{{ $stat['value'] }}</dd>
-            </div>
-        @endforeach
-    </dl>
+    {{-- Petunjuk scroll ke bawah --}}
+    <a href="#ai-cv" aria-label="Scroll ke bawah" class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/80 transition-colors hover:text-white">
+        <span class="text-xs font-semibold uppercase tracking-[0.25em]">Scroll Down</span>
+        <x-sketch.arrow direction="down" class="w-3.5 h-7 animate-bounce motion-reduce:animate-none" />
+    </a>
 </section>
 
 {{-- ============================================================
@@ -226,10 +191,7 @@
 <section id="ai-cv" class="relative bg-brand-softmist px-6 py-20 md:py-28 scroll-mt-24">
     <div class="max-w-6xl mx-auto">
         <div class="max-w-3xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-darkred">
-                <x-sketch.sparks>AI CV Enhancer</x-sketch.sparks>
-            </p>
-            <h2 class="mt-4 font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
+            <h2 class="font-display text-3xl md:text-4xl font-bold uppercase tracking-wide leading-tight text-left">
                 <x-sketch.frame class="-ml-4 md:-ml-5">Buat &amp; Optimalkan CV Digital Siap Kerja Berstandar ATS</x-sketch.frame>
             </h2>
             <p class="mt-5 text-base md:text-lg leading-relaxed text-brand-ink/70">
@@ -425,24 +387,6 @@
                         <span class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-brand-darkred">Poin Pencapaian</span>
                     </div>
                 </article>
-            </div>
-
-            {{-- Ajakan --}}
-            <div class="lg:col-span-12 flex flex-col gap-5 rounded-card bg-brand-ink p-6 md:p-8 text-white sm:flex-row sm:items-center sm:justify-between">
-                <ul class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/80">
-                    @foreach (['Gratis untuk siswa & alumni', 'Ekspor PDF ramah ATS', 'Langsung dipakai melamar'] as $perk)
-                        <li class="flex items-center gap-2"><x-landing.icon name="check" class="w-4 h-4 text-brand-warmred" /> {{ $perk }}</li>
-                    @endforeach
-                </ul>
-                <div class="flex shrink-0 flex-wrap items-center gap-4">
-                    <a href="{{ route('bkk.berita.detail', 'panduan-praktis-siswa-5-langkah-membuat-cv-digital-standar-ats') }}" class="text-sm font-semibold text-white/80 underline-offset-4 hover:text-white hover:underline">
-                        Baca panduan CV ATS
-                    </a>
-                    <a href="{{ $cvStudioUrl }}" class="group inline-flex items-center gap-3 rounded-full bg-linear-to-r from-brand-signal to-brand-darkred px-7 py-3.5 text-sm font-semibold text-white shadow-xl shadow-black/20 transition-transform hover:-translate-y-0.5">
-                        Buka AI CV Studio
-                        <x-sketch.arrow class="w-7 h-3.5 transition-transform group-hover:translate-x-1" />
-                    </a>
-                </div>
             </div>
         </div>
     </div>

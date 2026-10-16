@@ -13,18 +13,11 @@ return new class extends Migration
     {
         Schema::create('cv_resumes', function (Blueprint $table) {
             $table->id();
-            $table->string('siswa_id', 64)->index();
-            $table->foreign('siswa_id')->references('user_id')->on('profil_siswa')->cascadeOnDelete();
-            $table->string('judul_cv', 150)->default('CV Utama ATS');
-            $table->boolean('is_primary')->default(true);
-            $table->string('target_posisi', 150)->nullable();
-            $table->string('domisili_kota', 100)->nullable();
-            $table->text('ringkasan_eksekutif')->nullable();
-            $table->longText('konten_markdown');
-            $table->unsignedTinyInteger('skor_total_ai')->default(0);
-            $table->json('skor_parameter_json')->nullable();
-            $table->json('saran_perbaikan_ai_json')->nullable();
-            $table->timestamp('terakhir_dianalisis_ai')->nullable();
+            $table->string('user_id', 64)->index();
+            $table->foreign('user_id')->references('user_id')->on('profil_siswa')->cascadeOnDelete();
+            $table->longText('raw_markdown');
+            $table->string('checksum', 64)->index();
+            $table->boolean('is_main')->default(true)->index();
             $table->timestamps();
         });
     }

@@ -17,12 +17,6 @@
             ['label' => 'Tracer Study', 'icon' => 'graduation-cap', 'route' => 'bkk.admin.tracer.index', 'active' => ['bkk.admin.tracer.*']],
         ],
     ];
-
-    $shortcuts = [
-        ['label' => 'CMS Portal Utama', 'icon' => 'globe', 'href' => config('app.cms_admin_url')],
-        ['label' => 'Admin BKK', 'icon' => 'briefcase', 'current' => true],
-        ['label' => 'Admin PPDB', 'icon' => 'school', 'href' => config('app.ppdb_admin_url')],
-    ];
 @endphp
 
 <!-- Backdrop sidebar mobile -->
@@ -48,14 +42,10 @@
                     @endphp
                     <a href="{{ route($item['route']) }}"
                        @if($isActive) aria-current="page" @endif
-                       class="group flex items-center justify-between gap-2 h-10 px-3 rounded-xl text-[13px] transition-colors {{ $isActive ? 'bg-brand-paper text-brand-darkred font-bold' : 'text-brand-ink font-medium hover:bg-brand-paper' }}">
+                       class="group flex items-center justify-between gap-2 h-10 px-3 rounded-xl text-[13px] transition-colors {{ $isActive ? 'bg-navy text-white font-semibold shadow-sm' : 'text-brand-ink font-medium hover:bg-brand-paper' }}">
                         <span class="flex items-center gap-3 min-w-0">
-                            <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0 {{ $isActive ? 'text-brand-darkred' : 'text-muted group-hover:text-brand-ink' }}"></i>
-                            @if($isActive)
-                                <x-sketch.underline size="sm" class="truncate">{{ $item['label'] }}</x-sketch.underline>
-                            @else
-                                <span class="truncate">{{ $item['label'] }}</span>
-                            @endif
+                            <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0 {{ $isActive ? 'text-white' : 'text-muted group-hover:text-brand-ink' }}"></i>
+                            <span class="truncate">{{ $item['label'] }}</span>
                         </span>
                         @if(!empty($item['badge']))
                             <span class="min-w-5 h-5 px-1.5 rounded-full bg-brand-darkred text-white text-[10px] font-bold grid place-items-center shrink-0">{{ $item['badge'] }}</span>
@@ -65,30 +55,12 @@
             </nav>
         @endforeach
 
-        <nav class="space-y-0.5">
-            <div class="px-3 pb-1.5 flex items-center gap-2">
-                <span class="font-display text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-darkred">Pintas Dashboard</span>
-                <span class="h-px flex-1 bg-brand-ink/10"></span>
-            </div>
-            @foreach($shortcuts as $item)
-                @if(!empty($item['current']))
-                    <div class="flex items-center justify-between h-10 px-3 rounded-xl text-[13px] font-semibold bg-brand-ink text-white">
-                        <span class="flex items-center gap-3"><i data-lucide="{{ $item['icon'] }}" class="w-4 h-4"></i>{{ $item['label'] }}</span>
-                        <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white/15">Aktif</span>
-                    </div>
-                @else
-                    <a href="{{ $item['href'] }}" class="group flex items-center justify-between h-10 px-3 rounded-xl text-[13px] font-medium text-brand-ink hover:bg-brand-paper transition-colors">
-                        <span class="flex items-center gap-3"><i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 text-muted group-hover:text-brand-ink"></i>{{ $item['label'] }}</span>
-                        <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-muted group-hover:text-brand-darkred"></i>
-                    </a>
-                @endif
-            @endforeach
-        </nav>
+        @include('partials.dashboard-shortcuts', ['current' => 'bkk', 'currentHref' => route('bkk.admin.index')])
     </div>
 
     <!-- Kaki sidebar -->
     <div class="p-3 border-t border-brand-ink/10">
-        <a href="{{ route('bkk.index') }}" target="_blank" rel="noopener" class="group block rounded-card bg-brand-ink text-white p-4 relative overflow-hidden">
+        <a href="{{ route('bkk.index') }}" target="_blank" rel="noopener" class="group block rounded-card bg-gradient-to-br from-brand-darkred to-brand-deepred text-white shadow-softpill p-4 relative overflow-hidden">
             <span class="text-[10px] font-semibold uppercase tracking-wider text-[#F5C2C7]">Situs Publik</span>
             <span class="mt-1 flex items-center justify-between font-display text-base uppercase tracking-wide">
                 Web BKK Penus

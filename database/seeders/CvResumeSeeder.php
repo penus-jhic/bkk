@@ -2,11 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\CvKeahlian;
-use App\Models\CvPendidikan;
-use App\Models\CvPengalaman;
 use App\Models\CvResume;
-use App\Models\CvSertifikat;
 use App\Models\ProfilSiswa;
 use Illuminate\Database\Seeder;
 
@@ -18,6 +14,39 @@ class CvResumeSeeder extends Seeder
         $alumni = ProfilSiswa::find('usr-alumni-001');
 
         if ($siswa) {
+            // Versi 1 (Arsip terdahulu, is_main = false)
+            $oldMarkdownSiswa = <<<MARKDOWN
+# Ahmad Rizky Pratama
+**Siswa SMK Plus Pelita Nusantara · Rekayasa Perangkat Lunak**
+Email: siswa_rizky@smkpenus.sch.id | Telepon: 0812-3456-7890 | Bogor, Jawa Barat
+
+---
+
+## Ringkasan Profil
+Siswa SMK Plus Pelita Nusantara jurusan Rekayasa Perangkat Lunak dengan minat tinggi dalam web development menggunakan PHP dan MySQL.
+
+## Pendidikan
+### SMK Plus Pelita Nusantara — Rekayasa Perangkat Lunak
+*2023 - 2026* | Nilai Rata-rata: 88.0
+
+## Keahlian Teknis
+- HTML5, CSS3, JavaScript Dasar
+- PHP Dasar & MySQL
+MARKDOWN;
+
+            CvResume::updateOrCreate(
+                ['user_id' => $siswa->user_id, 'checksum' => CvResume::generateChecksum($oldMarkdownSiswa)],
+                [
+                    'raw_markdown' => $oldMarkdownSiswa,
+                    'is_main' => false,
+                    'temp' => false,
+                    'feedback' => null,
+                    'created_at' => now()->subDays(14),
+                    'updated_at' => now()->subDays(14),
+                ]
+            );
+
+            // Versi 2 (CV Utama Aktif, is_main = true)
             $markdownSiswa = <<<MARKDOWN
 # Ahmad Rizky Pratama
 **Junior Full-Stack Web Developer**
@@ -45,84 +74,77 @@ Siswa kelas XII jurusan Rekayasa Perangkat Lunak SMK Plus Pelita Nusantara denga
 - **Bahasa Pemrograman**: PHP, JavaScript, SQL, HTML5/CSS3
 - **Framework & Libs**: Laravel 12, Bootstrap 5, Tailwind CSS, Alpine.js
 - **Tools**: Git, GitHub, Postman, VS Code, Figma
+
+## Portofolio & Sertifikasi
+- **LSP-P1 Junior Web Developer** — Badan Nasional Sertifikasi Profesi (BNSP), 2025 (No: BNSP-SMK-PENUS-2025-089)
 MARKDOWN;
 
-            $resumeSiswa = CvResume::updateOrCreate(
-                ['siswa_id' => $siswa->user_id, 'is_primary' => true],
+            $checksumSiswa = CvResume::generateChecksum($markdownSiswa);
+            CvResume::updateOrCreate(
+                ['user_id' => $siswa->user_id, 'checksum' => $checksumSiswa],
                 [
-                    'judul_cv' => 'CV ATS Utama — Software Engineering',
-                    'target_posisi' => 'Junior Web Developer / Backend Intern',
-                    'domisili_kota' => 'Bogor',
-                    'ringkasan_eksekutif' => 'Siswa kelas XII RPL yang menguasai ekosistem Laravel dan modern relational database.',
-                    'konten_markdown' => $markdownSiswa,
-                    'skor_total_ai' => 94,
-                    'skor_parameter_json' => [
-                        ['label' => 'Kesesuaian Industri', 'value' => 95],
-                        ['label' => 'Kelengkapan Data', 'value' => 92],
-                        ['label' => 'Format ATS Standar', 'value' => 98],
-                        ['label' => 'Daya Tarik Portofolio', 'value' => 91],
+                    'raw_markdown' => $markdownSiswa,
+                    'is_main' => true,
+                    'temp' => false,
+                    'score' => 88,
+                    'feedback' => [
+                        'checksum' => $checksumSiswa,
+                        'total_score' => 88,
+                        'grade_label' => 'Baik',
+                        'percentile' => 82,
+                        'summary_verdict' => 'CV memiliki struktur ATS yang sangat rapi dan mudah di-parse mesin. Kualitas dapat ditingkatkan hingga skor 95+ dengan menambahkan metrik numerik pada bagian sertifikasi dan proyek kejuruan.',
+                        'parameters' => [
+                            [
+                                'id' => 'param_industry_fit',
+                                'label' => 'Kesesuaian Industri',
+                                'score' => 90,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.35,
+                                'feedback' => 'Terminologi teknis (Laravel, PostgreSQL, JWT, Tailwind CSS) selaras dengan kebutuhan industri software engineering.',
+                            ],
+                            [
+                                'id' => 'param_completeness',
+                                'label' => 'Kelengkapan Data',
+                                'score' => 84,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.25,
+                                'feedback' => 'Semua bagian utama telah tersedia lengkap dengan kontak LinkedIn dan GitHub.',
+                            ],
+                            [
+                                'id' => 'param_ats_format',
+                                'label' => 'Format & Parsing ATS',
+                                'score' => 95,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.25,
+                                'feedback' => 'Hirarki heading (H1, H2), bullet points, dan tipografi Markdown sepenuhnya bebas dari karakter pemecah parser.',
+                            ],
+                            [
+                                'id' => 'param_portfolio_impact',
+                                'label' => 'Daya Tarik Portofolio',
+                                'score' => 85,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.15,
+                                'feedback' => 'Sebagian besar butir telah mencantumkan hasil terukur, tambahkan 1 tautan proyek mandiri unggulan.',
+                            ],
+                        ],
+                        'detected_sections' => [
+                            'HEADER_IDENTITY',
+                            'SUMMARY',
+                            'EDUCATION',
+                            'EXPERIENCE',
+                            'SKILLS',
+                            'CERTIFICATIONS',
+                        ],
+                        'missing_sections' => [
+                            'PROJECTS',
+                        ],
                     ],
-                    'saran_perbaikan_ai_json' => [
-                        [
-                            'id' => 's1',
-                            'section' => 'Sertifikasi Kejuruan',
-                            'impact' => 'Tinggi',
-                            'title' => 'Tambahkan Sertifikat BNSP Pemrograman Web',
-                            'desc' => 'Sertifikasi BNSP Skema Junior Web Programmer akan meningkatkan daya saing ATS hingga 98%.',
-                        ]
-                    ],
-                    'terakhir_dianalisis_ai' => now()->subDays(2),
-                ]
-            );
-
-            // Sub-tables
-            CvPendidikan::updateOrCreate(
-                ['cv_id' => $resumeSiswa->id, 'nama_institusi' => 'SMK Plus Pelita Nusantara'],
-                [
-                    'jurusan_peminatan' => 'Rekayasa Perangkat Lunak',
-                    'tahun_mulai' => '2023',
-                    'tahun_selesai' => '2026',
-                    'nilai_akhir' => 'Rata-rata 89.5',
-                    'deskripsi_prestasi' => 'Juara 2 LKS Web Technologies Tingkat Kota Bogor',
-                    'urutan' => 1,
-                ]
-            );
-
-            CvPengalaman::updateOrCreate(
-                ['cv_id' => $resumeSiswa->id, 'perusahaan' => 'PT Solusi Teknologi Nusantara'],
-                [
-                    'tipe_pengalaman' => 'PKL',
-                    'posisi' => 'Web Developer Intern',
-                    'lokasi' => 'Bogor',
-                    'periode_mulai' => '2025-07-01',
-                    'periode_selesai' => null,
-                    'is_current' => true,
-                    'deskripsi_tugas' => 'Membangun komponen Blade UI dan REST API backend modul sistem informasi BKK.',
-                    'urutan' => 1,
-                ]
-            );
-
-            $skills = [
-                ['nama' => 'Laravel Framework', 'kat' => 'Backend', 'tingkat' => 'Mahir'],
-                ['nama' => 'PostgreSQL & MySQL', 'kat' => 'Database', 'tingkat' => 'Mahir'],
-                ['nama' => 'Tailwind CSS', 'kat' => 'Frontend', 'tingkat' => 'Mahir'],
-                ['nama' => 'REST API Design', 'kat' => 'Arsitektur', 'tingkat' => 'Menengah'],
-                ['nama' => 'Git Version Control', 'kat' => 'Tools', 'tingkat' => 'Mahir'],
-            ];
-            foreach ($skills as $s) {
-                CvKeahlian::updateOrCreate(
-                    ['cv_id' => $resumeSiswa->id, 'nama_keahlian' => $s['nama']],
-                    ['kategori' => $s['kat'], 'tingkat_kemahiran' => $s['tingkat']]
-                );
-            }
-
-            CvSertifikat::updateOrCreate(
-                ['cv_id' => $resumeSiswa->id, 'nama_sertifikat' => 'LSP-P1 Junior Web Developer SMK Pelita Nusantara'],
-                [
-                    'lembaga_penerbit' => 'Badan Nasional Sertifikasi Profesi (BNSP)',
-                    'tahun_perolehan' => '2025',
-                    'nomor_sertifikat' => 'BNSP-SMK-PENUS-2025-089',
-                    'status_verifikasi' => 'VALID',
+                    'created_at' => now()->subDays(2),
+                    'updated_at' => now()->subDays(2),
                 ]
             );
         }
@@ -148,60 +170,79 @@ Alumni SMK Plus Pelita Nusantara 2024 jurusan Teknik Komputer & Jaringan dengan 
 ## Pendidikan
 **SMK Plus Pelita Nusantara** — Teknik Komputer & Jaringan (TKJ)  
 *2021 - 2024* | Nilai Akhir: 91.0 / 100
+
+## Keahlian & Sertifikasi
+- MikroTik Certified Network Associate (MTCNA-2405-ID-8819)
+- Fiber Optic Splicing & OTDR Testing
+- Bandwidth Management & VLAN Trunking
 MARKDOWN;
 
-            $resumeAlumni = CvResume::updateOrCreate(
-                ['siswa_id' => $alumni->user_id, 'is_primary' => true],
+            $checksumAlumni = CvResume::generateChecksum($markdownAlumni);
+            CvResume::updateOrCreate(
+                ['user_id' => $alumni->user_id, 'checksum' => $checksumAlumni],
                 [
-                    'judul_cv' => 'CV ATS Profesional — Network Engineer',
-                    'target_posisi' => 'Network Engineer / Systems Support',
-                    'domisili_kota' => 'Semarang',
-                    'ringkasan_eksekutif' => 'Alumni TKJ berdedikasi tinggi dengan keahlian sertifikasi MTCNA.',
-                    'konten_markdown' => $markdownAlumni,
-                    'skor_total_ai' => 96,
-                    'skor_parameter_json' => [
-                        ['label' => 'Kesesuaian Industri', 'value' => 98],
-                        ['label' => 'Kelengkapan Data', 'value' => 95],
-                        ['label' => 'Format ATS Standar', 'value' => 96],
-                        ['label' => 'Daya Tarik Portofolio', 'value' => 95],
+                    'raw_markdown' => $markdownAlumni,
+                    'is_main' => true,
+                    'temp' => false,
+                    'score' => 91,
+                    'feedback' => [
+                        'checksum' => $checksumAlumni,
+                        'total_score' => 91,
+                        'grade_label' => 'Sangat Baik',
+                        'percentile' => 89,
+                        'summary_verdict' => 'Dokumen CV berstandar profesional dengan kredensial MTCNA dan metrik pemeliharaan jaringan yang kuat.',
+                        'parameters' => [
+                            [
+                                'id' => 'param_industry_fit',
+                                'label' => 'Kesesuaian Industri',
+                                'score' => 93,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.35,
+                                'feedback' => 'Kata kunci teknis jaringan ISP (MTCNA, ODP, VLAN, OTDR) sangat relevan dengan target industri.',
+                            ],
+                            [
+                                'id' => 'param_completeness',
+                                'label' => 'Kelengkapan Data',
+                                'score' => 88,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.25,
+                                'feedback' => 'Identitas, pengalaman kerja, pendidikan, dan nomor lisensi sertifikasi sudah lengkap.',
+                            ],
+                            [
+                                'id' => 'param_ats_format',
+                                'label' => 'Format & Parsing ATS',
+                                'score' => 94,
+                                'max_score' => 100,
+                                'status' => 'EXCELLENT',
+                                'weight' => 0.25,
+                                'feedback' => 'Struktur bagian kronologis terbalik memudahkan pembacaan sistem ATS perusahaan.',
+                            ],
+                            [
+                                'id' => 'param_portfolio_impact',
+                                'label' => 'Daya Tarik Portofolio',
+                                'score' => 87,
+                                'max_score' => 100,
+                                'status' => 'GOOD',
+                                'weight' => 0.15,
+                                'feedback' => 'Tambahkan persentase SLA uptime jaringan yang berhasil dipertahankan.',
+                            ],
+                        ],
+                        'detected_sections' => [
+                            'HEADER_IDENTITY',
+                            'SUMMARY',
+                            'EXPERIENCE',
+                            'EDUCATION',
+                            'SKILLS',
+                            'CERTIFICATIONS',
+                        ],
+                        'missing_sections' => [
+                            'PROJECTS',
+                        ],
                     ],
-                    'terakhir_dianalisis_ai' => now()->subDay(),
-                ]
-            );
-
-            CvPendidikan::updateOrCreate(
-                ['cv_id' => $resumeAlumni->id, 'nama_institusi' => 'SMK Plus Pelita Nusantara'],
-                [
-                    'jurusan_peminatan' => 'Teknik Komputer & Jaringan',
-                    'tahun_mulai' => '2021',
-                    'tahun_selesai' => '2024',
-                    'nilai_akhir' => '91.0 / 100',
-                    'deskripsi_prestasi' => 'Peringkat 1 Lulusan Terbaik Jurusan TKJ Angkatan 2024',
-                    'urutan' => 1,
-                ]
-            );
-
-            CvPengalaman::updateOrCreate(
-                ['cv_id' => $resumeAlumni->id, 'perusahaan' => 'PT Telkom Akses Semarang'],
-                [
-                    'tipe_pengalaman' => 'KERJA',
-                    'posisi' => 'Junior Network Engineer',
-                    'lokasi' => 'Semarang',
-                    'periode_mulai' => '2024-08-01',
-                    'periode_selesai' => null,
-                    'is_current' => true,
-                    'deskripsi_tugas' => 'Instalasi dan pemeliharaan jaringan fiber optic serta manajemen bandwidth MikroTik.',
-                    'urutan' => 1,
-                ]
-            );
-
-            CvSertifikat::updateOrCreate(
-                ['cv_id' => $resumeAlumni->id, 'nama_sertifikat' => 'MikroTik Certified Network Associate (MTCNA)'],
-                [
-                    'lembaga_penerbit' => 'MikroTik SIA / Academy Penus',
-                    'tahun_perolehan' => '2024',
-                    'nomor_sertifikat' => 'MTCNA-2405-ID-8819',
-                    'status_verifikasi' => 'VALID',
+                    'created_at' => now()->subDay(),
+                    'updated_at' => now()->subDay(),
                 ]
             );
         }

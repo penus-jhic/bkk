@@ -41,9 +41,10 @@ Dokumen arsitektur database relasional untuk **Sistem BKK (Bursa Kerja Khusus) S
 2. **Mitra IDUKA (Perusahaan Industri)**:
    - Sesuai dengan rute `/bkk/dashboard/*`, Mitra **membypass VerifyMiddleware**.
    - Mitra memiliki tabel mandiri `mitra` dengan kredensial login unik: **NPWP** dan **Password Hash**.
-3. **Model CV ATS Hybrid**:
-   - Tabel induk `cv_resumes` menyimpan ringkasan, skor AI, JSON parameter, dan raw Markdown teks.
-   - Tabel anak (`cv_pendidikan`, `cv_pengalaman`, `cv_keahlian`, `cv_sertifikat`) menyimpan entri terstruktur agar sinkronisasi form dinamis dan pencarian bakat berjalan cepat dan terindeks.
+3. **Model CV Single-Record dengan Versioning & Checksum**:
+   - Seluruh konten CV disimpan dalam 1 record teks murni pada kolom `cv_resumes.raw_markdown` sehingga format fleksibel dan tidak kaku.
+   - Kolom `checksum` (SHA-256) di-generate otomatis di Backend untuk memverifikasi integritas draf, mencegah duplikasi, dan menjadi acuan lookup evaluasi AI eksternal.
+   - Kolom `is_main` menandai CV utama aktif milik siswa, sementara riwayat revisi tetap tersimpan sebagai record versioning.
 4. **Tracer Study Dinamis (Multi-Kuesioner)**:
    - Menggunakan sistem bank survei (`tracer_kuesioner`, `tracer_pertanyaan`, `tracer_respon`, `tracer_jawaban_detail`) sehingga sekolah bebas membuat survei berkala (misal 6 bulan, 1 tahun, 2 tahun pasca lulus) yang diisi alumni di `/bkk/me`.
 
@@ -54,10 +55,6 @@ Dokumen arsitektur database relasional untuk **Sistem BKK (Bursa Kerja Khusus) S
 ```mermaid
 erDiagram
     PROFIL_SISWA ||--o{ CV_RESUMES : "memiliki"
-    CV_RESUMES ||--o{ CV_PENDIDIKAN : "memuat"
-    CV_RESUMES ||--o{ CV_PENGALAMAN : "memuat"
-    CV_RESUMES ||--o{ CV_KEAHLIAN : "memuat"
-    CV_RESUMES ||--o{ CV_SERTIFIKAT : "memuat"
 
     MITRA ||--o{ LOWONGAN : "menerbitkan"
     LOWONGAN ||--o{ LAMARAN : "menerima"
@@ -109,87 +106,16 @@ Menyimpan atribut data akademik dan kesiswaan pelengkap yang tidak disediakan ol
 
 ---
 
-### Kelompok 2: Modul CV ATS & AI Engine (`/bkk/me/cv`)
+### Kelompok 2: Modul CV ATS, Versioning & Checksum (`/bkk/me/cv`)
 
 #### 2. `cv_resumes`
-Tabel master resume ATS siswa/alumni beserta metadata scoring dan hasil analisis AI.
+Tabel master resume ATS siswa/alumni berbasis teks murni Markdown dengan sistem versioning dan verifikasi integritas otomatis melalui checksum.
 - **`id`** (`BIGINT UNSIGNED`, Primary Key, Auto Increment).
-- **`siswa_id`** (`UUID`, Indeks): Relasi ke `profil_siswa.user_id`.
-- **`judul_cv`** (`VARCHAR(150)`, Default: `'CV Utama ATS'`): Nama label versi CV.
-- **`is_primary`** (`BOOLEAN`, Default: `true`): Penanda apakah ini CV aktif untuk melamar.
-- **`target_posisi`** (`VARCHAR(150)`, Nullable): Posisi yang dibidik (misal: *Teknisi Jaringan & Fiber Optic*).
-- **`domisili_kota`** (`VARCHAR(100)`, Nullable): Kota tempat tinggal (misal: *Semarang* / *Bogor*).
-- **`ringkasan_eksekutif`** (`TEXT`, Nullable): Ringkasan profil profesional.
-- **`konten_markdown`** (`LONGTEXT`): Kode sumber Markdown CV lengkap yang disinkronkan dengan live preview dan editor.
-- **`skor_total_ai`** (`TINYINT UNSIGNED`, Default: 0): Health score CV akumulasi (0-100).
-- **`skor_parameter_json`** (`JSON`, Nullable): Rincian 4 parameter penilaian AI:
-  ```json
-  [
-    {"label": "Kesesuaian Industri", "value": 88},
-    {"label": "Kelengkapan Data", "value": 78},
-    {"label": "Format ATS", "value": 92},
-    {"label": "Daya Tarik Portofolio", "value": 80}
-  ]
-  ```
-- **`saran_perbaikan_ai_json`** (`JSON`, Nullable): Daftar rekomendasi improvisasi AI:
-  ```json
-  [
-    {
-      "id": "s1",
-      "section": "Portofolio & Sertifikat",
-      "impact": "Tinggi",
-      "title": "Tambahkan sertifikasi kejuruan BNSP / MTCNA",
-      "desc": "Cantumkan sertifikat keahlian MikroTik (MTCNA)..."
-    }
-  ]
-  ```
-- **`terakhir_dianalisis_ai`** (`TIMESTAMP`, Nullable): Waktu terakhir evaluasi AI dijalankan.
+- **`user_id`** (`VARCHAR(64)`, Indeks): Relasi ke `profil_siswa.user_id` (`cascadeOnDelete`).
+- **`raw_markdown`** (`LONGTEXT`): Kode sumber Markdown CV lengkap yang fleksibel tanpa batasan form kaku.
+- **`checksum`** (`VARCHAR(64)`, Indeks): SHA-256 hash dari `raw_markdown` yang dihitung otomatis di Backend untuk memverifikasi integritas, mencegah duplikasi penyimpanan, dan menjadi acuan lookup evaluasi AI eksternal.
+- **`is_main`** (`BOOLEAN`, Default: `true`, Indeks): Penanda apakah record ini merupakan CV Utama aktif siswa yang dilampirkan pada lamaran kerja/PKL. Saat siswa menyimpan revisi baru atau mengaktifkan versi lain, record versi lain otomatis menjadi `false`.
 - **`created_at`, `updated_at`** (`TIMESTAMP`).
-
-#### 3. `cv_pendidikan`
-Riwayat pendidikan terstruktur untuk form builder CV.
-- **`id`** (`BIGINT UNSIGNED`, PK).
-- **`cv_id`** (`BIGINT UNSIGNED`, FK ke `cv_resumes.id`, On Delete Cascade).
-- **`nama_institusi`** (`VARCHAR(150)`): Misal: *SMK Plus Pelita Nusantara*.
-- **`jurusan_peminatan`** (`VARCHAR(150)`): Misal: *Teknik Komputer & Jaringan*.
-- **`tahun_mulai`** (`VARCHAR(10)`): Misal: *2022*.
-- **`tahun_selesai`** (`VARCHAR(10)`): Misal: *2025* atau *Sekarang*.
-- **`nilai_akhir`** (`VARCHAR(50)`, Nullable): Misal: *Rata-rata 88.4 / 100*.
-- **`deskripsi_prestasi`** (`TEXT`, Nullable): Poin ekstrakurikuler/lomba kejuruan (LKS).
-- **`urutan`** (`TINYINT UNSIGNED`, Default: 1).
-
-#### 4. `cv_pengalaman`
-Riwayat PKL, kerja magang, part-time, atau freelance.
-- **`id`** (`BIGINT UNSIGNED`, PK).
-- **`cv_id`** (`BIGINT UNSIGNED`, FK ke `cv_resumes.id`, On Delete Cascade).
-- **`tipe_pengalaman`** (`ENUM('PKL', 'KERJA', 'MAGANG', 'FREELANCE', 'PROYEK')`, Default: `'PKL'`).
-- **`posisi`** (`VARCHAR(150)`): Misal: *Field Technician Apprentice*.
-- **`perusahaan`** (`VARCHAR(150)`): Misal: *PT Telkom Akses Semarang*.
-- **`lokasi`** (`VARCHAR(100)`, Nullable): Misal: *Semarang*.
-- **`periode_mulai`** (`DATE` / `VARCHAR(20)`).
-- **`periode_selesai`** (`DATE` / `VARCHAR(20)`, Nullable).
-- **`is_current`** (`BOOLEAN`, Default: `false`).
-- **`deskripsi_tugas`** (`TEXT`): Kalimat penjelasan tugas yang sudah diimprovisasi dengan action verb.
-- **`urutan`** (`TINYINT UNSIGNED`, Default: 1).
-
-#### 5. `cv_keahlian`
-Daftar kompetensi teknis dan soft skills.
-- **`id`** (`BIGINT UNSIGNED`, PK).
-- **`cv_id`** (`BIGINT UNSIGNED`, FK ke `cv_resumes.id`, On Delete Cascade).
-- **`nama_keahlian`** (`VARCHAR(100)`): Misal: *Fiber Optic Splicing*, *MikroTik MTCNA*, *Laravel*, *Accurate 5*.
-- **`kategori`** (`VARCHAR(50)`, Default: `'Teknis'`): Kategori keahlian (Networking, Programming, Finance, Design, Tools).
-- **`tingkat_kemahiran`** (`ENUM('Dasar', 'Menengah', 'Mahir')`, Nullable).
-
-#### 6. `cv_sertifikat`
-Portofolio, sertifikat kompetensi LSP/BNSP, dan piagam kejuaraan.
-- **`id`** (`BIGINT UNSIGNED`, PK).
-- **`cv_id`** (`BIGINT UNSIGNED`, FK ke `cv_resumes.id`, On Delete Cascade).
-- **`nama_sertifikat`** (`VARCHAR(200)`): Misal: *Sertifikasi Kompetensi Kejuruan TKJ LSP-P1*.
-- **`lembaga_penerbit`** (`VARCHAR(150)`): Misal: *BNSP / MikroTik Academy*.
-- **`tahun_perolehan`** (`VARCHAR(10)`).
-- **`nomor_sertifikat`** (`VARCHAR(100)`, Nullable).
-- **`file_url`** (`TEXT`, Nullable): Path dokumen upload (PDF/JPG) untuk verifikasi tim BKK.
-- **`status_verifikasi`** (`ENUM('MENUNGGU', 'VALID', 'TIDAK_VALID')`, Default: `'MENUNGGU'`).
 
 ---
 
@@ -464,27 +390,23 @@ Tabel matriks berikut memetakan **hak operasi setiap tabel** pada masing-masing 
 | No | Nama Tabel | Dashboard Siswa / Alumni (`/bkk/me`) | Dashboard Mitra IDUKA (`/bkk/dashboard`) | Dashboard Admin BKK (`/bkk/admin`) | Web Publik BKK (`/bkk/*`) |
 | :---: | :--- | :---: | :---: | :---: | :---: |
 | 1 | `profil_siswa` | **R / U** (Profil sendiri) | **R** (Hanya pelamar yang mendaftar) | **C / R / U / D** (Kelola seluruh siswa/alumni) | - |
-| 2 | `cv_resumes` | **C / R / U** (Resume sendiri) | **R** (Preview CV & skor AI pelamar) | **R** (Monitoring CV siswa) | - |
-| 3 | `cv_pendidikan` | **C / R / U / D** | **R** (Dalam tampilan CV) | **R** | - |
-| 4 | `cv_pengalaman` | **C / R / U / D** | **R** (Dalam tampilan CV) | **R** | - |
-| 5 | `cv_keahlian` | **C / R / U / D** | **R** (Dalam tampilan CV) | **R** | - |
-| 6 | `cv_sertifikat` | **C / R / U / D** | **R** (Dokumen pendukung) | **R / U** (Verifikasi keabsahan sertifikat) | - |
-| 7 | `mitra` | **R** (Info profil mitra pada lowongan) | **R / U** (Profil perusahaannya sendiri) | **C / R / U / D** (Verifikasi MoU & kelola IDUKA) | **R** (Daftar mitra kerja sama) |
-| 8 | `permohonan_kerjasama` | - | - | **R / U** (Review & approve MoU baru) | **C** (Submit form di `/bkk/kerja-sama`) |
-| 9 | `lowongan` | **R** (Melihat info & syarat posisi) | **C / R / U / D** (Kelola lowongan perusahaannya) | **R / U / D** (Moderasi lowongan industri) | **R** (Katalog lowongan publik) |
-| 10 | `lamaran` | **C / R** (Kirim & pantau status lamaran) | **R / U** (Ubah status: Dipanggil, Interview, Diterima) | **R / U** (Monitoring keterserapan & filter) | - |
-| 11 | `jadwal_interview` | **R** (Melihat jadwal & tautan meeting) | **C / R / U / D** (Atur jadwal wawancara pelamar) | **R** (Monitoring agenda seleksi) | - |
-| 12 | `lamaran_riwayat_status`| **R** (Lihat timeline visual) | **C / R** (Otomatis tercatat saat status diupdate)| **C / R** (Log audit seleksi) | - |
-| 13 | `penempatan_pkl` | **R** (Lihat info tempat PKL & pembimbing) | **R** (Lihat siswa aktif PKL di perusahaannya) | **C / R / U / D** (Plotting siswa & guru pembimbing)| - |
-| 14 | `pkl_jurnal_harian` | **C / R / U** (Input log kegiatan harian) | **R** (Opsional review mentor lapangan) | **R / U** (Validasi, paraf, beri revisi jurnal) | - |
-| 15 | `pkl_laporan_akhir` | **C / R / U** (Upload draf Bab I - V) | - | **R / U** (Review naskah laporan & kelulusan PKL)| - |
-| 16 | `tracer_kuesioner` | **R** (Alumni melihat survei aktif) | - | **C / R / U / D** (Buat periode survei tracer) | - |
-| 17 | `tracer_pertanyaan` | **R** (Membaca pertanyaan kuesioner) | - | **C / R / U / D** (Kelola bank butir soal survei) | - |
-| 18 | `tracer_respon` | **C / R** (Alumni mengisi survei tracer) | - | **R** (Rekapitulasi grafik & analisis statistik) | - |
-| 19 | `tracer_jawaban_detail`| **C / R** (Simpan respon per soal) | - | **R** (Export data Excel/CSV untuk Kemendikbud)| - |
-| 20 | `notifikasi` | **R / U** (Baca & tandai notif terbaca) | **R / U** (Baca & tandai notif terbaca) | **C / R / U** (Kirim broadcast pengumuman) | - |
-| 21 | `kategori_berita` | - | - | **C / R / U / D** (Kelola kategori berita) | **R** (Filter berita publik) |
-| 22 | `berita` | - | - | **C / R / U / D** (Tulis, draft, publikasi warta) | **R** (Baca artikel & warta BKK) |
+| 2 | `cv_resumes` | **C / R / U** (Kelola draf Markdown, versioning & set is_main) | **R** (Membaca Markdown CV pelamar) | **R** (Monitoring dokumen CV siswa) | - |
+| 3 | `mitra` | **R** (Info profil mitra pada lowongan) | **R / U** (Profil perusahaannya sendiri) | **C / R / U / D** (Verifikasi MoU & kelola IDUKA) | **R** (Daftar mitra kerja sama) |
+| 4 | `permohonan_kerjasama` | - | - | **R / U** (Review & approve MoU baru) | **C** (Submit form di `/bkk/kerja-sama`) |
+| 5 | `lowongan` | **R** (Melihat info & syarat posisi) | **C / R / U / D** (Kelola lowongan perusahaannya) | **R / U / D** (Moderasi lowongan industri) | **R** (Katalog lowongan publik) |
+| 6 | `lamaran` | **C / R** (Kirim & pantau status lamaran) | **R / U** (Ubah status: Dipanggil, Interview, Diterima) | **R / U** (Monitoring keterserapan & filter) | - |
+| 7 | `jadwal_interview` | **R** (Melihat jadwal & tautan meeting) | **C / R / U / D** (Atur jadwal wawancara pelamar) | **R** (Monitoring agenda seleksi) | - |
+| 8 | `lamaran_riwayat_status`| **R** (Lihat timeline visual) | **C / R** (Otomatis tercatat saat status diupdate)| **C / R** (Log audit seleksi) | - |
+| 9 | `penempatan_pkl` | **R** (Lihat info tempat PKL & pembimbing) | **R** (Lihat siswa aktif PKL di perusahaannya) | **C / R / U / D** (Plotting siswa & guru pembimbing)| - |
+| 10 | `pkl_jurnal_harian` | **C / R / U** (Input log kegiatan harian) | **R** (Opsional review mentor lapangan) | **R / U** (Validasi, paraf, beri revisi jurnal) | - |
+| 11 | `pkl_laporan_akhir` | **C / R / U** (Upload draf Bab I - V) | - | **R / U** (Review naskah laporan & kelulusan PKL)| - |
+| 12 | `tracer_kuesioner` | **R** (Alumni melihat survei aktif) | - | **C / R / U / D** (Buat periode survei tracer) | - |
+| 13 | `tracer_pertanyaan` | **R** (Membaca pertanyaan kuesioner) | - | **C / R / U / D** (Kelola bank butir soal survei) | - |
+| 14 | `tracer_respon` | **C / R** (Alumni mengisi survei tracer) | - | **R** (Rekapitulasi grafik & analisis statistik) | - |
+| 15 | `tracer_jawaban_detail`| **C / R** (Simpan respon per soal) | - | **R** (Export data Excel/CSV untuk Kemendikbud)| - |
+| 16 | `notifikasi` | **R / U** (Baca & tandai notif terbaca) | **R / U** (Baca & tandai notif terbaca) | **C / R / U** (Kirim broadcast pengumuman) | - |
+| 17 | `kategori_berita` | - | - | **C / R / U / D** (Kelola kategori berita) | **R** (Filter berita publik) |
+| 18 | `berita` | - | - | **C / R / U / D** (Tulis, draft, publikasi warta) | **R** (Baca artikel & warta BKK) |
 
 ---
 

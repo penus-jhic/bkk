@@ -32,7 +32,7 @@
     $statusBadge = [
         'Terkirim' => 'bg-brand-softmist text-brand-ink',
         'Sedang Ditinjau' => 'bg-amber-50 text-amber-800 border border-amber-200',
-        'Dipanggil Interview' => 'bg-blue-50 text-blue-800 border border-blue-200',
+        'Dipanggil Interview' => 'bg-navy/5 text-navy border border-navy/20',
         'Diterima' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
         'Ditolak' => 'bg-brand-darkred/5 text-brand-darkred border border-brand-darkred/20',
     ];
@@ -247,7 +247,7 @@
             <ul class="mt-5 space-y-2.5">
                 @forelse($vacancies as $job)
                     <li class="flex items-center gap-3 p-3 rounded-xl border border-brand-ink/10 hover:border-brand-darkred/30 hover:bg-brand-paper/50 transition-colors">
-                        <span class="w-11 h-11 rounded-xl grid place-items-center font-display text-xs uppercase shrink-0 {{ $job->tipe === 'PKL' ? 'bg-brand-darkred text-white' : 'bg-brand-ink text-white' }}">{{ $job->tipe }}</span>
+                        <span class="w-11 h-11 rounded-xl grid place-items-center font-display text-xs uppercase shrink-0 {{ $job->tipe === 'PKL' ? 'bg-brand-darkred text-white' : 'bg-navy text-white' }}">{{ $job->tipe }}</span>
                         <span class="min-w-0 flex-1">
                             <a href="{{ route('bkk.mitra.pelamar.index', $job->id) }}" class="block text-sm font-semibold text-brand-ink hover:text-brand-darkred truncate">{{ $job->judul }}</a>
                             <span class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-brand-ink/60">
@@ -261,7 +261,7 @@
                             <span class="block text-[10px] uppercase tracking-wider text-brand-ink/50">pelamar</span>
                         </span>
                         <span class="flex items-center gap-1 shrink-0">
-                            <a href="{{ route('bkk.mitra.pelamar.index', $job->id) }}" class="h-8 px-3 rounded-full bg-brand-ink text-white text-xs font-semibold hover:bg-brand-darkred inline-flex items-center transition-colors">Review CV</a>
+                            <a href="{{ route('bkk.mitra.pelamar.index', $job->id) }}" class="h-8 px-3 rounded-full bg-navy text-white text-xs font-semibold hover:bg-brand-darkred inline-flex items-center transition-colors">Review CV</a>
                             <a href="{{ route('bkk.mitra.lowongan.edit', $job->id) }}" class="w-8 h-8 rounded-full grid place-items-center text-muted hover:text-brand-ink hover:bg-brand-softmist transition-colors" title="Edit lowongan" aria-label="Edit lowongan {{ $job->judul }}">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
                             </a>
@@ -272,7 +272,7 @@
                         <span class="w-12 h-12 rounded-full bg-brand-paper text-brand-darkred grid place-items-center mx-auto"><i data-lucide="briefcase" class="w-5 h-5"></i></span>
                         <p class="mt-3 font-display uppercase tracking-wide text-brand-ink">Belum Ada Lowongan</p>
                         <p class="text-xs text-brand-ink/60 mt-1 max-w-sm mx-auto">Pasang lowongan PKL atau kerja untuk siswa dan alumni SMK Plus Pelita Nusantara.</p>
-                        <a href="{{ route('bkk.mitra.lowongan.create') }}" class="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-brand-ink text-white text-xs font-semibold hover:bg-brand-darkred transition-colors">
+                        <a href="{{ route('bkk.mitra.lowongan.create') }}" class="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-navy text-white text-xs font-semibold hover:bg-brand-darkred transition-colors">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>Buat Lowongan Pertama
                         </a>
                     </li>
