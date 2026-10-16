@@ -9,6 +9,7 @@ use App\Models\PklJurnalHarian;
 use App\Models\PklLaporanAkhir;
 use App\Models\ProfilSiswa;
 use App\Support\DevAuth;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,8 @@ use Tests\TestCase;
 
 class GuruPortalAndCvUploadTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,10 +38,10 @@ class GuruPortalAndCvUploadTest extends TestCase
             ->withCookie(DevAuth::COOKIE, $role);
     }
 
-    public function test_student_can_upload_cv_document_file(): void
+    // Tiap test menyiapkan datanya sendiri (RefreshDatabase mengosongkan database di antara test)
+    protected function makeSiswa(string $userId = 'usr-siswa-001'): ProfilSiswa
     {
-        $userId = 'usr-siswa-001';
-        ProfilSiswa::updateOrCreate(
+        return ProfilSiswa::updateOrCreate(
             ['user_id' => $userId],
             [
                 'nis' => '0061234567',
@@ -47,6 +50,65 @@ class GuruPortalAndCvUploadTest extends TestCase
                 'status_kelulusan' => 'SISWA_AKTIF',
             ]
         );
+    }
+
+    protected function makeCv(string $userId = 'usr-siswa-001', array $attributes = []): CvResume
+    {
+        $this->makeSiswa($userId);
+        $markdown = "# CV Siswa\n\nPengalaman proyek web.";
+
+        return CvResume::create(array_merge([
+            'user_id' => $userId,
+            'raw_markdown' => $markdown,
+            'checksum' => hash('sha256', $markdown),
+            'is_main' => true,
+            'temp' => false,
+        ], $attributes));
+    }
+
+    protected function makeMitra(): Mitra
+    {
+        return Mitra::firstOrCreate(
+            ['npwp' => 'TEST-MITRA-001'],
+            [
+                'nama_perusahaan' => 'PT Solusi Bangsa Industri',
+                'password' => bcrypt('secret123'),
+                'sektor_industri' => 'Teknologi Informasi',
+                'alamat_kantor' => 'Jl. Merdeka No. 10',
+                'kota' => 'Bogor',
+                'email_perusahaan' => 'hrd@solusibangsa.id',
+                'no_telp_perusahaan' => '0251123456',
+                'pic_name' => 'Bpk. Hendra PIC',
+                'pic_role' => 'HR Manager',
+                'pic_phone' => '081234567890',
+                'pic_email' => 'hendra@solusibangsa.id',
+                'is_verified' => true,
+            ]
+        );
+    }
+
+    protected function makePenempatan(string $status, string $userId = 'usr-siswa-001'): PenempatanPkl
+    {
+        $this->makeSiswa($userId);
+
+        return PenempatanPkl::create([
+            'siswa_id' => $userId,
+            'mitra_id' => $this->makeMitra()->id,
+            'guru_pembimbing_id' => 'usr-guru-001',
+            'pembimbing_industri_nama' => 'Mentor Budi',
+            'unit_kerja_divisi' => 'Software Dev',
+            'tanggal_mulai' => now()->toDateString(),
+            'tanggal_selesai' => now()->addMonths(6)->toDateString(),
+            'target_jam' => 640,
+            'total_jam_tercapai' => 0,
+            'status' => $status,
+        ]);
+    }
+
+    public function test_student_can_upload_cv_document_file(): void
+    {
+        $userId = 'usr-siswa-001';
+        $this->makeSiswa($userId);
 
         $fakePdf = UploadedFile::fake()->create('curriculum_vitae.pdf', 500, 'application/pdf');
 
@@ -67,15 +129,11 @@ class GuruPortalAndCvUploadTest extends TestCase
 
     public function test_student_can_delete_uploaded_cv_document(): void
     {
-        $userId = 'usr-siswa-001';
-        $cv = CvResume::where('user_id', $userId)->first();
-        if ($cv) {
-            $cv->update([
-                'file_path' => 'storage/cv_uploads/fake.pdf',
-                'file_name' => 'fake.pdf',
-                'file_size' => 12345,
-            ]);
-        }
+        $cv = $this->makeCv('usr-siswa-001', [
+            'file_path' => 'storage/cv_uploads/fake.pdf',
+            'file_name' => 'fake.pdf',
+            'file_size' => 12345,
+        ]);
 
         $response = $this->asRole('SISWA')
             ->post('/bkk/me/cv/delete-file');
@@ -103,6 +161,7 @@ class GuruPortalAndCvUploadTest extends TestCase
     public function test_guru_can_review_cv_and_provide_feedback(): void
     {
         $userId = 'usr-siswa-001';
+        $this->makeCv($userId);
 
         $cvRes = $this->asRole('GURU')
             ->get("/bkk/guru/siswa/{$userId}/cv");
@@ -126,36 +185,7 @@ class GuruPortalAndCvUploadTest extends TestCase
     public function test_guru_can_accept_pkl_application(): void
     {
         $userId = 'usr-siswa-001';
-        $mitra = Mitra::firstOrCreate(
-            ['npwp' => 'TEST-MITRA-001'],
-            [
-                'nama_perusahaan' => 'PT Solusi Bangsa Industri',
-                'password' => bcrypt('secret123'),
-                'sektor_industri' => 'Teknologi Informasi',
-                'alamat_kantor' => 'Jl. Merdeka No. 10',
-                'kota' => 'Bogor',
-                'email_perusahaan' => 'hrd@solusibangsa.id',
-                'no_telp_perusahaan' => '0251123456',
-                'pic_name' => 'Bpk. Hendra PIC',
-                'pic_role' => 'HR Manager',
-                'pic_phone' => '081234567890',
-                'pic_email' => 'hendra@solusibangsa.id',
-                'is_verified' => true,
-            ]
-        );
-
-        $penempatan = PenempatanPkl::create([
-            'siswa_id' => $userId,
-            'mitra_id' => $mitra->id,
-            'guru_pembimbing_id' => 'usr-guru-001',
-            'pembimbing_industri_nama' => 'Mentor Budi',
-            'unit_kerja_divisi' => 'Software Dev',
-            'tanggal_mulai' => now()->toDateString(),
-            'tanggal_selesai' => now()->addMonths(6)->toDateString(),
-            'target_jam' => 640,
-            'total_jam_tercapai' => 0,
-            'status' => 'MENUNGGU_PERSETUJUAN',
-        ]);
+        $penempatan = $this->makePenempatan('MENUNGGU_PERSETUJUAN', $userId);
 
         $acceptRes = $this->asRole('GURU')
             ->from('/bkk/guru/pengajuan')
@@ -173,7 +203,7 @@ class GuruPortalAndCvUploadTest extends TestCase
     public function test_guru_can_input_final_grade_and_complete_pkl(): void
     {
         $userId = 'usr-siswa-001';
-        $penempatan = PenempatanPkl::where('siswa_id', $userId)->where('status', 'BERJALAN')->latest()->first();
+        $penempatan = $this->makePenempatan('BERJALAN', $userId);
 
         $gradeRes = $this->asRole('GURU')
             ->from("/bkk/guru/penempatan/{$penempatan->id}")
@@ -198,8 +228,6 @@ class GuruPortalAndCvUploadTest extends TestCase
     public function test_student_can_view_pkl_status_and_submit_mandiri_application(): void
     {
         $userId = 'usr-siswa-001';
-        PenempatanPkl::where('siswa_id', $userId)->delete();
-
         ProfilSiswa::updateOrCreate(
             ['user_id' => $userId],
             [
@@ -237,9 +265,30 @@ class GuruPortalAndCvUploadTest extends TestCase
         $this->assertEquals('Network Operations Center', $penempatan->unit_kerja_divisi);
     }
 
+    public function test_student_can_submit_pkl_application_without_optional_fields(): void
+    {
+        $userId = 'usr-siswa-001';
+        $this->makeSiswa($userId);
+
+        $this->asRole('SISWA')
+            ->post('/bkk/me/pkl/pengajuan', [
+                'tipe_mitra' => 'MANDIRI',
+                'nama_perusahaan_mandiri' => 'PT Jaringan Solusi Global',
+                'unit_kerja_divisi' => 'Network Operations Center',
+                'tanggal_mulai' => now()->toDateString(),
+                'tanggal_selesai' => now()->addMonths(6)->toDateString(),
+            ])
+            ->assertRedirect(route('bkk.me.pkl'))
+            ->assertSessionHas('success');
+
+        $penempatan = PenempatanPkl::where('siswa_id', $userId)->first();
+        $this->assertEquals('Mentor Industri', $penempatan->pembimbing_industri_nama);
+        $this->assertNull($penempatan->catatan_guru);
+    }
+
     public function test_guru_can_validate_journal_entry(): void
     {
-        $penempatan = PenempatanPkl::first();
+        $penempatan = $this->makePenempatan('BERJALAN');
         $jurnal = PklJurnalHarian::create([
             'penempatan_pkl_id' => $penempatan->id,
             'siswa_id' => $penempatan->siswa_id,
@@ -264,7 +313,7 @@ class GuruPortalAndCvUploadTest extends TestCase
 
     public function test_guru_can_validate_final_report_chapter(): void
     {
-        $penempatan = PenempatanPkl::first();
+        $penempatan = $this->makePenempatan('BERJALAN');
         $laporan = PklLaporanAkhir::create([
             'penempatan_pkl_id' => $penempatan->id,
             'siswa_id' => $penempatan->siswa_id,

@@ -105,7 +105,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'BKK Penus - Bursa Kerja Khusus SMK Plus Pelita Nusantara')</title>
     <meta name="description" content="@yield('description', 'Bursa Kerja Khusus SMK Plus Pelita Nusantara: lowongan PKL & kerja terverifikasi IDUKA, dan AI CV Enhancer berstandar ATS.')">
-    <link rel="icon" href="{{ asset('images/logosmkpenus.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/logofavicon.png') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

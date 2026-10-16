@@ -6,7 +6,7 @@
      Token lama (navy, maroon, line, canvas, muted, primary/surface ala Material, font-headline, .google-card) tetap ada
      tapi diarahkan ke palet yang sama, jadi halaman lama ikut berganti tampilan tanpa ditulis ulang. Skala bawaan
      Tailwind red/rose/slate/gray juga ditimpa ke versi hangat supaya kelas lama (bg-red-50, text-slate-500) ikut serasi. --}}
-<link rel="icon" href="{{ asset('images/logosmkpenus.png') }}">
+<link rel="icon" type="image/png" href="{{ asset('images/logofavicon.png') }}">
 
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>

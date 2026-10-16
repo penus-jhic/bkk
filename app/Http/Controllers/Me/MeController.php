@@ -1503,14 +1503,14 @@ class MeController extends Controller
             'siswa_id' => $userId,
             'mitra_id' => $mitraId,
             'guru_pembimbing_id' => 'usr-guru-001',
-            'pembimbing_industri_nama' => $validated['pembimbing_industri_nama'] ?: 'Mentor Industri',
+            'pembimbing_industri_nama' => ($validated['pembimbing_industri_nama'] ?? null) ?: 'Mentor Industri',
             'unit_kerja_divisi' => $validated['unit_kerja_divisi'],
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'],
             'target_jam' => 640,
             'total_jam_tercapai' => 0,
             'status' => 'MENUNGGU_PERSETUJUAN',
-            'catatan_guru' => $validated['catatan_siswa'] ? "Catatan Siswa: {$validated['catatan_siswa']}" : null,
+            'catatan_guru' => !empty($validated['catatan_siswa']) ? "Catatan Siswa: {$validated['catatan_siswa']}" : null,
             'pengajuan_mandiri' => ($validated['tipe_mitra'] === 'MANDIRI'),
         ]);
 

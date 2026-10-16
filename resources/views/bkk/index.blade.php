@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>bkk</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logofavicon.png') }}">
 </head>
 <body>
     <header style="display: flex; justify-content: space-between; align-items: center;">

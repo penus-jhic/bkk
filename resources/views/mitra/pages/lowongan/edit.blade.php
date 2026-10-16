@@ -116,7 +116,7 @@
                             name="deadline"
                             id="deadline"
                             required
-                            value="{{ $vacancy['deadline'] }}"
+                            value="{{ $vacancy->deadline?->format('Y-m-d') }}"
                             class="w-full px-4 py-2.5 rounded-xl border border-line bg-canvas text-brand-ink text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy"
                         />
                     </div>
@@ -159,7 +159,7 @@
                         rows="4"
                         required
                         class="w-full px-4 py-3 rounded-xl border border-line bg-canvas text-brand-ink text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy font-mono text-xs"
-                    >{{ implode("\n", $vacancy['persyaratan']) }}</textarea>
+                    >{{ implode("\n", $vacancy->persyaratan_json ?? []) }}</textarea>
                 </div>
 
                 <div class="space-y-1.5">
@@ -169,7 +169,7 @@
                         id="benefit"
                         rows="3"
                         class="w-full px-4 py-3 rounded-xl border border-line bg-canvas text-brand-ink text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy font-mono text-xs"
-                    >{{ implode("\n", $vacancy['benefit']) }}</textarea>
+                    >{{ implode("\n", $vacancy->benefit_json ?? []) }}</textarea>
                 </div>
             </div>
 

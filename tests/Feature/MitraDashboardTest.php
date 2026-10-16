@@ -144,6 +144,34 @@ class MitraDashboardTest extends TestCase
     }
 
     /**
+     * 7b. Form Edit Lowongan (/bkk/dashboard/lowongan/{id}) terisi data dari kolom JSON & tanggal deadline.
+     */
+    public function test_authenticated_mitra_lowongan_edit_page_loads(): void
+    {
+        $lowongan = Lowongan::create([
+            'mitra_id' => $this->mitra->id,
+            'judul' => 'Teknisi Jaringan Junior',
+            'slug' => 'teknisi-jaringan-junior-test',
+            'tipe' => 'Kerja',
+            'tipe_badge' => 'Kerja',
+            'target_jurusan' => 'Teknik Komputer & Jaringan (TKJ)',
+            'lokasi' => 'Kota Bogor',
+            'kuota' => 2,
+            'deadline' => '2026-12-31',
+            'deskripsi' => 'Instalasi dan pemeliharaan jaringan kantor.',
+            'persyaratan_json' => ['Lulusan SMK TKJ', 'Memahami Mikrotik'],
+            'benefit_json' => null,
+            'status' => 'Aktif',
+        ]);
+
+        $this->withSession(['mitra_id' => $this->mitra->id])
+            ->get("/bkk/dashboard/lowongan/{$lowongan->id}")
+            ->assertStatus(200)
+            ->assertSee('value="2026-12-31"', false)
+            ->assertSee("Lulusan SMK TKJ\nMemahami Mikrotik", false);
+    }
+
+    /**
      * 8. Halaman Pengaturan Mitra (/bkk/dashboard/pengaturan).
      */
     public function test_mitra_pengaturan_page_loads(): void
